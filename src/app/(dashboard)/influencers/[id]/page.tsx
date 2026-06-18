@@ -16,6 +16,8 @@ import { CampaignTimeline } from "@/components/influencers/campaign-timeline";
 import { InternalNotes } from "@/components/influencers/internal-notes";
 import { SyncDiagnosticsPanel } from "@/components/influencers/sync-diagnostics-panel";
 
+import { Suspense } from "react";
+
 export const metadata: Metadata = {
   title: "Influencer Intelligence | TwinPix",
   description: "View creator intelligence, content performance, and campaign history.",
@@ -26,22 +28,11 @@ export default async function InfluencerDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAuth();
   const resolvedParams = await params;
-
-  let influencer;
-  try {
-    influencer = await getInfluencerByIdAction(resolvedParams.id);
-  } catch (error) {
-    notFound();
-  }
-
-  // Format campaigns
-  const mappedCampaigns = influencer.campaigns?.map((ci: any) => ci.campaign) || [];
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar - Renders instantly */}
       <div className="flex items-center justify-between pb-2">
         <Link 
           href="/influencers"
@@ -52,38 +43,65 @@ export default async function InfluencerDetailPage({
         </Link>
       </div>
 
-      {/* 12-Column Grid Layout */}
-      <div className="grid grid-cols-12 gap-8">
-        
-        {/* Section 1: Hero (includes status dropdown, quick actions, sync button) */}
-        <CreatorHero influencer={influencer} />
+      <Suspense fallback={<InfluencerSkeleton />}>
+        <InfluencerContent id={resolvedParams.id} />
+      </Suspense>
+    </div>
+  );
+}
 
-        {/* Section 2: Performance + Contact Info (side by side) */}
-        <PerformanceOverview influencer={influencer} analytics={influencer.analytics} />
-        <ContactInfoCard influencer={influencer} />
+async function InfluencerContent({ id }: { id: string }) {
+  // Data fetch happens inside the Suspense boundary
+  let influencer;
+  try {
+    influencer = await getInfluencerByIdAction(id);
+  } catch (error) {
+    notFound();
+  }
 
-        {/* Section 3: Content Performance */}
-        <ContentPerformance posts={influencer.recentPosts || []} reels={influencer.recentReels || []} analytics={influencer.analytics} />
+  // Format campaigns
+  const mappedCampaigns = influencer.campaigns?.map((ci: any) => ci.campaign) || [];
 
-        {/* Section 4: Feed Posts */}
-        <InfluencerPostsGrid posts={influencer.recentPosts || []} influencerHandle={influencer.instagramHandle} />
+  return (
+    <div className="grid grid-cols-12 gap-8">
+      {/* Section 1: Hero (includes status dropdown, quick actions, sync button) */}
+      <CreatorHero influencer={influencer} />
 
-        {/* Divider */}
-        <div className="col-span-12 h-px bg-[var(--color-border)] my-8" />
+      {/* Section 2: Performance + Contact Info (side by side) */}
+      <PerformanceOverview influencer={influencer} analytics={influencer.analytics} />
+      <ContactInfoCard influencer={influencer} />
 
-        {/* Section 6: Campaign History + AI Insights + Notes */}
-        <CampaignTimeline campaigns={mappedCampaigns} />
+      {/* Section 3: Content Performance */}
+      <ContentPerformance posts={influencer.recentPosts || []} reels={influencer.recentReels || []} analytics={influencer.analytics} />
 
-        <CreatorInsights analytics={influencer.analytics} />
+      {/* Section 4: Feed Posts */}
+      <InfluencerPostsGrid posts={influencer.recentPosts || []} influencerHandle={influencer.instagramHandle} />
 
-        {/* Section 7: Internal Notes */}
-        <InternalNotes influencerId={influencer.id} initialNotes={influencer.notes} />
-        
-        {/* Sync Diagnostics (Dev only inside component) */}
-        <div className="col-span-12">
-          <SyncDiagnosticsPanel influencer={influencer} />
-        </div>
+      {/* Divider */}
+      <div className="col-span-12 h-px bg-[var(--color-border)] my-8" />
+
+      {/* Section 6: Campaign History + AI Insights + Notes */}
+      <CampaignTimeline campaigns={mappedCampaigns} />
+      <CreatorInsights analytics={influencer.analytics} />
+
+      {/* Section 7: Internal Notes */}
+      <InternalNotes influencerId={influencer.id} initialNotes={influencer.notes} />
+      
+      {/* Sync Diagnostics (Dev only inside component) */}
+      <div className="col-span-12">
+        <SyncDiagnosticsPanel influencer={influencer} />
       </div>
+    </div>
+  );
+}
+
+function InfluencerSkeleton() {
+  return (
+    <div className="grid grid-cols-12 gap-8 animate-pulse">
+      <div className="col-span-12 h-[280px] bg-stone-100 rounded-3xl" />
+      <div className="col-span-12 md:col-span-8 h-48 bg-stone-100 rounded-2xl" />
+      <div className="col-span-12 md:col-span-4 h-48 bg-stone-100 rounded-2xl" />
+      <div className="col-span-12 h-64 bg-stone-100 rounded-2xl" />
     </div>
   );
 }

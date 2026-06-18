@@ -12,6 +12,9 @@ export class PlaywrightProvider implements InstagramProvider {
     try {
       console.log(`[PlaywrightProvider] Browser launched. Scraping profile...`);
       const profileData = await scrapeProfile(session.page, username);
+      if (!profileData) {
+        throw new Error(`Failed to scrape profile for ${username}. Playwright may have hit a login wall.`);
+      }
       
       const profile: ScrapedProfile = {
         username: profileData.username,

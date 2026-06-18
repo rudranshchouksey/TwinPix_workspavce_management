@@ -33,7 +33,14 @@ export function NotificationsDropdown() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
+    
+    // Only poll every 60s, and only if the window is in focus to save DB calls
+    const interval = setInterval(() => {
+      if (document.hasFocus()) {
+        fetchNotifications();
+      }
+    }, 60000); 
+    
     return () => clearInterval(interval);
   }, []);
 

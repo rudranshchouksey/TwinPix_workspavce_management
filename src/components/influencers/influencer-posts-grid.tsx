@@ -67,6 +67,8 @@ export function InfluencerPostsGrid({ posts, influencerHandle }: PostsGridProps)
                 src={post.thumbnail} 
                 alt={post.caption || "Instagram Post"} 
                 className="w-full h-auto object-cover" 
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="w-full aspect-square flex items-center justify-center bg-stone-100">

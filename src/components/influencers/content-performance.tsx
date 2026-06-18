@@ -42,7 +42,7 @@ export function ContentPerformance({ posts, reels, analytics }: ContentPerforman
             
             <div className="w-full sm:w-48 aspect-square rounded-2xl overflow-hidden bg-stone-100 shrink-0 shadow-sm relative border border-[var(--color-border)]">
               {topPost.thumbnail && (
-                <img src={topPost.thumbnail} alt="Top Post" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={topPost.thumbnail} alt="Top Post" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
               )}
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold text-rose-600 flex items-center shadow-sm">
                 <Trophy className="w-3 h-3 mr-1" /> Best Post
@@ -85,7 +85,7 @@ export function ContentPerformance({ posts, reels, analytics }: ContentPerforman
 
             <div className="w-full sm:w-40 aspect-[9/16] rounded-2xl overflow-hidden bg-stone-100 shrink-0 shadow-sm relative border border-[var(--color-border)]">
               {topReel.thumbnail && (
-                <img src={topReel.thumbnail} alt="Top Reel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={topReel.thumbnail} alt="Top Reel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
               )}
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold text-sky-600 flex items-center shadow-sm">
                 <Trophy className="w-3 h-3 mr-1" /> Best Reel
