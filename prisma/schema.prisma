@@ -1,0 +1,638 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN // Founders — full system access, can manage admins
+  ADMIN // Managers — can manage team members and clients
+  TEAM_MEMBER // Internal team — standard workspace access
+  CLIENT // External clients — restricted view-only access
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum EventType {
+  TASK
+  CAMPAIGN
+  MEETING
+  CONTENT_POST
+  DEADLINE
+}
+
+// ─────────────────────────────────────────────
+// Core Models
+// ─────────────────────────────────────────────
+
+model User {
+  id          String     @id @default(cuid())
+  name        String?
+  email       String     @unique
+  password    String // bcrypt hashed — never stored plain text
+  role        Role       @default(TEAM_MEMBER)
+  status      UserStatus @default(ACTIVE)
+  image       String? // avatar URL or local path
+  jobTitle    String?
+  department  String?
+  createdById String? // cuid of admin who created this account
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  createdBy     User?                @relation("CreatedByAdmin", fields: [createdById], references: [id])
+  createdUsers  User[]               @relation("CreatedByAdmin")
+  campaigns     CampaignTeamMember[]
+  assignedTasks Task[]               @relation("TaskAssignee")
+  authoredTasks Task[]               @relation("TaskAuthor")
+  taskComments  TaskComment[]
+  uploadedFiles File[]               @relation("UploadedFiles")
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  events        Event[]
+  sentMessages  Message[]            @relation("SentMessages")
+  receivedMessages Message[]         @relation("ReceivedMessages")
+  feedback      Feedback[]           @relation("UserFeedback")
+
+  managedInfluencers Influencer[]         @relation("InfluencerManager")
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Audit Logging
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String // e.g. "USER_CREATED", "USER_UPDATED", "USER_DELETED"
+  entityType String // e.g. "USER"
+  entityId   String // ID of the entity that was affected
+  adminId    String? // ID of the admin who performed the action
+  details    String? // JSON string or description of the changes
+  createdAt  DateTime @default(now())
+
+  // We could establish a relation, but typically audit logs are immutable and shouldn't 
+  // fail/cascade if an admin user is deleted. Keeping it loose is often safer.
+
+  @@index([adminId])
+  @@index([entityId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// CRM Models
+// ─────────────────────────────────────────────
+
+enum InfluencerStatus {
+  NEW_LEAD
+  CONTACTED
+  REPLIED
+  NEGOTIATING
+  ACTIVE
+  ONBOARDED
+  BLACKLISTED
+}
+
+model Influencer {
+  id                 String           @id @default(cuid())
+  influencerName     String?
+  instagramHandle    String           @unique
+  platform           String?
+  posts              Int?
+  followers          Int?
+  following          Int?
+  category           String?
+  location           String?
+  email              String?
+  phoneNumber        String?
+  profileLink        String?
+  sampleVideoViews   String?
+  profileDescription String?
+  engagementRate     Float?
+  status             InfluencerStatus @default(NEW_LEAD)
+  notes              String?
+  profileImage       String?
+  assignedManagerId  String?
+  reelRate           Float?
+  storyRate          Float?
+  campaignCount      Int              @default(0)
+  lastContactDate    DateTime?
+  lastSyncDate       DateTime?
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  assignedManager    User?                @relation("InfluencerManager", fields: [assignedManagerId], references: [id], onDelete: SetNull)
+  campaigns          CampaignInfluencer[]
+  files              File[]
+  events             Event[]
+  recentPosts        InfluencerPost[]
+  recentReels        InfluencerReel[]
+  analytics          InfluencerContentAnalytics?
+
+  @@index([status])
+  @@index([category])
+  @@index([assignedManagerId])
+  @@map("influencers")
+}
+
+model InfluencerPost {
+  id              String   @id @default(cuid())
+  influencerId    String
+  instagramPostId String   @unique
+  thumbnail       String
+  caption         String?
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  publishedDate   DateTime
+  postUrl         String
+  createdAt       DateTime @default(now())
+
+  influencer      Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  
+  @@index([influencerId])
+  @@map("influencer_posts")
+}
+
+model InfluencerReel {
+  id              String   @id @default(cuid())
+  influencerId    String
+  instagramReelId String   @unique
+  thumbnail       String
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  publishedDate   DateTime
+  reelUrl         String
+  createdAt       DateTime @default(now())
+
+  influencer      Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  
+  @@index([influencerId])
+  @@map("influencer_reels")
+}
+
+model InfluencerContentAnalytics {
+  id                     String   @id @default(cuid())
+  influencerId           String   @unique
+  avgEngagementRate      Float    @default(0.0)
+  avgReelViews           Int      @default(0)
+  avgPostLikes           Int      @default(0)
+  avgPostComments        Int      @default(0)
+  topPostId              String?
+  topReelId              String?
+  contentConsistencyScore Float   @default(0.0)
+  aiInsights             String[] @default([])
+  updatedAt              DateTime @updatedAt
+
+  influencer             Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  
+  @@map("influencer_content_analytics")
+}
+
+// ─────────────────────────────────────────────
+// Client CRM Models
+// ─────────────────────────────────────────────
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  LEAD
+  CLOSED
+}
+
+model Client {
+  id            String       @id @default(cuid())
+  companyName   String
+  brandName     String?
+  contactPerson String
+  email         String       @unique
+  phone         String?
+  industry      String?
+  website       String?
+  address       String?
+  notes         String? // Quick notes field
+  status        ClientStatus @default(LEAD)
+  tags          String[]     @default([])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  clientNotes ClientNote[]
+  activities  ClientActivity[]
+  campaigns   Campaign[]
+  projects    Project[]
+
+  @@index([status])
+  @@index([industry])
+  @@index([email])
+  @@map("clients")
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  content   String
+  clientId  String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("client_notes")
+}
+
+model ClientActivity {
+  id        String   @id @default(cuid())
+  type      String // CLIENT_CREATED, NOTE_ADDED, STATUS_CHANGED, FILE_UPLOADED, etc.
+  details   String
+  clientId  String
+  userId    String?
+  metadata  String? // JSON string for extra data
+  createdAt DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([type])
+  @@map("client_activities")
+}
+
+// ─────────────────────────────────────────────
+// Campaign Management Models
+// ─────────────────────────────────────────────
+
+enum CampaignStatus {
+  PLANNING
+  ACTIVE
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  name         String
+  clientId     String
+  budget       Float          @default(0.0)
+  deliverables String? // Overall text description of deliverables
+  startDate    DateTime?
+  endDate      DateTime?
+  status       CampaignStatus @default(PLANNING)
+  notes        String?
+  projectId    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Relations to explicit join tables
+  influencers CampaignInfluencer[]
+  teamMembers CampaignTeamMember[]
+  activities  CampaignActivity[]
+  tasks       Task[]
+  files       File[]
+  events      Event[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+model CampaignInfluencer {
+  id           String   @id @default(cuid())
+  campaignId   String
+  influencerId String
+  fee          Float    @default(0.0)
+  deliverables String? // Influencer-specific deliverables
+  status       String   @default("PENDING") // e.g. PENDING, ACCEPTED, IN_PROGRESS, DELIVERED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, influencerId])
+  @@index([campaignId])
+  @@index([influencerId])
+  @@map("campaign_influencers")
+}
+
+model CampaignTeamMember {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  role       String   @default("MEMBER") // e.g. MANAGER, MEMBER
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@map("campaign_team_members")
+}
+
+model CampaignActivity {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String?
+  type       String // e.g. STATUS_CHANGED, INFLUENCER_ADDED
+  details    String
+  metadata   String? // JSON string
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("campaign_activities")
+}
+
+// ─────────────────────────────────────────────
+// Task Management Models
+// ─────────────────────────────────────────────
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
+  dueDate     DateTime?
+  attachments String[]     @default([])
+
+  assigneeId String?
+  campaignId String?
+  authorId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignee User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  author   User      @relation("TaskAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  comments   TaskComment[]
+  activities TaskActivity[]
+  files      File[]
+  events     Event[]
+
+  @@index([assigneeId])
+  @@index([campaignId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_comments")
+}
+
+model TaskActivity {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  type      String // STATUS_CHANGED, COMMENT_ADDED, ASSIGNED, etc.
+  details   String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_activities")
+}
+
+// ─────────────────────────────────────────────
+// File Management Models
+// ─────────────────────────────────────────────
+
+model File {
+  id           String   @id @default(cuid())
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploadedBy User? @relation("UploadedFiles", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  influencerId String?
+  influencer   Influencer? @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([uploadedById])
+  @@index([campaignId])
+  @@index([influencerId])
+  @@index([taskId])
+  @@map("files")
+}
+
+// ─────────────────────────────────────────────
+// Notifications & Activity
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // e.g. TASK_ASSIGNED, CAMPAIGN_UPDATED, FILE_UPLOADED
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  entityId  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userName   String? // Snapshot of user name
+  action     String // e.g. "created a new campaign", "uploaded a file"
+  entityType String // CAMPAIGN, TASK, FILE, INFLUENCER, USER
+  entityId   String?
+  targetName String? // e.g. "Summer Campaign", "brief.pdf"
+  details    String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType])
+  @@map("activity_logs")
+}
+
+// ─────────────────────────────────────────────
+// Calendar & Scheduling Models
+// ─────────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        EventType @default(MEETING)
+  start       DateTime
+  end         DateTime?
+  allDay      Boolean   @default(false)
+  color       String?
+
+  userId       String?
+  campaignId   String?
+  taskId       String?
+  influencerId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  task       Task?       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  influencer Influencer? @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([type])
+  @@map("events")
+}
+
+// ─────────────────────────────────────────────
+// Messaging & Feedback Models
+// ─────────────────────────────────────────────
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
+  receiverId String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@map("messages")
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  subject   String
+  content   String
+  status    String   @default("OPEN") // OPEN, REVIEWED, RESOLVED
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserFeedback", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("feedback")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  clientId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  campaigns   Campaign[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("projects")
+}
+
+model InfluencerLead {
+  id                  String    @id @default(cuid())
+  influencerName      String?
+  instagramHandle     String    @unique
+  platform            String?
+  posts               Int?
+  followers           Int?
+  following           Int?
+  categoryNiche       String?
+  cityCountry         String?
+  email               String?
+  phoneNumber         String?
+  facebookProfileLink String?
+  sampleVideoViews    String?
+  profileDescription  String?
+  engagementRate      Float?
+  status              String?
+  dateAdded           DateTime?
+  notes               String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([platform])
+  @@index([status])
+  @@index([categoryNiche])
+  @@map("influencer_leads")
+}

@@ -1,0 +1,23 @@
+import { z } from "zod";
+
+export const taskSchema = z.object({
+  title: z.string().min(1, "Task title is required").max(200),
+  description: z.string().optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
+  status: z.enum(["TODO", "IN_PROGRESS", "REVIEW", "DONE"]),
+  dueDate: z.string().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
+  campaignId: z.string().optional().nullable(),
+  attachments: z.array(z.string()).default([]),
+});
+
+export type TaskInput = z.infer<typeof taskSchema>;
+
+export const updateTaskSchema = taskSchema.partial();
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+
+export const taskCommentSchema = z.object({
+  content: z.string().min(1, "Comment cannot be empty").max(1000),
+});
+
+export type TaskCommentInput = z.infer<typeof taskCommentSchema>;

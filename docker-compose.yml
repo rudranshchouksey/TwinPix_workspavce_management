@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: twinpix_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: twinpix
+      POSTGRES_PASSWORD: twinpix_secret
+      POSTGRES_DB: twinpix_studio
+    ports:
+      - "5432:5432"
+    volumes:
+      - twinpix_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twinpix -d twinpix_studio"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  twinpix_pgdata:
