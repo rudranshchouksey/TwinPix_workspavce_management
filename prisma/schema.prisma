@@ -150,6 +150,7 @@ model Influencer {
 
   @@index([status])
   @@index([category])
+  @@index([category, status])
   @@index([assignedManagerId])
   @@map("influencers")
 }
@@ -316,6 +317,8 @@ model Campaign {
 
   @@index([clientId])
   @@index([status])
+  @@index([clientId, status])
+  @@index([startDate(sort: Desc)])
   @@map("campaigns")
 }
 
@@ -415,6 +418,7 @@ model Task {
   @@index([assigneeId])
   @@index([campaignId])
   @@index([status])
+  @@index([assigneeId, status, dueDate])
   @@map("tasks")
 }
 
@@ -520,6 +524,7 @@ model ActivityLog {
 
   @@index([userId])
   @@index([entityType])
+  @@index([entityId, entityType])
   @@map("activity_logs")
 }
 

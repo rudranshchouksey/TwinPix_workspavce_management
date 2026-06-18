@@ -1,10 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { KPICards } from "./kpi-cards";
-import { RevenueChart } from "./revenue-chart";
-import { CampaignChart } from "./campaign-chart";
 import { TopInfluencers } from "./top-influencers";
+
+const RevenueChart = dynamic(() => import("./revenue-chart").then(mod => mod.RevenueChart), { 
+  ssr: false,
+  loading: () => <div className="col-span-4 lg:col-span-3 min-h-[400px] rounded-xl bg-stone-100 animate-pulse border" />
+});
+
+const CampaignChart = dynamic(() => import("./campaign-chart").then(mod => mod.CampaignChart), { 
+  ssr: false,
+  loading: () => <div className="col-span-4 lg:col-span-2 min-h-[400px] rounded-xl bg-stone-100 animate-pulse border" />
+});
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";

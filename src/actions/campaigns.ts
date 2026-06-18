@@ -28,18 +28,19 @@ async function logActivity(campaignId: string, type: string, details: string, me
   });
 }
 
-// Helper to log audit
-async function logAudit(action: string, entityId: string, details?: string) {
-  const user = await requireAuth();
-  await db.auditLog.create({
-    data: {
-      action,
-      entityType: "CAMPAIGN",
-      entityId,
-      adminId: user.id,
-      details,
-    },
-  });
+// Helper to log audit (Fire and forget to not block request)
+function logAudit(action: string, entityId: string, details?: string) {
+  requireAuth().then((user) => {
+    db.auditLog.create({
+      data: {
+        action,
+        entityType: "CAMPAIGN",
+        entityId,
+        adminId: user.id,
+        details,
+      },
+    }).catch(console.error);
+  }).catch(console.error);
 }
 
 export async function getCampaignsAction(params: {
@@ -151,7 +152,7 @@ export async function createCampaignAction(input: CampaignInput) {
     },
   });
 
-  await logAudit("CAMPAIGN_CREATED", campaign.id, `Created campaign: ${campaign.name}`);
+  logAudit("CAMPAIGN_CREATED", campaign.id, `Created campaign: ${campaign.name}`);
   await logActivity(campaign.id, "CAMPAIGN_CREATED", `Campaign created by ${user.name}`);
 
   revalidatePath("/campaigns");
@@ -180,7 +181,7 @@ export async function updateCampaignAction(id: string, input: UpdateCampaignInpu
     await logActivity(campaign.id, "CAMPAIGN_UPDATED", `Campaign details updated by ${user.name}`);
   }
 
-  await logAudit("CAMPAIGN_UPDATED", campaign.id, `Updated campaign: ${campaign.name}`);
+  logAudit("CAMPAIGN_UPDATED", campaign.id, `Updated campaign: ${campaign.name}`);
 
   revalidatePath(`/campaigns`);
   revalidatePath(`/campaigns/${id}`);
@@ -195,7 +196,7 @@ export async function deleteCampaignAction(id: string) {
 
   await db.campaign.delete({ where: { id } });
 
-  await logAudit("CAMPAIGN_DELETED", id, `Deleted campaign: ${campaign.name} by ${user.name}`);
+  logAudit("CAMPAIGN_DELETED", id, `Deleted campaign: ${campaign.name} by ${user.name}`);
 
   revalidatePath("/campaigns");
 }
@@ -300,25 +301,34 @@ export async function removeTeamMemberAction(campaignId: string, userId: string)
   revalidatePath(`/campaigns/${campaignId}`);
 }
 
+import { unstable_cache } from "next/cache";
+
+const getCachedCampaignStats = unstable_cache(
+  async () => {
+    const [total, active, review, planning, budgetAggregate] = await Promise.all([
+      db.campaign.count(),
+      db.campaign.count({ where: { status: "ACTIVE" } }),
+      db.campaign.count({ where: { status: "REVIEW" } }),
+      db.campaign.count({ where: { status: "PLANNING" } }),
+      db.campaign.aggregate({
+        where: { status: "ACTIVE" },
+        _sum: { budget: true },
+      }),
+    ]);
+
+    return {
+      total,
+      active,
+      review,
+      planning,
+      totalActiveBudget: budgetAggregate._sum.budget || 0,
+    };
+  },
+  ["campaign-stats"],
+  { revalidate: 60, tags: ["campaigns"] }
+);
+
 export async function getCampaignStatsAction() {
   await requireAuth();
-
-  const [total, active, review, planning, budgetAggregate] = await Promise.all([
-    db.campaign.count(),
-    db.campaign.count({ where: { status: "ACTIVE" } }),
-    db.campaign.count({ where: { status: "REVIEW" } }),
-    db.campaign.count({ where: { status: "PLANNING" } }),
-    db.campaign.aggregate({
-      where: { status: "ACTIVE" },
-      _sum: { budget: true },
-    }),
-  ]);
-
-  return {
-    total,
-    active,
-    review,
-    planning,
-    totalActiveBudget: budgetAggregate._sum.budget || 0,
-  };
+  return getCachedCampaignStats();
 }
