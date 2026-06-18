@@ -14,6 +14,7 @@ import { ContentPerformance } from "@/components/influencers/content-performance
 import { InfluencerPostsGrid } from "@/components/influencers/influencer-posts-grid";
 import { CampaignTimeline } from "@/components/influencers/campaign-timeline";
 import { InternalNotes } from "@/components/influencers/internal-notes";
+import { SyncDiagnosticsPanel } from "@/components/influencers/sync-diagnostics-panel";
 
 export const metadata: Metadata = {
   title: "Influencer Intelligence | TwinPix",
@@ -78,6 +79,10 @@ export default async function InfluencerDetailPage({
         {/* Section 7: Internal Notes */}
         <InternalNotes influencerId={influencer.id} initialNotes={influencer.notes} />
         
+        {/* Sync Diagnostics (Dev only inside component) */}
+        <div className="col-span-12">
+          <SyncDiagnosticsPanel influencer={influencer} />
+        </div>
       </div>
     </div>
   );

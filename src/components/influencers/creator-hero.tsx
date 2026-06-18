@@ -21,6 +21,7 @@ import { syncInfluencerAction } from "@/actions/instagram-sync";
 import { updateInfluencerStatusAction } from "@/actions/influencers";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface CreatorHeroProps {
   influencer: any;
@@ -121,10 +122,12 @@ export function CreatorHero({ influencer }: CreatorHeroProps) {
             className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden bg-white border-4 border-white shadow-lg shrink-0 flex items-center justify-center relative"
           >
             {influencer.profileImage ? (
-              <img
+              <Image
                 src={influencer.profileImage}
                 alt={influencer.influencerName || "Unnamed"}
-                className="w-full h-full object-cover"
+                fill
+                unoptimized
+                className="object-cover"
                 onError={(e) => {
                   // Fallback to initials if image fails to load
                   const target = e.target as HTMLImageElement;

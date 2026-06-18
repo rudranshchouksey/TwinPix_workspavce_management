@@ -84,10 +84,9 @@ export class InstagramSyncService {
         console.log(`[Sync:2/6] ✓ Playwright provider succeeded.`);
       } catch (playwrightError: any) {
         errors.push(`Playwright failed: ${playwrightError.message}`);
-        console.warn(`[Sync:2/6] Playwright failed: ${playwrightError.message}. Using MockProvider...`);
-        instagramData = await this.mock.fetchInfluencerData(username);
-        dataSource = "mock";
-        console.log(`[Sync:2/6] ✓ MockProvider used (development mode).`);
+        console.warn(`[Sync:2/6] Playwright failed: ${playwrightError.message}. No providers left. Extracting from DB...`);
+        // We do NOT use MockProvider. We let it fail so the defensive fallback works.
+        throw new Error("All data providers failed to fetch live Instagram data.");
       }
     }
 
@@ -143,15 +142,19 @@ export class InstagramSyncService {
     // ─── Step 5: Update Profile in DB ───────────────────────────
     console.log(`[Sync:5/6] Updating influencer profile in database...`);
     
+    const safeFollowers = instagramData.profile.followersCount > 0 ? instagramData.profile.followersCount : influencer.followers;
+    const safeFollowing = instagramData.profile.followingCount > 0 ? instagramData.profile.followingCount : influencer.following;
+    const safePostsCount = instagramData.profile.postsCount > 0 ? instagramData.profile.postsCount : influencer.posts;
+
     await prisma.influencer.update({
       where: { id: influencerId },
       data: {
         influencerName: instagramData.profile.fullName || influencer.influencerName,
         profileDescription: instagramData.profile.bio || influencer.profileDescription,
         profileImage: localProfileImagePath,
-        followers: instagramData.profile.followersCount,
-        following: instagramData.profile.followingCount,
-        posts: instagramData.profile.postsCount,
+        followers: safeFollowers,
+        following: safeFollowing,
+        posts: safePostsCount,
         profileLink: instagramData.profile.externalLink || influencer.profileLink,
         email: extractedEmail,
         phoneNumber: extractedPhone,
@@ -243,8 +246,8 @@ export class InstagramSyncService {
     const allPosts = instagramData.posts;
     const allReels = instagramData.reels;
     
-    // Use the UPDATED followers count (not stale from before sync)
-    const updatedFollowers = instagramData.profile.followersCount;
+    // Use the UPDATED safe followers count (fallback to existing if scraper fails)
+    const updatedFollowers = safeFollowers;
     
     let totalEngagements = 0;
     let totalPostLikes = 0;

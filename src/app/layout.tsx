@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   },
   description:
     "Internal workspace management platform for TwinPix Studio team.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   robots: { index: false, follow: false }, // Internal tool — never index
 };
 
