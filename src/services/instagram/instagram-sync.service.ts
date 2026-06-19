@@ -1,12 +1,11 @@
 import { db } from "@/lib/db";
 import { ApifyProvider } from "./apify-provider";
-import { PlaywrightProvider } from "./playwright-provider";
 import { MockProvider } from "./mock-provider";
 import { ImageDownloader } from "./image-downloader";
 
 export interface SyncResult {
   success: boolean;
-  source: "apify" | "playwright" | "mock";
+  source: "apify" | "mock";
   profile: {
     name: string | null;
     followers: number;
@@ -29,26 +28,24 @@ export interface SyncResult {
 
 export class InstagramSyncService {
   private apify: ApifyProvider | null = null;
-  private playwright: PlaywrightProvider;
   private mock: MockProvider;
   private imageDownloader: ImageDownloader;
 
   constructor() {
-    this.playwright = new PlaywrightProvider();
     this.mock = new MockProvider();
     this.imageDownloader = new ImageDownloader();
     
     try {
       this.apify = new ApifyProvider();
     } catch (e) {
-      console.warn("[InstagramSyncService] ApifyProvider not initialized. Missing API Token. Will use Playwright fallback exclusively.");
+      console.warn("[InstagramSyncService] ApifyProvider not initialized. Missing API Token.");
     }
   }
 
   async syncInfluencer(influencerId: string): Promise<SyncResult> {
     const prisma = db as any;
     const errors: string[] = [];
-    let dataSource: "apify" | "playwright" | "mock" = "mock";
+    let dataSource: "apify" | "mock" = "mock";
     
     // ─── Step 1: Fetch influencer from DB ───────────────────────
     console.log(`[Sync:1/6] Fetching influencer ${influencerId} from database...`);
@@ -77,17 +74,8 @@ export class InstagramSyncService {
       }
     } catch (error: any) {
       errors.push(`Apify failed: ${error.message}`);
-      console.warn(`[Sync:2/6] Apify failed: ${error.message}. Trying Playwright...`);
-      try {
-        instagramData = await this.playwright.fetchInfluencerData(username);
-        dataSource = "playwright";
-        console.log(`[Sync:2/6] ✓ Playwright provider succeeded.`);
-      } catch (playwrightError: any) {
-        errors.push(`Playwright failed: ${playwrightError.message}`);
-        console.warn(`[Sync:2/6] Playwright failed: ${playwrightError.message}. No providers left. Extracting from DB...`);
-        // We do NOT use MockProvider. We let it fail so the defensive fallback works.
-        throw new Error("All data providers failed to fetch live Instagram data.");
-      }
+      console.warn(`[Sync:2/6] Apify failed: ${error.message}. No providers left.`);
+      throw new Error("All data providers failed to fetch live Instagram data.");
     }
 
     if (!instagramData) {
