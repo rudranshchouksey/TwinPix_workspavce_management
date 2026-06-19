@@ -1,7 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { pipeline } from 'stream/promises';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary if CLOUDINARY_URL is available
+// Cloudinary automatically picks up process.env.CLOUDINARY_URL
+// format: cloudinary://my_key:my_secret@my_cloud_name
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({
+    secure: true,
+  });
+}
 
 export class ImageDownloader {
   private baseDir: string;
@@ -9,7 +18,7 @@ export class ImageDownloader {
   constructor() {
     this.baseDir = path.join(process.cwd(), 'public', 'uploads');
     
-    // Ensure directories exist
+    // Ensure directories exist for local fallback
     if (!fs.existsSync(path.join(this.baseDir, 'profiles'))) {
       fs.mkdirSync(path.join(this.baseDir, 'profiles'), { recursive: true });
     }
@@ -19,8 +28,8 @@ export class ImageDownloader {
   }
 
   /**
-   * Downloads an image from a URL and saves it locally.
-   * Returns the local public path (e.g., /uploads/profiles/123.jpg)
+   * Downloads an image from a URL and saves it permanently to Cloudinary (or local fallback).
+   * Returns the permanent secure URL (e.g., https://res.cloudinary.com/...)
    * 
    * @param url The remote URL of the image
    * @param type The type of image ('profile' or 'content')
@@ -30,33 +39,7 @@ export class ImageDownloader {
     if (!url) return undefined;
 
     try {
-      // Generate a unique filename using prefix + hash to avoid long/invalid filenames
-      const hash = crypto.createHash('md5').update(url).digest('hex').substring(0, 8);
-      
-      // Determine extension (default to jpg if unknown)
-      let ext = '.jpg';
-      try {
-        const parsedUrl = new URL(url);
-        const pathname = parsedUrl.pathname;
-        if (pathname.endsWith('.png')) ext = '.png';
-        if (pathname.endsWith('.webp')) ext = '.webp';
-        if (pathname.endsWith('.mp4')) ext = '.mp4'; // just in case
-      } catch (e) {
-        // ignore invalid URL parsing for extension
-      }
-
-      const filename = `${prefix}_${hash}${ext}`;
-      const relativeFolder = type === 'profile' ? 'profiles' : 'content';
-      
-      const localFilePath = path.join(this.baseDir, relativeFolder, filename);
-      const publicPath = `/uploads/${relativeFolder}/${filename}`;
-
-      // Skip download if already exists
-      if (fs.existsSync(localFilePath)) {
-        return publicPath;
-      }
-
-      // Fetch the image
+      // Fetch the image to a buffer
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -67,17 +50,55 @@ export class ImageDownloader {
          throw new Error('No response body');
       }
 
-      // Convert Web Stream to Node stream
-      // Node 18+ fetch returns a ReadableStream
-      const fileStream = fs.createWriteStream(localFilePath);
-      
-      // @ts-ignore - Node 18+ fetch body is a ReadableStream which can be handled by pipeline in newer versions, or we can use array buffer
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      
-      fs.writeFileSync(localFilePath, buffer);
 
+      // Cloudinary Upload Strategy
+      if (process.env.CLOUDINARY_URL) {
+        return new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            { 
+              folder: `twinpix/instagram/${type}`,
+              public_id: `${prefix}_${crypto.createHash('md5').update(url).digest('hex').substring(0, 8)}`,
+              overwrite: true,
+            },
+            (error, result) => {
+              if (error) {
+                console.error(`[ImageDownloader] Cloudinary upload failed:`, error);
+                return resolve(url); // Fallback to raw URL
+              }
+              if (result) {
+                return resolve(result.secure_url);
+              }
+              resolve(url);
+            }
+          ).end(buffer);
+        });
+      }
+
+      // Local Fallback Strategy (Works locally, but not persistent on Vercel)
+      const hash = crypto.createHash('md5').update(url).digest('hex').substring(0, 8);
+      let ext = '.jpg';
+      try {
+        const parsedUrl = new URL(url);
+        const pathname = parsedUrl.pathname;
+        if (pathname.endsWith('.png')) ext = '.png';
+        if (pathname.endsWith('.webp')) ext = '.webp';
+        if (pathname.endsWith('.mp4')) ext = '.mp4';
+      } catch (e) { }
+
+      const filename = `${prefix}_${hash}${ext}`;
+      const relativeFolder = type === 'profile' ? 'profiles' : 'content';
+      const localFilePath = path.join(this.baseDir, relativeFolder, filename);
+      const publicPath = `/uploads/${relativeFolder}/${filename}`;
+
+      if (fs.existsSync(localFilePath)) {
+        return publicPath;
+      }
+
+      fs.writeFileSync(localFilePath, buffer);
       return publicPath;
+
     } catch (error) {
       console.error(`[ImageDownloader] Error downloading image from ${url}:`, error);
       // If download fails, return the original URL as a fallback so we don't lose the image entirely

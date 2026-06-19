@@ -18,6 +18,8 @@ import { SyncDiagnosticsPanel } from "@/components/influencers/sync-diagnostics-
 
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Influencer Intelligence | TwinPix",
   description: "View creator intelligence, content performance, and campaign history.",
@@ -29,7 +31,7 @@ export default async function InfluencerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  
+
   // Check if current user has admin rights for deletion permission
   const { checkRole } = await import("@/lib/auth-utils");
   const isAdmin = await checkRole("ADMIN");
@@ -38,7 +40,7 @@ export default async function InfluencerDetailPage({
     <div className="space-y-8 pb-20">
       {/* Top Navigation Bar - Renders instantly */}
       <div className="flex items-center justify-between pb-2">
-        <Link 
+        <Link
           href="/influencers"
           className="flex items-center text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
         >
@@ -88,22 +90,18 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
 
       {/* Section 6: Campaign History + AI Insights + Notes */}
       <div className="col-span-12">
-        <CampaignHistorySection 
-          influencerId={influencer.id} 
-          campaigns={campaignAssignments} 
-          isAdmin={isAdmin} 
+        <CampaignHistorySection
+          influencerId={influencer.id}
+          campaigns={campaignAssignments}
+          isAdmin={isAdmin}
         />
       </div>
-      
+
       <CreatorInsights analytics={influencer.analytics} />
 
       {/* Section 7: Internal Notes */}
       <InternalNotes influencerId={influencer.id} initialNotes={influencer.notes} />
-      
-      {/* Sync Diagnostics (Dev only inside component) */}
-      <div className="col-span-12">
-        <SyncDiagnosticsPanel influencer={influencer} />
-      </div>
+
     </div>
   );
 }
