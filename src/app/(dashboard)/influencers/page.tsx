@@ -32,6 +32,10 @@ export default async function InfluencersPage({
   );
   
   const influencers = JSON.parse(JSON.stringify(rawInfluencers));
+  
+  // Check if current user has admin rights for deletion permission
+  const { checkRole } = await import("@/lib/auth-utils");
+  const isAdmin = await checkRole("ADMIN");
 
   return (
     <div className="space-y-6">
@@ -50,7 +54,7 @@ export default async function InfluencersPage({
       </div>
 
       <section aria-label="Influencers Listing">
-        <InfluencerTable data={influencers} />
+        <InfluencerTable data={influencers} isAdmin={isAdmin} />
       </section>
     </div>
   );

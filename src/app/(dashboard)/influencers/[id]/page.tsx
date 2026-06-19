@@ -12,7 +12,7 @@ import { CreatorInsights } from "@/components/influencers/creator-insights";
 import { ContactInfoCard } from "@/components/influencers/contact-info-card";
 import { ContentPerformance } from "@/components/influencers/content-performance";
 import { InfluencerPostsGrid } from "@/components/influencers/influencer-posts-grid";
-import { CampaignTimeline } from "@/components/influencers/campaign-timeline";
+import { CampaignHistorySection } from "@/components/influencers/campaigns/campaign-history-section";
 import { InternalNotes } from "@/components/influencers/internal-notes";
 import { SyncDiagnosticsPanel } from "@/components/influencers/sync-diagnostics-panel";
 
@@ -29,6 +29,10 @@ export default async function InfluencerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
+  
+  // Check if current user has admin rights for deletion permission
+  const { checkRole } = await import("@/lib/auth-utils");
+  const isAdmin = await checkRole("ADMIN");
 
   return (
     <div className="space-y-8 pb-20">
@@ -44,13 +48,13 @@ export default async function InfluencerDetailPage({
       </div>
 
       <Suspense fallback={<InfluencerSkeleton />}>
-        <InfluencerContent id={resolvedParams.id} />
+        <InfluencerContent id={resolvedParams.id} isAdmin={isAdmin} />
       </Suspense>
     </div>
   );
 }
 
-async function InfluencerContent({ id }: { id: string }) {
+async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean }) {
   // Data fetch happens inside the Suspense boundary
   let influencer;
   try {
@@ -61,13 +65,13 @@ async function InfluencerContent({ id }: { id: string }) {
     notFound();
   }
 
-  // Format campaigns
-  const mappedCampaigns = influencer.campaigns?.map((ci: any) => ci.campaign) || [];
+  // Format campaigns for the new system
+  const campaignAssignments = influencer.campaigns || [];
 
   return (
     <div className="grid grid-cols-12 gap-8">
       {/* Section 1: Hero (includes status dropdown, quick actions, sync button) */}
-      <CreatorHero influencer={influencer} />
+      <CreatorHero influencer={influencer} isAdmin={isAdmin} />
 
       {/* Section 2: Performance + Contact Info (side by side) */}
       <PerformanceOverview influencer={influencer} analytics={influencer.analytics} />
@@ -83,7 +87,14 @@ async function InfluencerContent({ id }: { id: string }) {
       <div className="col-span-12 h-px bg-[var(--color-border)] my-8" />
 
       {/* Section 6: Campaign History + AI Insights + Notes */}
-      <CampaignTimeline campaigns={mappedCampaigns} />
+      <div className="col-span-12">
+        <CampaignHistorySection 
+          influencerId={influencer.id} 
+          campaigns={campaignAssignments} 
+          isAdmin={isAdmin} 
+        />
+      </div>
+      
       <CreatorInsights analytics={influencer.analytics} />
 
       {/* Section 7: Internal Notes */}

@@ -28,12 +28,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, ArrowUpDown, Search, ExternalLink, Phone, Mail, AtSign, Users, Globe, Video, MessageCircle, Smartphone } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InfluencerActionsDropdown } from "./influencer-actions-dropdown";
 
 interface InfluencerTableProps {
   data: any[];
+  isAdmin?: boolean;
 }
 
-export function InfluencerTable({ data }: InfluencerTableProps) {
+export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -312,11 +314,7 @@ export function InfluencerTable({ data }: InfluencerTableProps) {
       cell: ({ row }) => {
         return (
           <div className="flex items-center justify-end gap-2">
-            <Link href={`/influencers/${row.original.id}`}>
-              <Button variant="ghost" size="sm" className="h-8 font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-brand-700)] hover:bg-[var(--color-brand-50)]">
-                View
-              </Button>
-            </Link>
+            <InfluencerActionsDropdown influencer={row.original} isAdmin={isAdmin} />
           </div>
         );
       },

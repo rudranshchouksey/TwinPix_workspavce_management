@@ -329,6 +329,8 @@ model CampaignInfluencer {
   fee          Float    @default(0.0)
   deliverables String? // Influencer-specific deliverables
   status       String   @default("PENDING") // e.g. PENDING, ACCEPTED, IN_PROGRESS, DELIVERED
+  notes        String?
+  performanceMetrics String? // JSON string
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

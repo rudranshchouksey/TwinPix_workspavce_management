@@ -18,6 +18,7 @@ import { InfluencerStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { AtSign, MoreHorizontal } from "lucide-react";
 import { updateInfluencerAction } from "@/actions/influencers";
+import { InfluencerActionsDropdown } from "../influencer-actions-dropdown";
 
 const COLUMNS = [
   { id: "NEW_LEAD", title: "New Lead", color: "border-blue-500/20 bg-blue-500/10 text-blue-400" },
@@ -32,9 +33,10 @@ const COLUMNS = [
 interface KanbanCardProps {
   influencer: any;
   isOverlay?: boolean;
+  isAdmin?: boolean;
 }
 
-function KanbanCard({ influencer, isOverlay }: KanbanCardProps) {
+function KanbanCard({ influencer, isOverlay, isAdmin = false }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: influencer.id,
     data: { type: "Influencer", influencer },
@@ -86,6 +88,9 @@ function KanbanCard({ influencer, isOverlay }: KanbanCardProps) {
             </div>
           </div>
         </div>
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <InfluencerActionsDropdown influencer={influencer} isAdmin={isAdmin} />
+        </div>
       </div>
       <div className="mt-3 flex items-center justify-between">
         <div className="text-xs text-[var(--color-text-secondary)]">
@@ -101,7 +106,7 @@ function KanbanCard({ influencer, isOverlay }: KanbanCardProps) {
   );
 }
 
-function KanbanColumn({ column, items }: { column: typeof COLUMNS[0]; items: any[] }) {
+function KanbanColumn({ column, items, isAdmin }: { column: typeof COLUMNS[0]; items: any[]; isAdmin: boolean }) {
   const { setNodeRef } = useSortable({
     id: column.id,
     data: { type: "Column", column },
@@ -124,7 +129,7 @@ function KanbanColumn({ column, items }: { column: typeof COLUMNS[0]; items: any
       >
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((influencer) => (
-            <KanbanCard key={influencer.id} influencer={influencer} />
+            <KanbanCard key={influencer.id} influencer={influencer} isAdmin={isAdmin} />
           ))}
         </SortableContext>
       </div>
@@ -132,7 +137,7 @@ function KanbanColumn({ column, items }: { column: typeof COLUMNS[0]; items: any
   );
 }
 
-export function KanbanBoard({ initialData }: { initialData: any[] }) {
+export function KanbanBoard({ initialData, isAdmin = false }: { initialData: any[], isAdmin?: boolean }) {
   const [data, setData] = useState(initialData);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -198,12 +203,12 @@ export function KanbanBoard({ initialData }: { initialData: any[] }) {
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-8 pt-4 custom-scrollbar items-start h-[calc(100vh-200px)]">
         {COLUMNS.map((col) => (
-          <KanbanColumn key={col.id} column={col} items={data.filter((i) => i.status === col.id)} />
+          <KanbanColumn key={col.id} column={col} items={data.filter((i) => i.status === col.id)} isAdmin={isAdmin} />
         ))}
       </div>
 
       <DragOverlay>
-        {activeInfluencer ? <KanbanCard influencer={activeInfluencer} isOverlay /> : null}
+        {activeInfluencer ? <KanbanCard influencer={activeInfluencer} isOverlay isAdmin={isAdmin} /> : null}
       </DragOverlay>
     </DndContext>
   );

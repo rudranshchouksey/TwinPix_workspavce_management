@@ -14,17 +14,21 @@ import {
   Mail,
   Globe,
   ChevronDown,
-  Check,
   NotebookPen,
+  Briefcase,
+  Check,
 } from "lucide-react";
+import { CreateCampaignModal } from "./campaigns/create-campaign-modal";
 import { syncInfluencerAction } from "@/actions/instagram-sync";
 import { updateInfluencerStatusAction } from "@/actions/influencers";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { InfluencerActionsDropdown } from "./influencer-actions-dropdown";
 
 interface CreatorHeroProps {
   influencer: any;
+  isAdmin?: boolean;
 }
 
 const STATUS_OPTIONS = [
@@ -37,9 +41,10 @@ const STATUS_OPTIONS = [
   { value: "BLACKLISTED", label: "Blacklisted", color: "bg-red-50 text-red-700 border-red-200" },
 ] as const;
 
-export function CreatorHero({ influencer }: CreatorHeroProps) {
+export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -246,14 +251,28 @@ export function CreatorHero({ influencer }: CreatorHeroProps) {
               {/* Quick Actions */}
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <Button
+                  onClick={() => setIsCreateCampaignOpen(true)}
+                  variant="outline"
+                  className="rounded-full border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold px-4 bg-white hover:bg-[var(--color-brand-50)] shadow-sm"
+                  size="sm"
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Create Campaign
+                </Button>
+
+                <Button
                   onClick={handleSync}
                   disabled={isSyncing}
-                  className="bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white shadow-sm rounded-full font-bold px-5"
+                  className="bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white shadow-sm rounded-full font-bold px-4"
                   size="sm"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                  {isSyncing ? "Syncing..." : "Refresh Data"}
+                  {isSyncing ? "Syncing..." : "Sync"}
                 </Button>
+
+                <div className="ml-1 border border-[var(--color-border)] rounded-full shadow-sm bg-white">
+                  <InfluencerActionsDropdown influencer={influencer} isAdmin={isAdmin} align="end" />
+                </div>
 
                 {influencer.email && (
                   <Button
@@ -354,6 +373,12 @@ export function CreatorHero({ influencer }: CreatorHeroProps) {
           )}
         </div>
       </div>
+
+      <CreateCampaignModal
+        influencerId={influencer.id}
+        open={isCreateCampaignOpen}
+        onOpenChange={setIsCreateCampaignOpen}
+      />
     </motion.div>
   );
 }

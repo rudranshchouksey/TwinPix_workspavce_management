@@ -13,7 +13,7 @@ export default function DashboardNotFound() {
         <p className="mb-8 text-lg text-[var(--color-surface-400)]">
           Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
         </p>
-        <Link href="/dashboard" passHref>
+        <Link href="/" passHref>
           <Button variant="default" size="lg">
             Return to Dashboard
           </Button>

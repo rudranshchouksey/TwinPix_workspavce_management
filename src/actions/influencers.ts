@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 const prisma = db as any;
-import { requireAuth } from "@/lib/auth-utils";
+import { requireAuth, requireAdmin } from "@/lib/auth-utils";
 import { influencerSchema, InfluencerInput } from "@/lib/validations/influencer";
 
 // Get influencers with pagination and filters
@@ -117,6 +117,9 @@ export async function createInfluencerAction(input: InfluencerInput) {
     });
 
     return newInfluencer;
+  }, {
+    maxWait: 5000,
+    timeout: 10000,
   });
 
   revalidatePath("/influencers");
@@ -164,6 +167,9 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
     });
 
     return updated;
+  }, {
+    maxWait: 5000,
+    timeout: 10000,
   });
 
   revalidatePath("/influencers");
@@ -173,12 +179,21 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
 
 // Delete influencer
 export async function deleteInfluencerAction(id: string) {
-  const user = await requireAuth();
+  const user = await requireAdmin();
 
   await prisma.$transaction(async (tx: any) => {
     const influencer = await tx.influencer.findUnique({ where: { id } });
     if (!influencer) throw new Error("Influencer not found");
 
+    // Explicitly cascade delete relations
+    await tx.influencerPost.deleteMany({ where: { influencerId: id } });
+    await tx.influencerReel.deleteMany({ where: { influencerId: id } });
+    await tx.influencerContentAnalytics.deleteMany({ where: { influencerId: id } });
+    await tx.campaignInfluencer.deleteMany({ where: { influencerId: id } });
+    await tx.event.deleteMany({ where: { influencerId: id } });
+    await tx.file.deleteMany({ where: { influencerId: id } });
+
+    // Finally delete the influencer
     await tx.influencer.delete({
       where: { id },
     });
@@ -192,6 +207,9 @@ export async function deleteInfluencerAction(id: string) {
         details: `Deleted influencer @${influencer.instagramHandle}`,
       },
     });
+  }, {
+    maxWait: 5000,
+    timeout: 10000,
   });
 
   revalidatePath("/influencers");
@@ -262,6 +280,9 @@ export async function updateInfluencerStatusAction(
     });
 
     return updated;
+  }, {
+    maxWait: 5000, // default is 2000ms
+    timeout: 10000, // default is 5000ms
   });
 
   revalidatePath("/influencers");
@@ -362,6 +383,9 @@ export async function importInstagramInfluencer(data: {
     });
 
     return newInfluencer;
+  }, {
+    maxWait: 5000,
+    timeout: 10000,
   });
 
   revalidatePath("/influencers");

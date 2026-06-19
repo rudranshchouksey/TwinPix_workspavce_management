@@ -17,6 +17,10 @@ export default async function PipelinePage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // Check if current user has admin rights for deletion permission
+  const { checkRole } = await import("@/lib/auth-utils");
+  const isAdmin = await checkRole("ADMIN");
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -24,7 +28,7 @@ export default async function PipelinePage() {
         description="Drag and drop influencers across stages to manage your outreach pipeline."
       />
       
-      <KanbanBoard initialData={influencers} />
+      <KanbanBoard initialData={influencers} isAdmin={isAdmin} />
     </div>
   );
 }
