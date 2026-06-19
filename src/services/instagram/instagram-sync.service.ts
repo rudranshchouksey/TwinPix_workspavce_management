@@ -1,7 +1,11 @@
 import { db } from "@/lib/db";
 import { ApifyProvider } from "./apify-provider";
 import { MockProvider } from "./mock-provider";
-import { ImageDownloader } from "./image-downloader";
+import {
+  uploadProfileImage,
+  uploadPostThumbnail,
+  uploadReelThumbnail,
+} from "@/lib/cloudinary";
 
 export interface SyncResult {
   success: boolean;
@@ -29,12 +33,10 @@ export interface SyncResult {
 export class InstagramSyncService {
   private apify: ApifyProvider | null = null;
   private mock: MockProvider;
-  private imageDownloader: ImageDownloader;
 
   constructor() {
     this.mock = new MockProvider();
-    this.imageDownloader = new ImageDownloader();
-    
+
     try {
       this.apify = new ApifyProvider();
     } catch (e) {
@@ -46,12 +48,12 @@ export class InstagramSyncService {
     const prisma = db as any;
     const errors: string[] = [];
     let dataSource: "apify" | "mock" = "mock";
-    
+
     // ─── Step 1: Fetch influencer from DB ───────────────────────
     console.log(`[Sync:1/6] Fetching influencer ${influencerId} from database...`);
-    
+
     const influencer = await prisma.influencer.findUnique({
-      where: { id: influencerId }
+      where: { id: influencerId },
     });
 
     if (!influencer || !influencer.instagramHandle) {
@@ -82,64 +84,77 @@ export class InstagramSyncService {
       throw new Error("Failed to fetch data from all providers");
     }
 
-    console.log(`[Sync:2/6] Raw data: ${instagramData.posts.length} posts, ${instagramData.reels.length} reels, followers=${instagramData.profile.followersCount}`);
+    console.log(
+      `[Sync:2/6] Raw data: ${instagramData.posts.length} posts, ${instagramData.reels.length} reels, followers=${instagramData.profile.followersCount}`
+    );
 
-    // ─── Step 3: Download Profile Image ─────────────────────────
-    console.log(`[Sync:3/6] Processing profile image...`);
-    
-    let localProfileImagePath = influencer.profileImage;
+    // ─── Step 3: Upload Profile Image to Cloudinary ─────────────
+    console.log(`[Sync:3/6] Uploading profile image to Cloudinary...`);
+
+    let profileImageUrl = influencer.profileImage;
     if (instagramData.profile.profileImageUrl) {
-       try {
-         localProfileImagePath = await this.imageDownloader.downloadImage(
-           instagramData.profile.profileImageUrl, 
-           'profile', 
-           username
-         ) || localProfileImagePath;
-         console.log(`[Sync:3/6] ✓ Profile image saved: ${localProfileImagePath}`);
-       } catch (imgError: any) {
-         errors.push(`Image download failed: ${imgError.message}`);
-         console.warn(`[Sync:3/6] ✗ Image download failed, keeping existing.`);
-       }
+      try {
+        profileImageUrl =
+          (await uploadProfileImage(instagramData.profile.profileImageUrl, username)) ??
+          profileImageUrl;
+        console.log(`[Sync:3/6] ✓ Profile image stored: ${profileImageUrl}`);
+      } catch (imgError: any) {
+        errors.push(`Profile image upload failed: ${imgError.message}`);
+        console.warn(`[Sync:3/6] ✗ Profile image upload failed, keeping existing.`);
+      }
     }
 
     // ─── Step 4: Extract contact info ───────────────────────────
     console.log(`[Sync:4/6] Extracting contact information...`);
-    
-    // Extract email from structured data or bio
+
     let extractedEmail = instagramData.profile.publicEmail || influencer.email;
     if (!extractedEmail && instagramData.profile.bio) {
-      const emailMatch = instagramData.profile.bio.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const emailMatch = instagramData.profile.bio.match(
+        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+      );
       if (emailMatch) {
         extractedEmail = emailMatch[0];
         console.log(`[Sync:4/6] ✓ Email extracted from bio: ${extractedEmail}`);
       }
     }
 
-    // Extract phone from structured data or bio
     let extractedPhone = instagramData.profile.publicPhoneNumber || influencer.phoneNumber;
     if (!extractedPhone && instagramData.profile.bio) {
-      const phoneMatch = instagramData.profile.bio.match(/[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}/);
-      if (phoneMatch && phoneMatch[0].replace(/\D/g, '').length >= 7) {
+      const phoneMatch = instagramData.profile.bio.match(
+        /[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}/
+      );
+      if (phoneMatch && phoneMatch[0].replace(/\D/g, "").length >= 7) {
         extractedPhone = phoneMatch[0].trim();
         console.log(`[Sync:4/6] ✓ Phone extracted from bio: ${extractedPhone}`);
       }
     }
 
-    console.log(`[Sync:4/6] Contact: email=${extractedEmail || 'none'}, phone=${extractedPhone || 'none'}`);
+    console.log(
+      `[Sync:4/6] Contact: email=${extractedEmail || "none"}, phone=${extractedPhone || "none"}`
+    );
 
     // ─── Step 5: Update Profile in DB ───────────────────────────
-    console.log(`[Sync:5/6] Updating influencer profile in database...`);
-    
-    const safeFollowers = instagramData.profile.followersCount > 0 ? instagramData.profile.followersCount : influencer.followers;
-    const safeFollowing = instagramData.profile.followingCount > 0 ? instagramData.profile.followingCount : influencer.following;
-    const safePostsCount = instagramData.profile.postsCount > 0 ? instagramData.profile.postsCount : influencer.posts;
+    console.log(`[Sync:5/6] Updating influencer profile and content in database...`);
+
+    const safeFollowers =
+      instagramData.profile.followersCount > 0
+        ? instagramData.profile.followersCount
+        : influencer.followers;
+    const safeFollowing =
+      instagramData.profile.followingCount > 0
+        ? instagramData.profile.followingCount
+        : influencer.following;
+    const safePostsCount =
+      instagramData.profile.postsCount > 0
+        ? instagramData.profile.postsCount
+        : influencer.posts;
 
     await prisma.influencer.update({
       where: { id: influencerId },
       data: {
         influencerName: instagramData.profile.fullName || influencer.influencerName,
         profileDescription: instagramData.profile.bio || influencer.profileDescription,
-        profileImage: localProfileImagePath,
+        profileImage: profileImageUrl,
         followers: safeFollowers,
         following: safeFollowing,
         posts: safePostsCount,
@@ -147,28 +162,33 @@ export class InstagramSyncService {
         email: extractedEmail,
         phoneNumber: extractedPhone,
         lastSyncDate: new Date(),
-      }
+      },
     });
 
-    // ─── Process Posts ───────────────────────────────────────────
-    let postsSynced = 0;
-    for (const post of instagramData.posts) {
-      try {
-        let localThumbnail: string | undefined = undefined;
-        if (post.thumbnailUrl) {
-           localThumbnail = await this.imageDownloader.downloadImage(
-             post.thumbnailUrl, 
-             'content', 
-             `post_${post.id}`
-           );
-        }
+    // ─── Process Posts — parallel Cloudinary uploads ─────────────
+    const postUploadResults = await Promise.allSettled(
+      instagramData.posts.map(async (post: any) => ({
+        post,
+        thumbnail: post.thumbnailUrl
+          ? await uploadPostThumbnail(post.thumbnailUrl, username, post.id)
+          : post.thumbnailUrl,
+      }))
+    );
 
+    let postsSynced = 0;
+    for (const result of postUploadResults) {
+      if (result.status === "rejected") {
+        errors.push(`Post thumbnail upload failed: ${result.reason}`);
+        continue;
+      }
+      const { post, thumbnail } = result.value;
+      try {
         await prisma.influencerPost.upsert({
           where: { instagramPostId: post.id },
           create: {
             influencerId,
             instagramPostId: post.id,
-            thumbnail: localThumbnail || post.thumbnailUrl,
+            thumbnail: thumbnail || post.thumbnailUrl,
             caption: post.caption,
             likes: post.likesCount,
             comments: post.commentsCount,
@@ -176,11 +196,11 @@ export class InstagramSyncService {
             publishedDate: post.timestamp || new Date(),
           },
           update: {
-            thumbnail: localThumbnail || post.thumbnailUrl,
+            thumbnail: thumbnail || post.thumbnailUrl,
             caption: post.caption,
             likes: post.likesCount,
             comments: post.commentsCount,
-          }
+          },
         });
         postsSynced++;
       } catch (postError: any) {
@@ -188,25 +208,30 @@ export class InstagramSyncService {
       }
     }
 
-    // ─── Process Reels ──────────────────────────────────────────
-    let reelsSynced = 0;
-    for (const reel of instagramData.reels) {
-      try {
-        let localThumbnail: string | undefined = undefined;
-        if (reel.thumbnailUrl) {
-           localThumbnail = await this.imageDownloader.downloadImage(
-             reel.thumbnailUrl, 
-             'content', 
-             `reel_${reel.id}`
-           );
-        }
+    // ─── Process Reels — parallel Cloudinary uploads ─────────────
+    const reelUploadResults = await Promise.allSettled(
+      instagramData.reels.map(async (reel: any) => ({
+        reel,
+        thumbnail: reel.thumbnailUrl
+          ? await uploadReelThumbnail(reel.thumbnailUrl, username, reel.id)
+          : reel.thumbnailUrl,
+      }))
+    );
 
+    let reelsSynced = 0;
+    for (const result of reelUploadResults) {
+      if (result.status === "rejected") {
+        errors.push(`Reel thumbnail upload failed: ${result.reason}`);
+        continue;
+      }
+      const { reel, thumbnail } = result.value;
+      try {
         await prisma.influencerReel.upsert({
           where: { instagramReelId: reel.id },
           create: {
             influencerId,
             instagramReelId: reel.id,
-            thumbnail: localThumbnail || reel.thumbnailUrl,
+            thumbnail: thumbnail || reel.thumbnailUrl,
             reelUrl: reel.url,
             views: reel.viewCount,
             likes: reel.likesCount,
@@ -214,11 +239,11 @@ export class InstagramSyncService {
             publishedDate: reel.timestamp || new Date(),
           },
           update: {
-            thumbnail: localThumbnail || reel.thumbnailUrl,
+            thumbnail: thumbnail || reel.thumbnailUrl,
             views: reel.viewCount,
             likes: reel.likesCount,
             comments: reel.commentsCount,
-          }
+          },
         });
         reelsSynced++;
       } catch (reelError: any) {
@@ -230,13 +255,11 @@ export class InstagramSyncService {
 
     // ─── Step 6: Compute & Save Analytics ───────────────────────
     console.log(`[Sync:6/6] Computing content analytics...`);
-    
+
     const allPosts = instagramData.posts;
     const allReels = instagramData.reels;
-    
-    // Use the UPDATED safe followers count (fallback to existing if scraper fails)
     const updatedFollowers = safeFollowers;
-    
+
     let totalEngagements = 0;
     let totalPostLikes = 0;
     let totalPostComments = 0;
@@ -249,25 +272,36 @@ export class InstagramSyncService {
         totalPostLikes += p.likesCount;
         totalPostComments += p.commentsCount;
       }
-      topPost = [...allPosts].sort((a, b) => (b.likesCount + b.commentsCount) - (a.likesCount + a.commentsCount))[0];
+      topPost = [...allPosts].sort(
+        (a: any, b: any) => b.likesCount + b.commentsCount - (a.likesCount + a.commentsCount)
+      )[0];
     }
 
     if (allReels.length > 0) {
-      topReel = [...allReels].sort((a, b) => b.viewCount - a.viewCount)[0];
+      topReel = [...allReels].sort((a: any, b: any) => b.viewCount - a.viewCount)[0];
     }
 
-    // Calculate engagement rate using updated followers
-    const avgEngagementRate = updatedFollowers > 0 
-      ? ((totalEngagements / Math.max(1, allPosts.length)) / updatedFollowers) * 100 
-      : 0;
+    const avgEngagementRate =
+      updatedFollowers > 0
+        ? ((totalEngagements / Math.max(1, allPosts.length)) / updatedFollowers) * 100
+        : 0;
 
-    const avgPostLikes = allPosts.length > 0 ? Math.floor(totalPostLikes / allPosts.length) : 0;
-    const avgPostComments = allPosts.length > 0 ? Math.floor(totalPostComments / allPosts.length) : 0;
+    const avgPostLikes =
+      allPosts.length > 0 ? Math.floor(totalPostLikes / allPosts.length) : 0;
+    const avgPostComments =
+      allPosts.length > 0 ? Math.floor(totalPostComments / allPosts.length) : 0;
 
-    const totalReelViews = allReels.reduce((acc, r) => acc + r.viewCount, 0);
-    const avgReelViews = allReels.length > 0 ? Math.floor(totalReelViews / allReels.length) : 0;
+    const totalReelViews = allReels.reduce((acc: number, r: any) => acc + r.viewCount, 0);
+    const avgReelViews =
+      allReels.length > 0 ? Math.floor(totalReelViews / allReels.length) : 0;
 
-    // Save analytics record
+    const aiInsights = [
+      `Consistency: Analyzed ${allPosts.length} recent posts and ${allReels.length} reels.`,
+      `Engagement: Average engagement rate is ${avgEngagementRate.toFixed(2)}%.`,
+      `Reach: Reels average ${avgReelViews.toLocaleString()} views.`,
+      `Content: Average ${avgPostLikes.toLocaleString()} likes and ${avgPostComments.toLocaleString()} comments per post.`,
+    ];
+
     await prisma.influencerContentAnalytics.upsert({
       where: { influencerId },
       create: {
@@ -279,12 +313,7 @@ export class InstagramSyncService {
         topPostId: topPost?.id,
         topReelId: topReel?.id,
         updatedAt: new Date(),
-        aiInsights: [
-          `Consistency: Analyzed ${allPosts.length} recent posts and ${allReels.length} reels.`,
-          `Engagement: Average engagement rate is ${avgEngagementRate.toFixed(2)}%.`,
-          `Reach: Reels average ${avgReelViews.toLocaleString()} views.`,
-          `Content: Average ${avgPostLikes.toLocaleString()} likes and ${avgPostComments.toLocaleString()} comments per post.`,
-        ]
+        aiInsights,
       },
       update: {
         avgEngagementRate,
@@ -294,25 +323,22 @@ export class InstagramSyncService {
         topPostId: topPost?.id,
         topReelId: topReel?.id,
         updatedAt: new Date(),
-        aiInsights: [
-          `Consistency: Analyzed ${allPosts.length} recent posts and ${allReels.length} reels.`,
-          `Engagement: Average engagement rate is ${avgEngagementRate.toFixed(2)}%.`,
-          `Reach: Reels average ${avgReelViews.toLocaleString()} views.`,
-          `Content: Average ${avgPostLikes.toLocaleString()} likes and ${avgPostComments.toLocaleString()} comments per post.`,
-        ]
-      }
+        aiInsights,
+      },
     });
 
-    // ─── CRITICAL FIX: Write engagement rate back to Influencer model ───
+    // Write engagement rate back to Influencer model
     await prisma.influencer.update({
       where: { id: influencerId },
-      data: {
-        engagementRate: Math.round(avgEngagementRate * 100) / 100,
-      }
+      data: { engagementRate: Math.round(avgEngagementRate * 100) / 100 },
     });
 
-    console.log(`[Sync:6/6] ✓ Analytics computed: engagement=${avgEngagementRate.toFixed(2)}%, avgViews=${avgReelViews}, avgLikes=${avgPostLikes}`);
-    console.log(`[Sync] ✓ Sync complete for @${username} via ${dataSource}. ${errors.length > 0 ? `(${errors.length} non-fatal errors)` : ''}`);
+    console.log(
+      `[Sync:6/6] ✓ Analytics: engagement=${avgEngagementRate.toFixed(2)}%, avgViews=${avgReelViews}, avgLikes=${avgPostLikes}`
+    );
+    console.log(
+      `[Sync] ✓ Complete for @${username} via ${dataSource}. ${errors.length > 0 ? `(${errors.length} non-fatal errors)` : ""}`
+    );
 
     return {
       success: true,
