@@ -24,12 +24,14 @@ export default async function InfluencersPage({
   const page = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page, 10) : 1;
 
   // Fetch influencers
-  const { influencers, totalPages, total } = await getInfluencersAction(
+  const { influencers: rawInfluencers, totalPages, total } = await getInfluencersAction(
     search,
     category,
     status,
     page
   );
+  
+  const influencers = JSON.parse(JSON.stringify(rawInfluencers));
 
   return (
     <div className="space-y-6">

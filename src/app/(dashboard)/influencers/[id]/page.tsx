@@ -54,7 +54,9 @@ async function InfluencerContent({ id }: { id: string }) {
   // Data fetch happens inside the Suspense boundary
   let influencer;
   try {
-    influencer = await getInfluencerByIdAction(id);
+    const rawInfluencer = await getInfluencerByIdAction(id);
+    // Serialize to plain JSON to prevent Next.js Client Component serialization errors with Dates
+    influencer = JSON.parse(JSON.stringify(rawInfluencer));
   } catch (error) {
     notFound();
   }
