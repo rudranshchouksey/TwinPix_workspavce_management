@@ -52,6 +52,15 @@ export async function getInfluencersAction(
   };
 }
 
+// Lightweight name-only lookup for page titles/breadcrumbs (avoids the heavy includes below)
+export async function getInfluencerNameAction(id: string) {
+  await requireAuth();
+  return prisma.influencer.findUnique({
+    where: { id },
+    select: { influencerName: true, instagramHandle: true },
+  });
+}
+
 // Get single influencer by ID
 export async function getInfluencerByIdAction(id: string) {
   await requireAuth();

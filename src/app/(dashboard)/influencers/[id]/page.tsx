@@ -1,11 +1,12 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
-import { getInfluencerByIdAction } from "@/actions/influencers";
+import { getInfluencerByIdAction, getInfluencerNameAction } from "@/actions/influencers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { CreatorHero } from "@/components/influencers/creator-hero";
 import { PerformanceOverview } from "@/components/influencers/performance-overview";
 import { CreatorInsights } from "@/components/influencers/creator-insights";
@@ -20,10 +21,20 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Influencer Intelligence | TwinPix",
-  description: "View creator intelligence, content performance, and campaign history.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const influencer = await getInfluencerNameAction(id);
+  const name = influencer?.influencerName || influencer?.instagramHandle;
+
+  return {
+    title: name ? `${name} | TwinPix` : "Influencer Intelligence | TwinPix",
+    description: "View creator intelligence, content performance, and campaign history.",
+  };
+}
 
 export default async function InfluencerDetailPage({
   params,
@@ -72,6 +83,8 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
 
   return (
     <div className="grid grid-cols-12 gap-8">
+      <BreadcrumbLabel label={influencer.influencerName || influencer.instagramHandle} />
+
       {/* Section 1: Hero (includes status dropdown, quick actions, sync button) */}
       <CreatorHero influencer={influencer} isAdmin={isAdmin} />
 

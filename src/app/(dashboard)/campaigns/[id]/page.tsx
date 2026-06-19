@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
-import { getCampaignByIdAction } from "@/actions/campaigns";
+import { getCampaignByIdAction, getCampaignNameAction } from "@/actions/campaigns";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -8,11 +8,21 @@ import { ArrowLeft } from "lucide-react";
 import { CampaignProfile } from "@/components/campaigns/campaign-profile";
 import { CampaignAnalytics } from "@/components/campaigns/campaign-analytics";
 import { FileList } from "@/components/files/file-list";
+import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 
-export const metadata: Metadata = {
-  title: "Campaign Detail",
-  description: "View and manage influencer campaign details, budget, and deliverables.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const campaign = await getCampaignNameAction(id);
+
+  return {
+    title: campaign?.name ? `${campaign.name} | TwinPix` : "Campaign Detail | TwinPix",
+    description: "View and manage influencer campaign details, budget, and deliverables.",
+  };
+}
 
 export default async function CampaignDetailPage({
   params,
@@ -32,6 +42,8 @@ export default async function CampaignDetailPage({
 
   return (
     <div className="space-y-6 pb-12">
+      <BreadcrumbLabel label={campaign.name} />
+
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.08)] pb-6">
         <Link 

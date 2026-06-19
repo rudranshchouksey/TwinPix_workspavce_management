@@ -41,18 +41,38 @@ import { getRoleLabel } from "@/lib/rbac";
 import { GlobalSearch } from "./global-search";
 
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
+import { useBreadcrumbLabels } from "@/contexts/breadcrumb-context";
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function pathToBreadcrumbs(pathname: string): string[] {
+// Friendly singular fallback shown for a detail route while its display
+// name is still resolving (e.g. /influencers/[id] -> "Influencer").
+const ENTITY_SINGULAR: Record<string, string> = {
+  influencers: "Influencer",
+  clients: "Client",
+  campaigns: "Campaign",
+  tasks: "Task",
+  projects: "Project",
+};
+
+// Prisma cuids are long opaque alphanumeric strings — never show one in a breadcrumb.
+function isLikelyDatabaseId(segment: string): boolean {
+  return /^[a-zA-Z0-9_-]{20,}$/.test(segment);
+}
+
+function pathToBreadcrumbs(pathname: string, resolvedLabel?: string): string[] {
   if (pathname === "/") return ["Dashboard"];
-  return pathname
-    .split("/")
-    .filter(Boolean)
-    .map(
-      (seg) =>
-        seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ")
-    );
+  const segments = pathname.split("/").filter(Boolean);
+
+  return segments.map((seg, i) => {
+    const isLast = i === segments.length - 1;
+    if (isLast && isLikelyDatabaseId(seg)) {
+      if (resolvedLabel) return resolvedLabel;
+      const parent = segments[i - 1]?.toLowerCase();
+      return (parent && ENTITY_SINGULAR[parent]) || "Detail";
+    }
+    return seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
+  });
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -72,7 +92,8 @@ export function Topbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { openMobile } = useSidebar();
-  const breadcrumbs = pathToBreadcrumbs(pathname);
+  const breadcrumbLabels = useBreadcrumbLabels();
+  const breadcrumbs = pathToBreadcrumbs(pathname, breadcrumbLabels[pathname]);
   const user = session?.user;
 
   return (

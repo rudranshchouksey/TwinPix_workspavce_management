@@ -106,6 +106,15 @@ export async function getCampaignsAction(params: {
   };
 }
 
+// Lightweight name-only lookup for page titles/breadcrumbs (avoids the heavy includes below)
+export async function getCampaignNameAction(id: string) {
+  await requireAuth();
+  return db.campaign.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+}
+
 export async function getCampaignByIdAction(id: string) {
   await requireAuth();
 

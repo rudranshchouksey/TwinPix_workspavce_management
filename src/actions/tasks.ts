@@ -53,6 +53,15 @@ export async function getTasksAction(params: {
   return tasks;
 }
 
+// Lightweight name-only lookup for page titles/breadcrumbs (avoids the heavy includes below)
+export async function getTaskNameAction(id: string) {
+  await requireAuth();
+  return db.task.findUnique({
+    where: { id },
+    select: { title: true },
+  });
+}
+
 export async function getTaskByIdAction(id: string) {
   await requireAuth();
 

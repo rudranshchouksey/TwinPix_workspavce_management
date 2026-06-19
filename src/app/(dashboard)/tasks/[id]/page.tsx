@@ -1,16 +1,26 @@
 import { Metadata } from "next";
-import { getTaskByIdAction } from "@/actions/tasks";
+import { getTaskByIdAction, getTaskNameAction } from "@/actions/tasks";
 import { requireAuth } from "@/lib/auth-utils";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Flag, CheckCircle2, User, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TaskComments } from "@/components/tasks/task-comments";
+import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 
-export const metadata: Metadata = {
-  title: "Task Detail",
-  description: "View task details, progress, and comments.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const task = await getTaskNameAction(id);
+
+  return {
+    title: task?.title ? `${task.title} | TwinPix` : "Task Detail | TwinPix",
+    description: "View task details, progress, and comments.",
+  };
+}
 
 export default async function TaskDetailPage({
   params,
@@ -50,6 +60,8 @@ export default async function TaskDetailPage({
 
   return (
     <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+      <BreadcrumbLabel label={task.title} />
+
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.08)] pb-6">
         <Link 

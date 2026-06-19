@@ -81,6 +81,15 @@ export async function getClientsAction(params: {
   };
 }
 
+// Lightweight name-only lookup for page titles/breadcrumbs (avoids the heavy includes below)
+export async function getClientNameAction(id: string) {
+  await requireAuth();
+  return db.client.findUnique({
+    where: { id },
+    select: { companyName: true },
+  });
+}
+
 export async function getClientByIdAction(id: string) {
   await requireAuth();
 

@@ -1,16 +1,26 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
-import { getClientByIdAction } from "@/actions/clients";
+import { getClientByIdAction, getClientNameAction } from "@/actions/clients";
 import { ClientProfile } from "@/components/clients/client-profile";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 
-export const metadata: Metadata = {
-  title: "Client Profile",
-  description: "View client details, notes, and activity.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const client = await getClientNameAction(id);
+
+  return {
+    title: client?.companyName ? `${client.companyName} | TwinPix` : "Client Profile | TwinPix",
+    description: "View client details, notes, and activity.",
+  };
+}
 
 export default async function ClientDetailPage({
   params,
@@ -29,9 +39,11 @@ export default async function ClientDetailPage({
 
   return (
     <div className="space-y-6">
+      <BreadcrumbLabel label={client.companyName} />
+
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.08)] pb-6">
-        <Link 
+        <Link
           href="/clients"
           className="flex items-center text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
         >
@@ -39,7 +51,7 @@ export default async function ClientDetailPage({
           Back to Clients
         </Link>
         {/* We can add a simple client-side wrapper button to open the edit modal here if needed,
-            for now we leave a placeholder as editing is mostly done from the table view, 
+            for now we leave a placeholder as editing is mostly done from the table view,
             but this matches the influencer detail pattern. */}
       </div>
 

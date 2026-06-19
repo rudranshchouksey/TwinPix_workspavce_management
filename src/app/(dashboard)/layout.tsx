@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth-utils";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { BreadcrumbProvider } from "@/contexts/breadcrumb-context";
 
 /**
  * Dashboard layout — wraps all /app/(dashboard) routes.
@@ -18,21 +19,23 @@ export default async function DashboardLayout({
   const user = await requireAuth();
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-[var(--color-surface-950)]">
-      {/* Sidebar (desktop: inline, mobile: overlay via portal) */}
-      <Sidebar userRole={user.role} />
+    <BreadcrumbProvider>
+      <div className="flex h-dvh w-full overflow-hidden bg-[var(--color-surface-950)]">
+        {/* Sidebar (desktop: inline, mobile: overlay via portal) */}
+        <Sidebar userRole={user.role} />
 
-      {/* Main area */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <Topbar />
+        {/* Main area */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <Topbar />
 
-        <main
-          id="main-content"
-          className="flex-1 overflow-y-auto p-4 sm:p-6"
-        >
-          {children}
-        </main>
+          <main
+            id="main-content"
+            className="flex-1 overflow-y-auto p-4 sm:p-6"
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </BreadcrumbProvider>
   );
 }
