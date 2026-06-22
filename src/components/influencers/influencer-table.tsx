@@ -1,18 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
   ColumnFiltersState,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-import Link from "next/link";
 import { format } from "date-fns";
 
 import {
@@ -26,18 +23,87 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ArrowUpDown, Search, ExternalLink, Phone, Mail, AtSign, Users, Globe, Video, MessageCircle, Smartphone } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Search, ExternalLink, Phone, Mail, AtSign, Users, Globe, Video, MessageCircle, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InfluencerActionsDropdown } from "./influencer-actions-dropdown";
 
 interface InfluencerTableProps {
   data: any[];
   isAdmin?: boolean;
+  currentPage: number;
+  totalPages: number;
+  total: number;
+  currentSort: string;
+  currentOrder: string;
 }
 
-export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+export function InfluencerTable({
+  data,
+  isAdmin = false,
+  currentPage,
+  totalPages,
+  total,
+  currentSort,
+  currentOrder,
+}: InfluencerTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  // Build URL with updated params (preserves existing params)
+  const buildUrl = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+      return `${pathname}?${params.toString()}`;
+    },
+    [pathname, searchParams]
+  );
+
+  // Navigate to a specific page
+  const goToPage = useCallback(
+    (page: number) => {
+      router.push(buildUrl({ page: page === 1 ? undefined : String(page) }));
+    },
+    [router, buildUrl]
+  );
+
+  // Toggle sort on a column
+  const toggleSort = useCallback(
+    (field: string) => {
+      let newOrder = "asc";
+      if (currentSort === field) {
+        // Toggle: asc -> desc -> remove
+        if (currentOrder === "asc") {
+          newOrder = "desc";
+        } else {
+          // Reset to default
+          router.push(buildUrl({ sort: undefined, order: undefined, page: undefined }));
+          return;
+        }
+      }
+      router.push(buildUrl({ sort: field, order: newOrder, page: undefined }));
+    },
+    [currentSort, currentOrder, router, buildUrl]
+  );
+
+  // Get sort icon for a column
+  const getSortIcon = (field: string) => {
+    if (currentSort !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    }
+    if (currentOrder === "asc") {
+      return <ArrowUp className="ml-2 h-4 w-4 text-[var(--color-brand-600)]" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-[var(--color-brand-600)]" />;
+  };
 
   const columns: ColumnDef<any>[] = [
     {
@@ -46,11 +112,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("influencerName")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Influencer
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("influencerName")}
           </Button>
         );
       },
@@ -114,11 +180,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("followers")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Followers
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("followers")}
           </Button>
         );
       },
@@ -145,11 +211,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("following")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Following
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("following")}
           </Button>
         );
       },
@@ -176,11 +242,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("posts")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Posts
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("posts")}
           </Button>
         );
       },
@@ -207,11 +273,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("engagementRate")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Eng. Rate
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("engagementRate")}
           </Button>
         );
       },
@@ -232,11 +298,11 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         return (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => toggleSort("lastSyncDate")}
             className="px-0 hover:bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-semibold"
           >
             Last Sync
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            {getSortIcon("lastSyncDate")}
           </Button>
         );
       },
@@ -325,21 +391,50 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
-      sorting,
       columnFilters,
     },
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
   });
+
+  // Generate page numbers with ellipsis
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    const maxVisible = 7;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push("ellipsis");
+      }
+
+      // Show pages around current
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push("ellipsis");
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const pageSize = 50;
+  const startEntry = (currentPage - 1) * pageSize + 1;
+  const endEntry = Math.min(currentPage * pageSize, total);
 
   return (
     <div className="space-y-4">
@@ -355,6 +450,9 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
             }}
             className="pl-9 h-10 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-500)] shadow-sm"
           />
+        </div>
+        <div className="text-sm font-medium text-[var(--color-text-muted)]">
+          {total.toLocaleString()} total influencer{total !== 1 ? "s" : ""}
         </div>
       </div>
 
@@ -409,35 +507,85 @@ export function InfluencerTable({ data, isAdmin = false }: InfluencerTableProps)
         </Table>
       </div>
 
-      {/* Pagination */}
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
+      {/* Server-side Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
           <div className="text-sm font-medium text-[var(--color-text-muted)]">
-            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            of {table.getFilteredRowModel().rows.length} entries
+            Showing {startEntry} to {endEntry} of {total.toLocaleString()} entries
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-1">
+            {/* First page */}
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)]"
+              size="icon"
+              className="h-8 w-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)] disabled:opacity-40"
+              onClick={() => goToPage(1)}
+              disabled={currentPage === 1}
+              title="First page"
             >
-              Previous
+              <ChevronsLeft className="h-4 w-4" />
             </Button>
+
+            {/* Previous page */}
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)]"
+              size="icon"
+              className="h-8 w-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)] disabled:opacity-40"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              title="Previous page"
             >
-              Next
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Page numbers */}
+            {getPageNumbers().map((pageNum, idx) =>
+              pageNum === "ellipsis" ? (
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="px-2 text-sm text-[var(--color-text-muted)] select-none"
+                >
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="icon"
+                  className={`h-8 w-8 text-sm font-semibold ${
+                    currentPage === pageNum
+                      ? "bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] shadow-sm"
+                      : "bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)]"
+                  }`}
+                  onClick={() => goToPage(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              )
+            )}
+
+            {/* Next page */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)] disabled:opacity-40"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              title="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            {/* Last page */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-900)] disabled:opacity-40"
+              onClick={() => goToPage(totalPages)}
+              disabled={currentPage === totalPages}
+              title="Last page"
+            >
+              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

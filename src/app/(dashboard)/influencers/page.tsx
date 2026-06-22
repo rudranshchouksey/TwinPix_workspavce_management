@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function InfluencersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ search?: string; category?: string; status?: string; page?: string; sort?: string; order?: string }>;
 }) {
   await requireAuth();
 
@@ -22,13 +22,18 @@ export default async function InfluencersPage({
   const category = resolvedSearchParams.category;
   const status = resolvedSearchParams.status;
   const page = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page, 10) : 1;
+  const sort = resolvedSearchParams.sort || "createdAt";
+  const order = resolvedSearchParams.order || "desc";
 
-  // Fetch influencers
+  // Fetch influencers with server-side pagination and sorting
   const { influencers: rawInfluencers, totalPages, total } = await getInfluencersAction(
     search,
     category,
     status,
-    page
+    page,
+    50,
+    sort,
+    order
   );
   
   const influencers = JSON.parse(JSON.stringify(rawInfluencers));
@@ -54,7 +59,15 @@ export default async function InfluencersPage({
       </div>
 
       <section aria-label="Influencers Listing">
-        <InfluencerTable data={influencers} isAdmin={isAdmin} />
+        <InfluencerTable
+          data={influencers}
+          isAdmin={isAdmin}
+          currentPage={page}
+          totalPages={totalPages}
+          total={total}
+          currentSort={sort}
+          currentOrder={order}
+        />
       </section>
     </div>
   );

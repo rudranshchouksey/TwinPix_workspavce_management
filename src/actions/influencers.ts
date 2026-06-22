@@ -12,7 +12,9 @@ export async function getInfluencersAction(
   category?: string,
   status?: string,
   page: number = 1,
-  limit: number = 50
+  limit: number = 50,
+  sortBy: string = "createdAt",
+  sortOrder: string = "desc"
 ) {
   await requireAuth();
 
@@ -35,12 +37,21 @@ export async function getInfluencersAction(
     where.status = status as any;
   }
 
+  // Validate sortBy against allowed fields to prevent injection
+  const allowedSortFields = [
+    "createdAt", "influencerName", "instagramHandle", "followers",
+    "following", "posts", "engagementRate", "category", "status",
+    "location", "lastSyncDate",
+  ];
+  const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
+  const safeSortOrder = sortOrder === "asc" ? "asc" : "desc";
+
   const [influencers, total] = await Promise.all([
     prisma.influencer.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: { [safeSortBy]: safeSortOrder },
     }),
     prisma.influencer.count({ where }),
   ]);
