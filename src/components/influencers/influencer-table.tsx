@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
-  ColumnFiltersState,
-  getFilteredRowModel,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 
@@ -49,7 +47,11 @@ export function InfluencerTable({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  // Server-side search with debounce
+  const currentSearch = searchParams.get("search") || "";
+  const [searchValue, setSearchValue] = useState(currentSearch);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build URL with updated params (preserves existing params)
   const buildUrl = useCallback(
@@ -66,6 +68,23 @@ export function InfluencerTable({
     },
     [pathname, searchParams]
   );
+
+  // Debounced server-side search
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        router.push(buildUrl({ search: value || undefined, page: undefined }));
+      }, 400);
+    },
+    [router, buildUrl]
+  );
+
+  // Keep local state in sync if URL search changes externally
+  useEffect(() => {
+    setSearchValue(currentSearch);
+  }, [currentSearch]);
 
   // Navigate to a specific page
   const goToPage = useCallback(
@@ -391,11 +410,6 @@ export function InfluencerTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      columnFilters,
-    },
   });
 
   // Generate page numbers with ellipsis
@@ -443,11 +457,9 @@ export function InfluencerTable({
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <Input
-            placeholder="Search influencers..."
-            value={(table.getColumn("instagramHandle")?.getFilterValue() as string) ?? ""}
-            onChange={(event) => {
-              table.getColumn("instagramHandle")?.setFilterValue(event.target.value);
-            }}
+            placeholder="Search by name or handle..."
+            value={searchValue}
+            onChange={(event) => handleSearchChange(event.target.value)}
             className="pl-9 h-10 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-500)] shadow-sm"
           />
         </div>
