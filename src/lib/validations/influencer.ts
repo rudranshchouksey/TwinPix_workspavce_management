@@ -2,7 +2,8 @@ import * as z from "zod";
 
 export const influencerSchema = z.object({
   influencerName: z.string().optional().nullable(),
-  instagramHandle: z.string().min(1, "Instagram handle is required").max(100),
+  instagramHandle: z.string().min(1, "Instagram handle is required").max(100)
+    .transform((val) => val.replace(/^@/, "").trim().toLowerCase()),
   platform: z.string().optional().nullable(),
   posts: z.coerce.number().optional().nullable(),
   followers: z.coerce.number().optional().nullable(),

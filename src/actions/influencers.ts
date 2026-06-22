@@ -6,6 +6,25 @@ const prisma = db as any;
 import { requireAuth, requireAdmin } from "@/lib/auth-utils";
 import { influencerSchema, InfluencerInput } from "@/lib/validations/influencer";
 
+// ─── Auto-Sync Helper ──────────────────────────────────────────
+// Fire-and-forget: triggers Instagram sync via Apify in the background
+// so the user isn't blocked. Errors are logged but never thrown.
+async function triggerAutoSync(influencerId: string) {
+  try {
+    const { InstagramSyncService } = await import("@/services/instagram");
+    const syncService = new InstagramSyncService();
+    syncService.syncInfluencer(influencerId)
+      .then(() => {
+        console.log(`[AutoSync] ✓ Completed for ${influencerId}`);
+        revalidatePath("/influencers");
+        revalidatePath(`/influencers/${influencerId}`);
+      })
+      .catch((err: any) => console.warn(`[AutoSync] ✗ Failed for ${influencerId}:`, err.message));
+  } catch (err: any) {
+    console.warn(`[AutoSync] ✗ Could not initialize sync service:`, err.message);
+  }
+}
+
 // Get influencers with pagination and filters
 export async function getInfluencersAction(
   search?: string,
@@ -112,9 +131,14 @@ export async function createInfluencerAction(input: InfluencerInput) {
     throw new Error(parsed.error.issues[0].message);
   }
 
-  // Check if instagramHandle already exists
-  const existing = await prisma.influencer.findUnique({
-    where: { instagramHandle: parsed.data.instagramHandle },
+  // Check if instagramHandle already exists (case-insensitive)
+  const existing = await prisma.influencer.findFirst({
+    where: {
+      instagramHandle: {
+        equals: parsed.data.instagramHandle,
+        mode: "insensitive",
+      },
+    },
   });
 
   if (existing) {
@@ -143,6 +167,10 @@ export async function createInfluencerAction(input: InfluencerInput) {
   });
 
   revalidatePath("/influencers");
+
+  // Auto-sync Instagram data in the background (fire-and-forget)
+  triggerAutoSync(influencer.id);
+
   return influencer;
 }
 
@@ -343,10 +371,13 @@ export async function importInstagramInfluencer(data: {
 }) {
   const user = await requireAuth();
 
+  // Normalize handle
+  const normalizedUsername = data.username.replace(/^@/, "").trim().toLowerCase();
+
   const existing = await prisma.influencer.findFirst({
     where: {
       instagramHandle: {
-        equals: data.username,
+        equals: normalizedUsername,
         mode: "insensitive",
       },
     },
@@ -354,7 +385,7 @@ export async function importInstagramInfluencer(data: {
 
   if (existing) {
     throw new Error(
-      `Influencer @${data.username} already exists in the database.`
+      `Influencer @${normalizedUsername} already exists in the database.`
     );
   }
 
@@ -364,11 +395,11 @@ export async function importInstagramInfluencer(data: {
       const { downloadProfileImage } = await import("@/lib/instagram/image-downloader");
       localImagePath = await downloadProfileImage(
         data.profileImageUrl,
-        data.username
+        normalizedUsername
       );
     } catch (error) {
       console.warn(
-        `[Import] Failed to download profile image for @${data.username}:`,
+        `[Import] Failed to download profile image for @${normalizedUsername}:`,
         error
       );
       localImagePath = data.profileImageUrl; 
@@ -378,7 +409,7 @@ export async function importInstagramInfluencer(data: {
   const influencer = await prisma.$transaction(async (tx: any) => {
     const newInfluencer = await tx.influencer.create({
       data: {
-        instagramHandle: data.username,
+        instagramHandle: normalizedUsername,
         influencerName: data.fullName,
         profileDescription: data.bio,
         profileImage: localImagePath,
@@ -398,7 +429,7 @@ export async function importInstagramInfluencer(data: {
         entityType: "INFLUENCER",
         entityId: newInfluencer.id,
         adminId: user.id,
-        details: `Imported influencer @${data.username} from Instagram`,
+        details: `Imported influencer @${normalizedUsername} from Instagram`,
       },
     });
 
@@ -409,6 +440,10 @@ export async function importInstagramInfluencer(data: {
   });
 
   revalidatePath("/influencers");
+
+  // Auto-sync Instagram data in the background (fire-and-forget)
+  triggerAutoSync(influencer.id);
+
   return influencer;
 }
 
@@ -418,6 +453,7 @@ export async function importInfluencersAction(data: any[]) {
 
   let imported = 0;
   let failed = 0;
+  const newInfluencerIds: string[] = [];
 
   // Process in chunks of 50 to avoid connection limits
   const chunkSize = 50;
@@ -427,7 +463,7 @@ export async function importInfluencersAction(data: any[]) {
     await Promise.all(
       chunk.map(async (row) => {
         try {
-          const handle = row["Instagram Handle"]?.trim().replace("@", "");
+          const handle = row["Instagram Handle"]?.trim().replace(/^@/, "").toLowerCase();
           if (!handle) {
             failed++;
             return;
@@ -458,7 +494,13 @@ export async function importInfluencersAction(data: any[]) {
             // Already parsed as number
           }
 
-          await prisma.influencer.upsert({
+          // Check if this handle already exists to determine if it's a new record
+          const existingRecord = await prisma.influencer.findUnique({
+            where: { instagramHandle: handle },
+            select: { id: true },
+          });
+
+          const result = await prisma.influencer.upsert({
             where: { instagramHandle: handle },
             update: {}, // Don't override existing data on simple import
             create: {
@@ -479,6 +521,12 @@ export async function importInfluencersAction(data: any[]) {
               notes: row["Notes"],
             },
           });
+
+          // Track newly created influencers for auto-sync
+          if (!existingRecord) {
+            newInfluencerIds.push(result.id);
+          }
+
           imported++;
         } catch (e) {
           console.error("Failed to import row", row, e);
@@ -494,10 +542,33 @@ export async function importInfluencersAction(data: any[]) {
       entityType: "INFLUENCER",
       entityId: "bulk",
       adminId: user.id,
-      details: `Bulk imported ${imported} influencers from CSV`,
+      details: `Bulk imported ${imported} influencers from CSV (${newInfluencerIds.length} new)`,
     },
   });
 
   revalidatePath("/influencers");
-  return { imported, failed };
+
+  // Auto-sync newly created influencers in the background (sequential, fire-and-forget)
+  if (newInfluencerIds.length > 0) {
+    (async () => {
+      try {
+        const { InstagramSyncService } = await import("@/services/instagram");
+        const syncService = new InstagramSyncService();
+        for (const id of newInfluencerIds) {
+          try {
+            await syncService.syncInfluencer(id);
+            console.log(`[BulkAutoSync] ✓ Synced ${id}`);
+            revalidatePath("/influencers");
+          } catch (err: any) {
+            console.warn(`[BulkAutoSync] ✗ Failed for ${id}:`, err.message);
+          }
+        }
+        console.log(`[BulkAutoSync] ✓ Completed all ${newInfluencerIds.length} syncs.`);
+      } catch (err: any) {
+        console.warn(`[BulkAutoSync] ✗ Could not initialize sync service:`, err.message);
+      }
+    })();
+  }
+
+  return { imported, failed, newlySyncing: newInfluencerIds.length };
 }
