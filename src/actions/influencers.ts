@@ -115,10 +115,6 @@ export async function getInfluencerByIdAction(id: string) {
     },
   });
 
-  if (!influencer) {
-    throw new Error("Influencer not found");
-  }
-
   return influencer;
 }
 

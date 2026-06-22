@@ -17,6 +17,9 @@ export default async function PipelinePage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // Serialize to plain JSON to prevent Next.js Client Component serialization errors with Dates
+  const serializedInfluencers = JSON.parse(JSON.stringify(influencers));
+
   // Check if current user has admin rights for deletion permission
   const { checkRole } = await import("@/lib/auth-utils");
   const isAdmin = await checkRole("ADMIN");
@@ -27,8 +30,8 @@ export default async function PipelinePage() {
         label="Influencer Pipeline"
         description="Drag and drop influencers across stages to manage your outreach pipeline."
       />
-      
-      <KanbanBoard initialData={influencers} isAdmin={isAdmin} />
+
+      <KanbanBoard initialData={serializedInfluencers} isAdmin={isAdmin} />
     </div>
   );
 }

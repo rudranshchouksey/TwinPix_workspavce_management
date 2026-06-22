@@ -200,7 +200,7 @@ export function KanbanBoard({ initialData, isAdmin = false }: { initialData: any
   const activeInfluencer = data.find((i) => i.id === activeId);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    <DndContext id="influencer-pipeline" sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-8 pt-4 custom-scrollbar items-start h-[calc(100vh-200px)]">
         {COLUMNS.map((col) => (
           <KanbanColumn key={col.id} column={col} items={data.filter((i) => i.status === col.id)} isAdmin={isAdmin} />

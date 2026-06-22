@@ -69,14 +69,12 @@ export default async function InfluencerDetailPage({
 
 async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean }) {
   // Data fetch happens inside the Suspense boundary
-  let influencer;
-  try {
-    const rawInfluencer = await getInfluencerByIdAction(id);
-    // Serialize to plain JSON to prevent Next.js Client Component serialization errors with Dates
-    influencer = JSON.parse(JSON.stringify(rawInfluencer));
-  } catch (error) {
+  const rawInfluencer = await getInfluencerByIdAction(id);
+  if (!rawInfluencer) {
     notFound();
   }
+  // Serialize to plain JSON to prevent Next.js Client Component serialization errors with Dates
+  const influencer = JSON.parse(JSON.stringify(rawInfluencer));
 
   // Format campaigns for the new system
   const campaignAssignments = influencer.campaigns || [];
