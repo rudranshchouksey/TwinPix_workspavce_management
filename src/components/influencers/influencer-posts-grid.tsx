@@ -48,57 +48,53 @@ export function InfluencerPostsGrid({ posts, influencerHandle }: PostsGridProps)
         </h2>
       </div>
 
-      <motion.div 
+      <motion.div
         variants={container}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-100px" }}
-        className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2"
       >
         {posts.map((post) => (
-          <motion.div 
+          <motion.div
             variants={item}
-            key={post.id} 
+            key={post.id}
             onClick={() => setSelectedPost(post)}
-            className="group relative rounded-3xl overflow-hidden border border-[var(--color-border)] bg-white shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer block break-inside-avoid"
+            className="group relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border)] bg-stone-100 cursor-pointer"
           >
             {post.thumbnail ? (
-              <img 
-                src={post.thumbnail} 
-                alt={post.caption || "Instagram Post"} 
-                className="w-full h-auto object-cover" 
+              <img
+                src={post.thumbnail}
+                alt={post.caption || "Instagram Post"}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
-              <div className="w-full aspect-square flex items-center justify-center bg-stone-100">
+              <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
                  <ImageIcon className="w-8 h-8 text-stone-300" />
               </div>
             )}
-            
+
             {/* Date badge */}
             {post.publishedDate && (
-              <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold text-[var(--color-text-secondary)] flex items-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-semibold text-white flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Calendar className="w-3 h-3 mr-1" />
                 {format(new Date(post.publishedDate), "MMM d, yyyy")}
               </div>
             )}
-            
-            {/* Elegant Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-               <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                 <div className="flex items-center gap-4 font-bold text-white mb-2">
-                    <span className="flex items-center gap-1.5"><Heart className="w-4 h-4 fill-white" /> {post.likes.toLocaleString()}</span>
-                    <span className="flex items-center gap-1.5"><MessageCircle className="w-4 h-4 fill-white" /> {post.comments.toLocaleString()}</span>
-                 </div>
-                 {post.caption && (
-                   <p className="text-sm line-clamp-2 text-stone-200 font-medium">
-                     {post.caption}
-                   </p>
-                 )}
-               </div>
-               <ExternalLink className="absolute top-4 right-4 w-5 h-5 text-white/50 hover:text-white transition-colors" />
+
+            {/* Instagram-style centered stats overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200 flex items-center justify-center gap-5 opacity-0 group-hover:opacity-100">
+              <span className="flex items-center gap-1.5 font-bold text-white text-sm">
+                <Heart className="w-4 h-4 fill-white" /> {post.likes.toLocaleString()}
+              </span>
+              <span className="flex items-center gap-1.5 font-bold text-white text-sm">
+                <MessageCircle className="w-4 h-4 fill-white" /> {post.comments.toLocaleString()}
+              </span>
             </div>
+
+            <ExternalLink className="absolute top-2 right-2 w-3.5 h-3.5 text-white/0 group-hover:text-white/80 transition-colors" />
           </motion.div>
         ))}
       </motion.div>
