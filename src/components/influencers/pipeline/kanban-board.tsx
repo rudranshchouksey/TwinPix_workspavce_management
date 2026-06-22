@@ -4,9 +4,12 @@ import React, { useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
+  DropAnimation,
   closestCorners,
+  defaultDropAnimationSideEffects,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragStartEvent,
@@ -14,11 +17,20 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
 import { InfluencerStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { AtSign, MoreHorizontal } from "lucide-react";
 import { updateInfluencerAction } from "@/actions/influencers";
 import { InfluencerActionsDropdown } from "../influencer-actions-dropdown";
+
+const dropAnimation: DropAnimation = {
+  duration: 220,
+  easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: { active: { opacity: "0.4" } },
+  }),
+};
 
 const COLUMNS = [
   { id: "NEW_LEAD", title: "New Lead", color: "border-blue-500/20 bg-blue-500/10 text-blue-400" },
@@ -42,9 +54,10 @@ function KanbanCard({ influencer, isOverlay, isAdmin = false }: KanbanCardProps)
     data: { type: "Influencer", influencer },
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transition,
     transform: CSS.Transform.toString(transform),
+    touchAction: "none",
   };
 
   if (isDragging) {
@@ -58,56 +71,62 @@ function KanbanCard({ influencer, isOverlay, isAdmin = false }: KanbanCardProps)
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`p-3 rounded-lg border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] cursor-grab hover:border-[rgba(0,0,0,0.2)] hover:shadow-lg transition-all group ${
-        isOverlay ? "scale-105 shadow-2xl z-50 cursor-grabbing" : ""
-      }`}
+    <motion.div
+      layout
+      layoutId={influencer.id}
+      transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full overflow-hidden bg-[rgba(0,0,0,0.1)] shrink-0">
-            {influencer.profileImage ? (
-              <img src={influencer.profileImage} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-white/50">
-                {influencer.instagramHandle.substring(0, 2).toUpperCase()}
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`p-3 rounded-lg border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] cursor-grab hover:border-[rgba(0,0,0,0.2)] hover:shadow-lg transition-all group ${
+          isOverlay ? "scale-105 shadow-2xl z-50 cursor-grabbing" : ""
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full overflow-hidden bg-[rgba(0,0,0,0.1)] shrink-0">
+              {influencer.profileImage ? (
+                <img src={influencer.profileImage} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-white/50">
+                  {influencer.instagramHandle.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white truncate max-w-[120px]">
+                {influencer.influencerName || "Unnamed"}
+              </p>
+              <div className="flex items-center text-[10px] text-[var(--color-text-muted)] mt-0.5">
+                <AtSign className="w-2.5 h-2.5 mr-1" />
+                <span className="truncate max-w-[100px]">@{influencer.instagramHandle}</span>
               </div>
-            )}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white truncate max-w-[120px]">
-              {influencer.influencerName || "Unnamed"}
-            </p>
-            <div className="flex items-center text-[10px] text-[var(--color-text-muted)] mt-0.5">
-              <AtSign className="w-2.5 h-2.5 mr-1" />
-              <span className="truncate max-w-[100px]">@{influencer.instagramHandle}</span>
             </div>
           </div>
+          <div onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+            <InfluencerActionsDropdown influencer={influencer} isAdmin={isAdmin} />
+          </div>
         </div>
-        <div onPointerDown={(e) => e.stopPropagation()}>
-          <InfluencerActionsDropdown influencer={influencer} isAdmin={isAdmin} />
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-xs text-[var(--color-text-secondary)]">
+            {influencer.followers ? new Intl.NumberFormat('en-US', { notation: "compact" }).format(influencer.followers) : "0"} followers
+          </div>
+          {influencer.category && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] truncate max-w-[80px]">
+              {influencer.category.split(",")[0]}
+            </span>
+          )}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="text-xs text-[var(--color-text-secondary)]">
-          {influencer.followers ? new Intl.NumberFormat('en-US', { notation: "compact" }).format(influencer.followers) : "0"} followers
-        </div>
-        {influencer.category && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] truncate max-w-[80px]">
-            {influencer.category.split(",")[0]}
-          </span>
-        )}
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
 function KanbanColumn({ column, items, isAdmin }: { column: typeof COLUMNS[0]; items: any[]; isAdmin: boolean }) {
-  const { setNodeRef } = useSortable({
+  const { setNodeRef, isOver } = useSortable({
     id: column.id,
     data: { type: "Column", column },
   });
@@ -125,7 +144,11 @@ function KanbanColumn({ column, items, isAdmin }: { column: typeof COLUMNS[0]; i
 
       <div
         ref={setNodeRef}
-        className="flex-1 min-h-[500px] bg-[rgba(0,0,0,0.02)] rounded-xl border border-[rgba(0,0,0,0.05)] p-2 flex flex-col gap-2"
+        className={`flex-1 min-h-[500px] rounded-xl border p-2 flex flex-col gap-2 transition-colors duration-200 ${
+          isOver
+            ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40"
+            : "bg-[rgba(0,0,0,0.02)] border-[rgba(0,0,0,0.05)]"
+        }`}
       >
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((influencer) => (
@@ -143,6 +166,7 @@ export function KanbanBoard({ initialData, isAdmin = false }: { initialData: any
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -207,7 +231,7 @@ export function KanbanBoard({ initialData, isAdmin = false }: { initialData: any
         ))}
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={dropAnimation}>
         {activeInfluencer ? <KanbanCard influencer={activeInfluencer} isOverlay isAdmin={isAdmin} /> : null}
       </DragOverlay>
     </DndContext>

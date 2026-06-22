@@ -194,27 +194,23 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
     }
   }
 
-  const influencer = await prisma.$transaction(async (tx: any) => {
-    const updated = await tx.influencer.update({
-      where: { id },
-      data: parsed.data,
-    });
+  const influencer = await prisma.influencer.update({
+    where: { id },
+    data: parsed.data,
+  });
 
-    await tx.auditLog.create({
+  // Fire-and-forget: audit logging shouldn't block the response
+  prisma.auditLog
+    .create({
       data: {
         action: "INFLUENCER_UPDATED",
         entityType: "INFLUENCER",
-        entityId: updated.id,
+        entityId: influencer.id,
         adminId: user.id,
-        details: `Updated influencer @${updated.instagramHandle}`,
+        details: `Updated influencer @${influencer.instagramHandle}`,
       },
-    });
-
-    return updated;
-  }, {
-    maxWait: 5000,
-    timeout: 10000,
-  });
+    })
+    .catch((err: any) => console.warn("[AuditLog] Failed to log INFLUENCER_UPDATED:", err.message));
 
   revalidatePath("/influencers");
   revalidatePath(`/influencers/${id}`);

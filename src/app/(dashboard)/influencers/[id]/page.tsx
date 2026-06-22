@@ -120,7 +120,7 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
 function InfluencerSkeleton() {
   return (
     <div className="grid grid-cols-12 gap-8 animate-pulse">
-      <div className="col-span-12 h-[280px] bg-stone-100 rounded-3xl" />
+      <div className="col-span-12 h-70 bg-stone-100 rounded-3xl" />
       <div className="col-span-12 md:col-span-8 h-48 bg-stone-100 rounded-2xl" />
       <div className="col-span-12 md:col-span-4 h-48 bg-stone-100 rounded-2xl" />
       <div className="col-span-12 h-64 bg-stone-100 rounded-2xl" />
