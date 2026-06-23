@@ -148,6 +148,7 @@ model Influencer {
   recentReels        InfluencerReel[]
   analytics          InfluencerContentAnalytics?
   creatorIntelligence CreatorAIInsights?
+  brandMatches        BrandMatchAnalysis[]
 
   @@index([status])
   @@index([category])
@@ -241,6 +242,27 @@ model CreatorAIInsights {
   influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
 
   @@map("creator_ai_insights")
+}
+
+model BrandMatchAnalysis {
+  id                      String   @id @default(cuid())
+  campaignId              String
+  influencerId            String
+  matchScore              Int      @default(0)
+  explanation             String[] @default([])
+  risks                   String[] @default([])
+  recommendedDeliverables String[] @default([])
+  modelUsed               String?
+  generatedAt             DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, influencerId])
+  @@index([campaignId])
+  @@index([influencerId])
+  @@map("brand_match_analyses")
 }
 
 // ─────────────────────────────────────────────
@@ -347,6 +369,7 @@ model Campaign {
   activities  CampaignActivity[]
   tasks       Task[]
   files       File[]
+  brandMatches BrandMatchAnalysis[]
   events      Event[]
 
   @@index([clientId])
