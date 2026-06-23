@@ -156,6 +156,9 @@ model Influencer {
   @@index([category])
   @@index([category, status])
   @@index([assignedManagerId])
+  @@index([followers])
+  @@index([engagementRate])
+  @@index([lastContactDate])
   @@map("influencers")
 }
 
@@ -740,4 +743,22 @@ model InfluencerLead {
   @@index([status])
   @@index([categoryNiche])
   @@map("influencer_leads")
+}
+
+model SearchQueryCache {
+  id               String   @id @default(cuid())
+  normalizedQuery  String   @unique
+  entity           String
+  parsedFilters    Json
+  explanation      String
+  suggestedFilters String[] @default([])
+  sortBy           String?
+  modelUsed        String?
+  hitCount         Int      @default(1)
+  lastUsedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([entity])
+  @@index([lastUsedAt])
+  @@map("search_query_cache")
 }

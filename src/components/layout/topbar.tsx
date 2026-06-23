@@ -10,6 +10,7 @@
  * - User profile dropdown with sign out
  */
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOutAction } from "@/actions/auth";
@@ -35,10 +36,12 @@ import {
   MessageSquare,
   FolderKanban,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getRoleLabel } from "@/lib/rbac";
 import { GlobalSearch } from "./global-search";
+import { AISearchModal } from "./ai-search-modal";
 
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
 import { useBreadcrumbLabels } from "@/contexts/breadcrumb-context";
@@ -92,6 +95,7 @@ export function Topbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { openMobile } = useSidebar();
+  const [isAISearchOpen, setIsAISearchOpen] = useState(false);
   const breadcrumbLabels = useBreadcrumbLabels();
   const breadcrumbs = pathToBreadcrumbs(pathname, breadcrumbLabels[pathname]);
   const user = session?.user;
@@ -137,8 +141,8 @@ export function Topbar() {
         </nav>
       </div>
 
-      {/* Center: Global Search (Desktop) */}
-      <div className="hidden flex-1 px-8 lg:flex lg:max-w-xl">
+      {/* Center: Global Search + AI Smart Search (Desktop) */}
+      <div className="hidden flex-1 items-center gap-2 px-8 lg:flex lg:max-w-xl">
         <button
           onClick={() => window.dispatchEvent(new Event("open-global-search"))}
           className="relative flex w-full items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-900)] px-3 py-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-400)] shadow-sm"
@@ -148,6 +152,15 @@ export function Topbar() {
           <kbd className="pointer-events-none absolute right-2 top-1.5 hidden h-5 select-none items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-950)] px-1.5 font-mono text-[10px] font-bold text-[var(--color-text-secondary)] sm:flex shadow-sm">
             <span className="text-[10px]">⌘</span>K
           </kbd>
+        </button>
+
+        <button
+          onClick={() => setIsAISearchOpen(true)}
+          aria-label="AI Smart Search"
+          title="AI Smart Search — search in plain English"
+          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-xl border border-[var(--color-brand-300)] bg-[var(--color-brand-50)] text-[var(--color-brand-600)] transition-colors hover:bg-[var(--color-brand-100)] shadow-sm"
+        >
+          <Sparkles className="h-4 w-4" />
         </button>
       </div>
 
@@ -162,8 +175,18 @@ export function Topbar() {
           <Search className="h-4 w-4" />
         </button>
 
+        {/* ── Mobile AI Search Toggle ───────────────────── */}
+        <button
+          onClick={() => setIsAISearchOpen(true)}
+          aria-label="AI Smart Search"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-brand-600)] hover:bg-[var(--color-brand-50)] transition-colors lg:hidden"
+        >
+          <Sparkles className="h-4 w-4" />
+        </button>
+
         {/* ── Global Search Component ──────────────────── */}
         <GlobalSearch />
+        <AISearchModal isOpen={isAISearchOpen} onClose={() => setIsAISearchOpen(false)} />
 
         {/* ── Notification dropdown ────────────────────── */}
         <NotificationsDropdown />
