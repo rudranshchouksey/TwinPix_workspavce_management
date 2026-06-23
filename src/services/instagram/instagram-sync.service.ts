@@ -27,6 +27,7 @@ export interface SyncResult {
     avgPostLikes: number;
     avgPostComments: number;
   };
+  aiInsightsGenerated: boolean;
   errors: string[];
 }
 
@@ -50,7 +51,7 @@ export class InstagramSyncService {
     let dataSource: "apify" | "mock" = "mock";
 
     // ─── Step 1: Fetch influencer from DB ───────────────────────
-    console.log(`[Sync:1/6] Fetching influencer ${influencerId} from database...`);
+    console.log(`[Sync:1/7] Fetching influencer ${influencerId} from database...`);
 
     const influencer = await prisma.influencer.findUnique({
       where: { id: influencerId },
@@ -64,19 +65,19 @@ export class InstagramSyncService {
     let instagramData;
 
     // ─── Step 2: Fetch Instagram data ───────────────────────────
-    console.log(`[Sync:2/6] Fetching Instagram data for @${username}...`);
+    console.log(`[Sync:2/7] Fetching Instagram data for @${username}...`);
 
     try {
       if (this.apify) {
         instagramData = await this.apify.fetchInfluencerData(username);
         dataSource = "apify";
-        console.log(`[Sync:2/6] ✓ Apify provider succeeded.`);
+        console.log(`[Sync:2/7] ✓ Apify provider succeeded.`);
       } else {
         throw new Error("Apify not configured");
       }
     } catch (error: any) {
       errors.push(`Apify failed: ${error.message}`);
-      console.warn(`[Sync:2/6] Apify failed: ${error.message}. No providers left.`);
+      console.warn(`[Sync:2/7] Apify failed: ${error.message}. No providers left.`);
       throw new Error("All data providers failed to fetch live Instagram data.");
     }
 
@@ -85,11 +86,11 @@ export class InstagramSyncService {
     }
 
     console.log(
-      `[Sync:2/6] Raw data: ${instagramData.posts.length} posts, ${instagramData.reels.length} reels, followers=${instagramData.profile.followersCount}`
+      `[Sync:2/7] Raw data: ${instagramData.posts.length} posts, ${instagramData.reels.length} reels, followers=${instagramData.profile.followersCount}`
     );
 
     // ─── Step 3: Upload Profile Image to Cloudinary ─────────────
-    console.log(`[Sync:3/6] Uploading profile image to Cloudinary...`);
+    console.log(`[Sync:3/7] Uploading profile image to Cloudinary...`);
 
     let profileImageUrl = influencer.profileImage;
     if (instagramData.profile.profileImageUrl) {
@@ -97,15 +98,15 @@ export class InstagramSyncService {
         profileImageUrl =
           (await uploadProfileImage(instagramData.profile.profileImageUrl, username)) ??
           profileImageUrl;
-        console.log(`[Sync:3/6] ✓ Profile image stored: ${profileImageUrl}`);
+        console.log(`[Sync:3/7] ✓ Profile image stored: ${profileImageUrl}`);
       } catch (imgError: any) {
         errors.push(`Profile image upload failed: ${imgError.message}`);
-        console.warn(`[Sync:3/6] ✗ Profile image upload failed, keeping existing.`);
+        console.warn(`[Sync:3/7] ✗ Profile image upload failed, keeping existing.`);
       }
     }
 
     // ─── Step 4: Extract contact info ───────────────────────────
-    console.log(`[Sync:4/6] Extracting contact information...`);
+    console.log(`[Sync:4/7] Extracting contact information...`);
 
     let extractedEmail = instagramData.profile.publicEmail || influencer.email;
     if (!extractedEmail && instagramData.profile.bio) {
@@ -114,7 +115,7 @@ export class InstagramSyncService {
       );
       if (emailMatch) {
         extractedEmail = emailMatch[0];
-        console.log(`[Sync:4/6] ✓ Email extracted from bio: ${extractedEmail}`);
+        console.log(`[Sync:4/7] ✓ Email extracted from bio: ${extractedEmail}`);
       }
     }
 
@@ -125,16 +126,16 @@ export class InstagramSyncService {
       );
       if (phoneMatch && phoneMatch[0].replace(/\D/g, "").length >= 7) {
         extractedPhone = phoneMatch[0].trim();
-        console.log(`[Sync:4/6] ✓ Phone extracted from bio: ${extractedPhone}`);
+        console.log(`[Sync:4/7] ✓ Phone extracted from bio: ${extractedPhone}`);
       }
     }
 
     console.log(
-      `[Sync:4/6] Contact: email=${extractedEmail || "none"}, phone=${extractedPhone || "none"}`
+      `[Sync:4/7] Contact: email=${extractedEmail || "none"}, phone=${extractedPhone || "none"}`
     );
 
     // ─── Step 5: Update Profile in DB ───────────────────────────
-    console.log(`[Sync:5/6] Updating influencer profile and content in database...`);
+    console.log(`[Sync:5/7] Updating influencer profile and content in database...`);
 
     const safeFollowers =
       instagramData.profile.followersCount > 0
@@ -251,10 +252,10 @@ export class InstagramSyncService {
       }
     }
 
-    console.log(`[Sync:5/6] ✓ Synced ${postsSynced} posts and ${reelsSynced} reels.`);
+    console.log(`[Sync:5/7] ✓ Synced ${postsSynced} posts and ${reelsSynced} reels.`);
 
     // ─── Step 6: Compute & Save Analytics ───────────────────────
-    console.log(`[Sync:6/6] Computing content analytics...`);
+    console.log(`[Sync:6/7] Computing content analytics...`);
 
     const allPosts = instagramData.posts;
     const allReels = instagramData.reels;
@@ -334,8 +335,24 @@ export class InstagramSyncService {
     });
 
     console.log(
-      `[Sync:6/6] ✓ Analytics: engagement=${avgEngagementRate.toFixed(2)}%, avgViews=${avgReelViews}, avgLikes=${avgPostLikes}`
+      `[Sync:6/7] ✓ Analytics: engagement=${avgEngagementRate.toFixed(2)}%, avgViews=${avgReelViews}, avgLikes=${avgPostLikes}`
     );
+
+    // ─── Step 7: Generate AI Creator Intelligence ───────────────
+    console.log(`[Sync:7/7] Generating AI creator intelligence...`);
+
+    let aiInsightsGenerated = false;
+    try {
+      const { CreatorIntelligenceService } = await import("@/services/ai/creator-intelligence.service");
+      const aiService = new CreatorIntelligenceService();
+      await aiService.generateInsights(influencerId);
+      aiInsightsGenerated = true;
+      console.log(`[Sync:7/7] ✓ AI creator intelligence generated.`);
+    } catch (aiError: any) {
+      errors.push(`AI insights generation failed: ${aiError.message}`);
+      console.warn(`[Sync:7/7] ✗ AI insights generation failed: ${aiError.message}`);
+    }
+
     console.log(
       `[Sync] ✓ Complete for @${username} via ${dataSource}. ${errors.length > 0 ? `(${errors.length} non-fatal errors)` : ""}`
     );
@@ -360,6 +377,7 @@ export class InstagramSyncService {
         avgPostLikes,
         avgPostComments,
       },
+      aiInsightsGenerated,
       errors,
     };
   }

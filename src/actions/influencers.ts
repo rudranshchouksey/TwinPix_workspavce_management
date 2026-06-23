@@ -112,6 +112,7 @@ export async function getInfluencerByIdAction(id: string) {
         take: 12,
       },
       analytics: true,
+      creatorIntelligence: true,
     },
   });
 

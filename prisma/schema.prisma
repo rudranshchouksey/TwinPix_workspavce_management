@@ -147,6 +147,7 @@ model Influencer {
   recentPosts        InfluencerPost[]
   recentReels        InfluencerReel[]
   analytics          InfluencerContentAnalytics?
+  creatorIntelligence CreatorAIInsights?
 
   @@index([status])
   @@index([category])
@@ -205,8 +206,41 @@ model InfluencerContentAnalytics {
   updatedAt              DateTime @updatedAt
 
   influencer             Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
-  
+
   @@map("influencer_content_analytics")
+}
+
+enum BrandSafetyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CollaborationRecommendation {
+  STRONGLY_RECOMMEND
+  RECOMMEND
+  NEUTRAL
+  NOT_RECOMMENDED
+}
+
+model CreatorAIInsights {
+  id                           String                      @id @default(cuid())
+  influencerId                 String                      @unique
+  summary                      String
+  strengths                    String[]                    @default([])
+  weaknesses                   String[]                    @default([])
+  recommendedCategories        String[]                    @default([])
+  brandSafetyScore             BrandSafetyLevel             @default(MEDIUM)
+  brandSafetyReason            String?
+  collaborationRecommendation  CollaborationRecommendation @default(NEUTRAL)
+  intelligenceScore            Int                          @default(0)
+  modelUsed                    String?
+  generatedAt                  DateTime                     @default(now())
+  updatedAt                    DateTime                     @updatedAt
+
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@map("creator_ai_insights")
 }
 
 // ─────────────────────────────────────────────

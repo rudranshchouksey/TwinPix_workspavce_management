@@ -10,6 +10,7 @@ import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { CreatorHero } from "@/components/influencers/creator-hero";
 import { PerformanceOverview } from "@/components/influencers/performance-overview";
 import { CreatorInsights } from "@/components/influencers/creator-insights";
+import { CreatorAIIntelligence } from "@/components/influencers/creator-ai-intelligence";
 import { ContactInfoCard } from "@/components/influencers/contact-info-card";
 import { ContentPerformance } from "@/components/influencers/content-performance";
 import { InfluencerPostsGrid } from "@/components/influencers/influencer-posts-grid";
@@ -95,6 +96,12 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
 
       {/* Section 4: Feed Posts */}
       <InfluencerPostsGrid posts={influencer.recentPosts || []} influencerHandle={influencer.instagramHandle} />
+
+      {/* Divider */}
+      <div className="col-span-12 h-px bg-[var(--color-border)] my-4" />
+
+      {/* Section 5: AI Creator Intelligence */}
+      <CreatorAIIntelligence influencerId={influencer.id} insights={influencer.creatorIntelligence} />
 
       {/* Divider */}
       <div className="col-span-12 h-px bg-[var(--color-border)] my-8" />
