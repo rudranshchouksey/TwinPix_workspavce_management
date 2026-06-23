@@ -17,8 +17,10 @@ import {
   NotebookPen,
   Briefcase,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { CreateCampaignModal } from "./campaigns/create-campaign-modal";
+import { GenerateOutreachModal } from "./generate-outreach-modal";
 import { syncInfluencerAction } from "@/actions/instagram-sync";
 import { updateInfluencerStatusAction } from "@/actions/influencers";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+  const [isGenerateOutreachOpen, setIsGenerateOutreachOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -261,6 +264,16 @@ export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
                 </Button>
 
                 <Button
+                  onClick={() => setIsGenerateOutreachOpen(true)}
+                  variant="outline"
+                  className="rounded-full border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold px-4 bg-white hover:bg-[var(--color-brand-50)] shadow-sm"
+                  size="sm"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Outreach
+                </Button>
+
+                <Button
                   onClick={handleSync}
                   disabled={isSyncing}
                   className="bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white shadow-sm rounded-full font-bold px-4"
@@ -378,6 +391,13 @@ export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
         influencerId={influencer.id}
         open={isCreateCampaignOpen}
         onOpenChange={setIsCreateCampaignOpen}
+      />
+
+      <GenerateOutreachModal
+        influencerId={influencer.id}
+        influencerName={influencer.influencerName || influencer.instagramHandle}
+        isOpen={isGenerateOutreachOpen}
+        onClose={() => setIsGenerateOutreachOpen(false)}
       />
     </motion.div>
   );

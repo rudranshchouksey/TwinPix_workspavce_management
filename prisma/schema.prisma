@@ -68,6 +68,7 @@ model User {
   feedback      Feedback[]           @relation("UserFeedback")
 
   managedInfluencers Influencer[]         @relation("InfluencerManager")
+  outreachMessages   OutreachMessage[]
 
   @@index([email])
   @@index([role])
@@ -149,6 +150,7 @@ model Influencer {
   analytics          InfluencerContentAnalytics?
   creatorIntelligence CreatorAIInsights?
   brandMatches        BrandMatchAnalysis[]
+  outreachMessages    OutreachMessage[]
 
   @@index([status])
   @@index([category])
@@ -265,6 +267,42 @@ model BrandMatchAnalysis {
   @@map("brand_match_analyses")
 }
 
+enum OutreachTone {
+  PROFESSIONAL
+  FRIENDLY
+  PREMIUM
+  LUXURY
+  CASUAL
+}
+
+model OutreachMessage {
+  id              String       @id @default(cuid())
+  influencerId    String
+  clientId        String?
+  campaignId      String?
+  createdById     String?
+  tone            OutreachTone @default(PROFESSIONAL)
+  subjectLine     String
+  emailBody       String
+  instagramDM     String
+  whatsappMessage String
+  isTemplate      Boolean      @default(false)
+  templateName    String?
+  modelUsed       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  client     Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  campaign   Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([influencerId])
+  @@index([clientId])
+  @@index([campaignId])
+  @@map("outreach_messages")
+}
+
 // ─────────────────────────────────────────────
 // Client CRM Models
 // ─────────────────────────────────────────────
@@ -297,6 +335,7 @@ model Client {
   activities  ClientActivity[]
   campaigns   Campaign[]
   projects    Project[]
+  outreachMessages OutreachMessage[]
 
   @@index([status])
   @@index([industry])
@@ -370,6 +409,7 @@ model Campaign {
   tasks       Task[]
   files       File[]
   brandMatches BrandMatchAnalysis[]
+  outreachMessages OutreachMessage[]
   events      Event[]
 
   @@index([clientId])
