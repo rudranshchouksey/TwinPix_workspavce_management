@@ -170,7 +170,7 @@ export function GenerateOutreachModal({
                 <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
                   Client (optional)
                 </label>
-                <Select value={clientId} onValueChange={setClientId}>
+                <Select value={clientId} onValueChange={(v) => setClientId(v || "")}>
                   <SelectTrigger>
                     <SelectValue placeholder="No specific client" />
                   </SelectTrigger>
@@ -188,7 +188,7 @@ export function GenerateOutreachModal({
                 <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
                   Campaign (optional)
                 </label>
-                <Select value={campaignId} onValueChange={setCampaignId} disabled={!clientId}>
+                <Select value={campaignId} onValueChange={(v) => setCampaignId(v || "")} disabled={!clientId}>
                   <SelectTrigger>
                     <SelectValue
                       placeholder={clientId ? "No specific campaign" : `Select a client first`}
