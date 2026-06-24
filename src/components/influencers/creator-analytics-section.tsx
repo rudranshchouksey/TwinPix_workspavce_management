@@ -64,7 +64,7 @@ export function CreatorAnalyticsSection({ influencer }: { influencer: any }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="label" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(v: number) => [`${v}%`, "Engagement"]} />
+                <Tooltip contentStyle={chartTooltipStyle} formatter={(v: any) => [`${v}%`, "Engagement"]} />
                 <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: "#10b981" }} />
               </LineChart>
             </ResponsiveContainer>
@@ -78,7 +78,7 @@ export function CreatorAnalyticsSection({ influencer }: { influencer: any }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="label" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(v: number) => [v, "Posts + Reels"]} />
+                <Tooltip contentStyle={chartTooltipStyle} formatter={(v: any) => [v, "Posts + Reels"]} />
                 <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -132,7 +132,7 @@ export function CreatorAnalyticsSection({ influencer }: { influencer: any }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis dataKey="label" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={chartTooltipStyle} formatter={(v: number) => [v.toLocaleString(), "Followers"]} />
+                  <Tooltip contentStyle={chartTooltipStyle} formatter={(v: any) => [v.toLocaleString(), "Followers"]} />
                   <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2.5} dot={{ r: 3, fill: "#0ea5e9" }} />
                 </LineChart>
               </ResponsiveContainer>
