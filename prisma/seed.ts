@@ -21,18 +21,22 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const ADMINS = [
-  {
-    name: "Rudransh Chouksey",
-    email: "rudranshchouksey@gmail.com",
-    password: "Admin@TwinPix2025!", // Change immediately after first login
-  },
-  {
-    name: "Divyani Jaiswal",
-    email: "divyanijaiswal0810@gmail.com",
-    password: "Admin@TwinPix2025!", // Change immediately after first login
-  },
-] as const;
+// Admin accounts are defined via env vars (see .env.example) so real names,
+// emails, and passwords are never hardcoded in source control.
+function parseAdminsFromEnv() {
+  const raw = process.env.SEED_ADMINS;
+  if (!raw) {
+    console.warn("⚠️  SEED_ADMINS not set — skipping admin seeding. See .env.example.");
+    return [];
+  }
+  // Format: "Name 1:email1@example.com:password1,Name 2:email2@example.com:password2"
+  return raw.split(",").map((entry) => {
+    const [name, email, password] = entry.split(":");
+    return { name: name?.trim(), email: email?.trim(), password: password?.trim() };
+  }).filter((a) => a.name && a.email && a.password);
+}
+
+const ADMINS = parseAdminsFromEnv();
 
 // ─── HELPER FUNCTIONS ────────────────────────────────────────
 
