@@ -69,11 +69,11 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
     <div className="space-y-6">
       <div className="flex justify-end">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-[var(--color-brand-500)] to-[var(--color-brand-400)] text-white hover:from-[var(--color-brand-600)] hover:to-[var(--color-brand-500)] shadow-md transition-all duration-200">
-              <Plus className="w-4 h-4 mr-2" />
-              New Project
-            </Button>
+          <DialogTrigger render={
+            <Button className="bg-gradient-to-r from-[var(--color-brand-500)] to-[var(--color-brand-400)] text-white hover:from-[var(--color-brand-600)] hover:to-[var(--color-brand-500)] shadow-md transition-all duration-200" />
+          }>
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] bg-[var(--color-surface-950)] border-[var(--color-border)] text-[var(--color-text-primary)] shadow-executive-lg">
             <DialogHeader>
@@ -142,10 +142,10 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
               
               <div className="absolute top-4 right-4">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                  <DropdownMenuTrigger render={
+                    <button className="p-1.5 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100" />
+                  }>
+                    <MoreVertical className="w-4 h-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40 bg-[var(--color-surface-900)] border-[rgba(0,0,0,0.1)]">
                     <DropdownMenuItem onClick={() => handleStatusChange(project.id, project.status === "ACTIVE" ? "COMPLETED" : "ACTIVE")} className="cursor-pointer text-sm py-2">
