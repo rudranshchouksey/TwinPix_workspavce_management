@@ -18,6 +18,7 @@ export const influencerSchema = z.object({
   engagementRate: z.coerce.number().optional().nullable(),
   status: z.enum(["NEW_LEAD", "CONTACTED", "REPLIED", "NEGOTIATING", "ACTIVE", "ONBOARDED", "BLACKLISTED"]).default("NEW_LEAD"),
   notes: z.string().optional().nullable(),
+  negotiationTerms: z.string().optional().nullable(),
   profileImage: z.string().optional().nullable(),
   assignedManagerId: z.string().optional().nullable(),
   reelRate: z.coerce.number().optional().nullable(),

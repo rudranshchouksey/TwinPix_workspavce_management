@@ -100,7 +100,11 @@ export async function getInfluencerByIdAction(id: string) {
     include: {
       campaigns: {
         include: {
-          campaign: true,
+          campaign: {
+            include: {
+              client: { select: { id: true, companyName: true, brandName: true } },
+            },
+          },
         },
       },
       recentPosts: {
@@ -113,6 +117,11 @@ export async function getInfluencerByIdAction(id: string) {
       },
       analytics: true,
       creatorIntelligence: true,
+      assignedManager: { select: { id: true, name: true, image: true } },
+      metricSnapshots: {
+        orderBy: { recordedAt: "asc" },
+        take: 24,
+      },
     },
   });
 
@@ -345,6 +354,31 @@ export async function updateInfluencerNotesAction(
 
   revalidatePath(`/influencers/${influencerId}`);
   return updated;
+}
+
+export async function updateInfluencerNegotiationTermsAction(
+  influencerId: string,
+  negotiationTerms: string
+) {
+  await requireAuth();
+
+  const updated = await prisma.influencer.update({
+    where: { id: influencerId },
+    data: { negotiationTerms },
+  });
+
+  revalidatePath(`/influencers/${influencerId}`);
+  return updated;
+}
+
+export async function getInfluencerActivityAction(influencerId: string, limit: number = 20) {
+  await requireAuth();
+
+  return prisma.auditLog.findMany({
+    where: { entityType: "INFLUENCER", entityId: influencerId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
 }
 
 // Import influencer from scraped Instagram data

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { Sparkline } from "./sparkline";
+import { Sparkline } from "@/components/ui/sparkline";
 
 interface CampaignKpiCardProps {
   label: string;

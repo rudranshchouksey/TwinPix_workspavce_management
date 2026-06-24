@@ -131,6 +131,7 @@ model Influencer {
   engagementRate     Float?
   status             InfluencerStatus @default(NEW_LEAD)
   notes              String?
+  negotiationTerms   String?
   profileImage       String?
   assignedManagerId  String?
   reelRate           Float?
@@ -152,6 +153,7 @@ model Influencer {
   creatorIntelligence CreatorAIInsights?
   brandMatches        BrandMatchAnalysis[]
   outreachMessages    OutreachMessage[]
+  metricSnapshots     InfluencerMetricSnapshot[]
 
   @@index([status])
   @@index([category])
@@ -161,6 +163,21 @@ model Influencer {
   @@index([engagementRate])
   @@index([lastContactDate])
   @@map("influencers")
+}
+
+model InfluencerMetricSnapshot {
+  id             String   @id @default(cuid())
+  influencerId   String
+  followers      Int?
+  following      Int?
+  engagementRate Float?
+  posts          Int?
+  recordedAt     DateTime @default(now())
+
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@index([influencerId, recordedAt])
+  @@map("influencer_metric_snapshots")
 }
 
 model InfluencerPost {

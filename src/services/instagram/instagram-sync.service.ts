@@ -334,6 +334,17 @@ export class InstagramSyncService {
       data: { engagementRate: Math.round(avgEngagementRate * 100) / 100 },
     });
 
+    // Record a point-in-time snapshot so Audience Growth can be charted over successive syncs
+    await prisma.influencerMetricSnapshot.create({
+      data: {
+        influencerId,
+        followers: safeFollowers,
+        following: safeFollowing,
+        posts: safePostsCount,
+        engagementRate: Math.round(avgEngagementRate * 100) / 100,
+      },
+    });
+
     console.log(
       `[Sync:6/7] ✓ Analytics: engagement=${avgEngagementRate.toFixed(2)}%, avgViews=${avgReelViews}, avgLikes=${avgPostLikes}`
     );
