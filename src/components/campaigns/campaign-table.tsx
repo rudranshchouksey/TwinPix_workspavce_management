@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import {
   ColumnDef,
   flexRender,
@@ -15,132 +14,189 @@ import {
   ColumnFiltersState,
 } from "@tanstack/react-table";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, ArrowUpDown, Plus, Search, ExternalLink, Edit, Trash2, Calendar, Megaphone } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
+import { ArrowUpDown, Calendar, Megaphone, Users, ListChecks } from "lucide-react";
 import { CampaignDialog } from "./campaign-dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-// You'll need to create a delete campaign alert similarly to the client one
-// import { DeleteCampaignAlert } from "./delete-campaign-alert";
+import { CampaignAddInfluencersModal } from "./campaign-add-influencers-modal";
+import { CampaignBriefModal } from "./campaign-brief-modal";
+import { CampaignQuickActions } from "./campaign-quick-actions";
+import {
+  getCompletionPct,
+  getDaysRemainingLabel,
+  getUrgency,
+  getAssignedManager,
+  STATUS_BADGE_STYLES,
+} from "./campaign-card-utils";
 
 interface CampaignTableProps {
   data: any[];
   clients: any[];
 }
 
+function EmptyCampaigns({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-brand-50)]">
+        <Megaphone className="h-8 w-8 text-[var(--color-brand-400)]" />
+      </div>
+      <div>
+        <h3 className="text-base font-semibold text-[var(--color-text-primary)]">No Active Campaigns Yet</h3>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)] max-w-sm">
+          Start your first influencer campaign and manage everything in one place.
+        </p>
+      </div>
+      <Button onClick={onCreate} className="mt-2 shadow-lg shadow-[var(--color-brand-500)]/20">
+        Create Campaign
+      </Button>
+    </div>
+  );
+}
+
 export function CampaignTable({ data, clients }: CampaignTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  // const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
 
-  const handleEdit = (campaign: any) => {
-    setSelectedCampaign(campaign);
-    setIsEditOpen(true);
-  };
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<any | null>(null);
+  const [addInfluencersCampaign, setAddInfluencersCampaign] = useState<any | null>(null);
+  const [briefCampaign, setBriefCampaign] = useState<any | null>(null);
 
   const columns: ColumnDef<any>[] = [
     {
       accessorKey: "name",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.05)] px-0 font-semibold"
-          >
-            Campaign Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.05)] px-0 font-semibold"
+        >
+          Campaign
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const campaign = row.original;
         return (
-          <div>
-            <Link 
-              href={`/campaigns/${campaign.id}`}
-              className="font-medium text-[var(--color-text-primary)] hover:text-[var(--color-brand-400)] transition-colors flex items-center group"
-            >
-              {campaign.name}
-            </Link>
-            <div className="text-sm text-[var(--color-text-muted)]">
-              Client: {campaign.client?.companyName}
-            </div>
-          </div>
+          <Link href={`/campaigns/${campaign.id}`} className="font-medium text-[var(--color-text-primary)] hover:text-[var(--color-brand-600)] transition-colors">
+            {campaign.name}
+          </Link>
         );
       },
     },
     {
-      accessorKey: "budget",
-      header: "Budget",
-      cell: ({ row }) => {
-        const budget = parseFloat(row.getValue("budget"));
-        return (
-          <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-            ${budget.toLocaleString()}
-          </span>
-        );
-      },
+      id: "client",
+      header: "Client",
+      cell: ({ row }) => (
+        <span className="text-sm text-[var(--color-text-secondary)]">{row.original.client?.companyName || "—"}</span>
+      ),
     },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
-        
-        let colorClass = "bg-gray-500/15 text-gray-400 border-gray-500/20";
-        if (status === "ACTIVE") colorClass = "bg-emerald-500/15 text-emerald-400 border-emerald-500/20";
-        if (status === "REVIEW") colorClass = "bg-amber-500/15 text-amber-400 border-amber-500/20";
-        if (status === "COMPLETED") colorClass = "bg-blue-500/15 text-blue-400 border-blue-500/20";
-        if (status === "CANCELLED") colorClass = "bg-rose-500/15 text-rose-400 border-rose-500/20";
-
         return (
-          <Badge variant="outline" className={`${colorClass} rounded-full text-xs py-0.5`}>
+          <Badge variant="outline" className={`${STATUS_BADGE_STYLES[status]} rounded-full text-xs py-0.5`}>
             {status}
           </Badge>
         );
       },
     },
     {
-      accessorKey: "startDate",
-      header: "Dates",
+      accessorKey: "budget",
+      header: "Budget",
+      cell: ({ row }) => (
+        <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+          ${parseFloat(row.getValue("budget")).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "influencers",
+      header: "Influencers",
       cell: ({ row }) => {
-        const start = row.original.startDate;
-        const end = row.original.endDate;
-        if (!start && !end) return <span className="text-sm text-[var(--color-text-disabled)]">—</span>;
-        
+        const campaign = row.original;
+        const assignments = campaign.influencers || [];
+        if (assignments.length === 0) {
+          return <span className="text-xs text-[var(--color-text-disabled)]">—</span>;
+        }
+        const visible = assignments.slice(0, 3);
+        const remaining = assignments.length - visible.length;
         return (
-          <div className="flex flex-col text-xs text-[var(--color-text-muted)]">
-            {start && (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {format(new Date(start), "MMM d, yyyy")}
-              </span>
-            )}
-            {end && (
-              <span className="flex items-center gap-1 mt-0.5">
-                <Calendar className="w-3 h-3 text-[var(--color-text-disabled)]" />
-                {format(new Date(end), "MMM d, yyyy")}
+          <div className="flex items-center gap-2">
+            <AvatarGroup>
+              {visible.map((a: any) => (
+                <Avatar key={a.id} size="sm">
+                  <AvatarImage src={a.influencer?.profileImage || undefined} alt="" />
+                  <AvatarFallback>{(a.influencer?.influencerName || "?")[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              ))}
+              {remaining > 0 && (
+                <AvatarGroupCount>
+                  <span className="text-[10px] font-semibold">+{remaining}</span>
+                </AvatarGroupCount>
+              )}
+            </AvatarGroup>
+            <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {assignments.length}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "deliverables",
+      header: "Deliverables",
+      cell: ({ row }) => (
+        <span className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1.5">
+          <ListChecks className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+          {row.original._count?.tasks ?? 0}
+        </span>
+      ),
+    },
+    {
+      id: "progress",
+      header: "Progress",
+      cell: ({ row }) => {
+        const pct = getCompletionPct(row.original);
+        return (
+          <div className="flex items-center gap-2 w-28">
+            <div className="h-1.5 flex-1 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[var(--color-brand-400)] to-[var(--color-brand-600)]"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-[var(--color-text-muted)] w-9 text-right">{pct}%</span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "deadline",
+      header: "Deadline",
+      cell: ({ row }) => {
+        const campaign = row.original;
+        const label = getDaysRemainingLabel(campaign);
+        const urgency = getUrgency(campaign);
+        if (!campaign.endDate) return <span className="text-sm text-[var(--color-text-disabled)]">—</span>;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
+              <Calendar className="w-3 h-3" />
+              {new Date(campaign.endDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+            </span>
+            {label && (
+              <span
+                className={`text-[10px] font-semibold ${
+                  urgency === "overdue" ? "text-red-600" : urgency === "urgent" ? "text-orange-600" : urgency === "soon" ? "text-amber-600" : "text-[var(--color-text-disabled)]"
+                }`}
+              >
+                {label}
               </span>
             )}
           </div>
@@ -148,36 +204,27 @@ export function CampaignTable({ data, clients }: CampaignTableProps) {
       },
     },
     {
-      id: "actions",
+      id: "manager",
+      header: "Manager",
       cell: ({ row }) => {
-        const campaign = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 text-[var(--color-text-muted)] hover:bg-[rgba(0,0,0,0.05)]">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="bg-[var(--color-surface-800)] border-[rgba(0,0,0,0.08)] shadow-xl"
-            >
-              <DropdownMenuItem className="hover:bg-[rgba(0,0,0,0.05)] focus:bg-[rgba(0,0,0,0.05)] cursor-pointer p-0">
-                <Link href={`/campaigns/${campaign.id}`} className="flex items-center w-full px-2 py-1.5">
-                  <ExternalLink className="mr-2 h-4 w-4 text-[var(--color-text-muted)]" />
-                  View Details
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleEdit(campaign)}
-                className="hover:bg-[rgba(0,0,0,0.05)] focus:bg-[rgba(0,0,0,0.05)] cursor-pointer"
-              >
-                <Edit className="mr-2 h-4 w-4 text-[var(--color-text-muted)]" />
-                Edit Campaign
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        const manager = getAssignedManager(row.original);
+        return manager ? (
+          <span className="text-sm text-[var(--color-text-secondary)]">{manager}</span>
+        ) : (
+          <span className="text-xs italic text-[var(--color-text-disabled)]">Unassigned</span>
         );
       },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <CampaignQuickActions
+          campaign={row.original}
+          onEdit={setEditCampaign}
+          onAddInfluencers={setAddInfluencersCampaign}
+          onGenerateBrief={setBriefCampaign}
+        />
+      ),
     },
   ];
 
@@ -190,52 +237,19 @@ export function CampaignTable({ data, clients }: CampaignTableProps) {
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
+    state: { sorting, columnFilters },
   });
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)]" />
-          <Input
-            placeholder="Search campaigns..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="pl-9 bg-[rgba(0,0,0,0.02)] border-[rgba(0,0,0,0.08)] focus-visible:ring-[var(--color-brand-500)]"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center justify-center rounded-lg h-8 px-2.5 bg-[var(--color-brand-500)] text-white hover:bg-[var(--color-brand-600)] shadow-lg shadow-[var(--color-brand-500)]/20 transition-all duration-200 text-sm font-medium"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] overflow-hidden glass-card">
+      <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white overflow-hidden glass-card">
         <Table>
           <TableHeader className="bg-[rgba(0,0,0,0.02)] border-b border-[rgba(0,0,0,0.08)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-none hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id} className="h-11">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -258,22 +272,8 @@ export function CampaignTable({ data, clients }: CampaignTableProps) {
               ))
             ) : (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columns.length} className="h-64 p-4 text-center">
-                  <EmptyState 
-                    icon={Megaphone} 
-                    title="No campaigns found" 
-                    description="Get started by creating your first campaign."
-                    action={
-                      <Button
-                        onClick={() => setIsCreateOpen(true)}
-                        variant="default"
-                        className="shadow-lg shadow-[var(--color-brand-500)]/20"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Campaign
-                      </Button>
-                    }
-                  />
+                <TableCell colSpan={columns.length} className="p-0">
+                  <EmptyCampaigns onCreate={() => setIsCreateOpen(true)} />
                 </TableCell>
               </TableRow>
             )}
@@ -281,18 +281,26 @@ export function CampaignTable({ data, clients }: CampaignTableProps) {
         </Table>
       </div>
 
-      <CampaignDialog 
-        open={isCreateOpen} 
-        onOpenChange={setIsCreateOpen} 
-        clients={clients}
-      />
-      
-      <CampaignDialog 
-        open={isEditOpen} 
-        onOpenChange={setIsEditOpen}
-        campaign={selectedCampaign} 
-        clients={clients}
-      />
+      <CampaignDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} clients={clients} />
+      <CampaignDialog open={!!editCampaign} onOpenChange={(open) => !open && setEditCampaign(null)} campaign={editCampaign} clients={clients} />
+
+      {addInfluencersCampaign && (
+        <CampaignAddInfluencersModal
+          campaignId={addInfluencersCampaign.id}
+          isOpen={!!addInfluencersCampaign}
+          onClose={() => setAddInfluencersCampaign(null)}
+          existingInfluencerIds={(addInfluencersCampaign.influencers || []).map((a: any) => a.influencerId)}
+        />
+      )}
+
+      {briefCampaign && (
+        <CampaignBriefModal
+          isOpen={!!briefCampaign}
+          onClose={() => setBriefCampaign(null)}
+          campaignId={briefCampaign.id}
+          campaignName={briefCampaign.name}
+        />
+      )}
     </div>
   );
 }

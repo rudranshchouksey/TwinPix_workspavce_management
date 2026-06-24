@@ -398,6 +398,7 @@ model Campaign {
   startDate    DateTime?
   endDate      DateTime?
   status       CampaignStatus @default(PLANNING)
+  isArchived   Boolean        @default(false)
   notes        String?
   projectId    String?
   createdAt    DateTime       @default(now())
@@ -420,6 +421,7 @@ model Campaign {
   @@index([status])
   @@index([clientId, status])
   @@index([startDate(sort: Desc)])
+  @@index([isArchived])
   @@map("campaigns")
 }
 

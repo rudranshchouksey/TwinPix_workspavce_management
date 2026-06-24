@@ -49,13 +49,14 @@ export async function getCampaignsAction(params: {
   clientId?: string;
   page?: number;
   limit?: number;
+  archived?: boolean;
 }) {
   await requireAuth();
 
-  const { query, status, clientId, page = 1, limit = 50 } = params;
+  const { query, status, clientId, page = 1, limit = 50, archived = false } = params;
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: any = { isArchived: archived };
 
   if (query) {
     where.name = { contains: query, mode: "insensitive" };
@@ -64,7 +65,7 @@ export async function getCampaignsAction(params: {
   if (status && status !== "ALL") {
     where.status = status;
   }
-  
+
   if (clientId) {
     where.clientId = clientId;
   }
@@ -79,10 +80,11 @@ export async function getCampaignsAction(params: {
         influencers: {
           include: {
             influencer: {
-              select: { id: true, influencerName: true, instagramHandle: true, profileImage: true },
+              select: { id: true, influencerName: true, instagramHandle: true, profileImage: true, followers: true },
             },
           },
         },
+        _count: { select: { tasks: true } },
         teamMembers: {
           include: {
             user: {
@@ -208,6 +210,74 @@ export async function deleteCampaignAction(id: string) {
   logAudit("CAMPAIGN_DELETED", id, `Deleted campaign: ${campaign.name} by ${user.name}`);
 
   revalidatePath("/campaigns");
+}
+
+export async function duplicateCampaignAction(id: string) {
+  const user = await requireAuth();
+
+  const original = await db.campaign.findUnique({
+    where: { id },
+    include: { influencers: true },
+  });
+  if (!original) throw new Error("Campaign not found");
+
+  const copy = await db.campaign.create({
+    data: {
+      name: `${original.name} (Copy)`,
+      clientId: original.clientId,
+      budget: original.budget,
+      deliverables: original.deliverables,
+      startDate: original.startDate,
+      endDate: original.endDate,
+      status: "PLANNING",
+      notes: original.notes,
+      projectId: original.projectId,
+      influencers: {
+        create: original.influencers.map((inf) => ({
+          influencerId: inf.influencerId,
+          fee: inf.fee,
+          deliverables: inf.deliverables,
+          status: "PENDING",
+        })),
+      },
+    },
+  });
+
+  logAudit("CAMPAIGN_DUPLICATED", copy.id, `Duplicated from "${original.name}" by ${user.name}`);
+  await logActivity(copy.id, "CAMPAIGN_CREATED", `Duplicated from campaign "${original.name}"`);
+
+  revalidatePath("/campaigns");
+  return copy;
+}
+
+export async function archiveCampaignAction(id: string) {
+  const user = await requireAuth();
+
+  const campaign = await db.campaign.update({
+    where: { id },
+    data: { isArchived: true },
+  });
+
+  logAudit("CAMPAIGN_ARCHIVED", id, `Archived campaign: ${campaign.name} by ${user.name}`);
+  await logActivity(id, "CAMPAIGN_ARCHIVED", `Campaign archived by ${user.name}`);
+
+  revalidatePath("/campaigns");
+  return campaign;
+}
+
+export async function unarchiveCampaignAction(id: string) {
+  const user = await requireAuth();
+
+  const campaign = await db.campaign.update({
+    where: { id },
+    data: { isArchived: false },
+  });
+
+  logAudit("CAMPAIGN_UNARCHIVED", id, `Unarchived campaign: ${campaign.name} by ${user.name}`);
+  await logActivity(id, "CAMPAIGN_UNARCHIVED", `Campaign restored from archive by ${user.name}`);
+
+  revalidatePath("/campaigns");
+  return campaign;
 }
 
 export async function assignInfluencerAction(campaignId: string, input: AssignInfluencerInput) {
@@ -340,4 +410,236 @@ const getCachedCampaignStats = unstable_cache(
 export async function getCampaignStatsAction() {
   await requireAuth();
   return getCachedCampaignStats();
+}
+
+// ─── KPI Dashboard (rich metrics + 8-week sparklines + growth) ──────────
+
+function weekBucketKey(date: Date, now: Date) {
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksAgo = Math.floor((now.getTime() - date.getTime()) / msPerWeek);
+  return weeksAgo;
+}
+
+function buildWeeklySeries(
+  rows: { date: Date; value: number }[],
+  weeks: number,
+  now: Date
+): number[] {
+  const buckets = new Array(weeks).fill(0);
+  for (const row of rows) {
+    const weeksAgo = weekBucketKey(row.date, now);
+    const idx = weeks - 1 - weeksAgo; // oldest week first, current week last
+    if (idx >= 0 && idx < weeks) buckets[idx] += row.value;
+  }
+  return buckets;
+}
+
+function growthPct(series: number[]): number | null {
+  const curr = series[series.length - 1];
+  const prev = series[series.length - 2];
+  if (prev === 0) return curr > 0 ? 100 : null;
+  return Math.round(((curr - prev) / prev) * 100);
+}
+
+const getCachedCampaignKpis = unstable_cache(
+  async () => {
+    const WEEKS = 8;
+    const now = new Date();
+
+    const [campaigns, assignments] = await Promise.all([
+      db.campaign.findMany({
+        where: { isArchived: false },
+        select: { id: true, status: true, budget: true, createdAt: true, startDate: true, endDate: true, updatedAt: true },
+      }),
+      db.campaignInfluencer.findMany({
+        where: { campaign: { isArchived: false } },
+        select: {
+          id: true,
+          createdAt: true,
+          influencerId: true,
+          status: true,
+          campaign: { select: { status: true } },
+          influencer: { select: { followers: true } },
+        },
+      }),
+    ]);
+
+    const total = campaigns.length;
+    const active = campaigns.filter((c) => c.status === "ACTIVE").length;
+    const completed = campaigns.filter((c) => c.status === "COMPLETED").length;
+    const totalBudget = campaigns.filter((c) => c.status !== "CANCELLED").reduce((sum, c) => sum + c.budget, 0);
+
+    const distinctInfluencerIds = new Set(assignments.map((a) => a.influencerId));
+    const totalInfluencers = distinctInfluencerIds.size;
+
+    const seenForReach = new Set<string>();
+    let expectedReach = 0;
+    for (const a of assignments) {
+      if (seenForReach.has(a.influencerId)) continue;
+      seenForReach.add(a.influencerId);
+      expectedReach += a.influencer.followers || 0;
+    }
+
+    const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const upcomingDeadlines = campaigns.filter(
+      (c) => c.endDate && c.endDate >= now && c.endDate <= sevenDaysOut && ["PLANNING", "ACTIVE", "REVIEW"].includes(c.status)
+    ).length;
+
+    const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const totalSeries = buildWeeklySeries(campaigns.map((c) => ({ date: c.createdAt, value: 1 })), WEEKS, now);
+    const activeSeries = buildWeeklySeries(
+      campaigns.filter((c) => c.startDate).map((c) => ({ date: c.startDate as Date, value: c.status === "ACTIVE" ? 1 : 0 })),
+      WEEKS,
+      now
+    );
+    const completedSeries = buildWeeklySeries(
+      campaigns.filter((c) => c.status === "COMPLETED").map((c) => ({ date: c.updatedAt, value: 1 })),
+      WEEKS,
+      now
+    );
+    const budgetSeries = buildWeeklySeries(
+      campaigns.filter((c) => c.status !== "CANCELLED").map((c) => ({ date: c.createdAt, value: c.budget })),
+      WEEKS,
+      now
+    );
+    const reachSeries = buildWeeklySeries(
+      assignments.map((a) => ({ date: a.createdAt, value: a.influencer.followers || 0 })),
+      WEEKS,
+      now
+    );
+    const influencerSeries = buildWeeklySeries(
+      assignments.map((a) => ({ date: a.createdAt, value: 1 })),
+      WEEKS,
+      now
+    );
+
+    const deadlineSeries = (() => {
+      const days = 7;
+      const buckets = new Array(days).fill(0);
+      for (const c of campaigns) {
+        if (!c.endDate || c.endDate < now) continue;
+        const daysOut = Math.floor((c.endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        if (daysOut >= 0 && daysOut < days) buckets[daysOut] += 1;
+      }
+      return buckets;
+    })();
+
+    const successSeries = (() => {
+      const sorted = [...campaigns].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      const weekMs = 7 * 24 * 60 * 60 * 1000;
+      const series: number[] = [];
+      for (let w = WEEKS - 1; w >= 0; w--) {
+        const cutoff = new Date(now.getTime() - w * weekMs);
+        const upToNow = sorted.filter((c) => c.createdAt <= cutoff);
+        const completedUpToNow = upToNow.filter((c) => c.status === "COMPLETED").length;
+        series.push(upToNow.length > 0 ? Math.round((completedUpToNow / upToNow.length) * 100) : 0);
+      }
+      return series;
+    })();
+
+    return {
+      total,
+      active,
+      completed,
+      totalBudget,
+      expectedReach,
+      totalInfluencers,
+      upcomingDeadlines,
+      successRate,
+      series: {
+        total: totalSeries,
+        active: activeSeries,
+        completed: completedSeries,
+        budget: budgetSeries,
+        reach: reachSeries,
+        influencers: influencerSeries,
+        deadlines: deadlineSeries,
+        successRate: successSeries,
+      },
+      growth: {
+        total: growthPct(totalSeries),
+        active: growthPct(activeSeries),
+        completed: growthPct(completedSeries),
+        budget: growthPct(budgetSeries),
+        reach: growthPct(reachSeries),
+        influencers: growthPct(influencerSeries),
+        successRate: growthPct(successSeries),
+      },
+    };
+  },
+  ["campaign-kpis"],
+  { revalidate: 60, tags: ["campaigns"] }
+);
+
+export async function getCampaignKpisAction() {
+  await requireAuth();
+  return getCachedCampaignKpis();
+}
+
+// ─── CSV Import ───────────────────────────────────────────────────────
+
+export async function getRecentCampaignActivityAction(limit: number = 8) {
+  await requireAuth();
+  return db.campaignActivity.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: {
+      campaign: { select: { id: true, name: true } },
+    },
+  });
+}
+
+export async function importCampaignsAction(rows: Record<string, string>[]) {
+  const user = await requireAuth();
+
+  const clients = await db.client.findMany({ select: { id: true, companyName: true } });
+  const clientByName = new Map(clients.map((c) => [c.companyName.trim().toLowerCase(), c.id]));
+
+  let created = 0;
+  const errors: { row: number; reason: string }[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const name = row.name?.trim();
+    const clientName = row.clientName?.trim() || row.client?.trim();
+
+    if (!name) {
+      errors.push({ row: i + 1, reason: "Missing campaign name" });
+      continue;
+    }
+
+    const clientId = clientName ? clientByName.get(clientName.toLowerCase()) : undefined;
+    if (!clientId) {
+      errors.push({ row: i + 1, reason: `Client "${clientName || ""}" not found` });
+      continue;
+    }
+
+    const statusRaw = row.status?.trim().toUpperCase();
+    const status = ["PLANNING", "ACTIVE", "REVIEW", "COMPLETED", "CANCELLED"].includes(statusRaw)
+      ? statusRaw
+      : "PLANNING";
+
+    try {
+      const campaign = await db.campaign.create({
+        data: {
+          name,
+          clientId,
+          budget: row.budget ? parseFloat(row.budget) || 0 : 0,
+          startDate: row.startDate ? new Date(row.startDate) : null,
+          endDate: row.endDate ? new Date(row.endDate) : null,
+          status: status as any,
+          deliverables: row.deliverables || undefined,
+          notes: row.notes || undefined,
+        },
+      });
+      logAudit("CAMPAIGN_IMPORTED", campaign.id, `Imported campaign: ${campaign.name} by ${user.name}`);
+      created++;
+    } catch (err: any) {
+      errors.push({ row: i + 1, reason: err.message || "Failed to create campaign" });
+    }
+  }
+
+  revalidatePath("/campaigns");
+  return { created, errors, total: rows.length };
 }

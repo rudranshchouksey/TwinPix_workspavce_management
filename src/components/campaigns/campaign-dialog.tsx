@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -40,25 +40,43 @@ interface CampaignDialogProps {
   onOpenChange: (open: boolean) => void;
   campaign?: any; // If provided, edit mode
   clients: any[]; // For the client dropdown
+  prefill?: Partial<CampaignInput>; // Pre-fill values for create mode (e.g. from an AI brief)
 }
 
-export function CampaignDialog({ open, onOpenChange, campaign, clients }: CampaignDialogProps) {
+export function CampaignDialog({ open, onOpenChange, campaign, clients, prefill }: CampaignDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!campaign;
+  const source = campaign || prefill;
 
   const form = useForm<CampaignInput>({
     resolver: zodResolver(campaignSchema) as any,
     defaultValues: {
-      name: campaign?.name || "",
-      clientId: campaign?.clientId || "",
-      budget: campaign?.budget || 0,
-      deliverables: campaign?.deliverables || "",
-      startDate: campaign?.startDate ? new Date(campaign.startDate).toISOString().split('T')[0] : "",
-      endDate: campaign?.endDate ? new Date(campaign.endDate).toISOString().split('T')[0] : "",
-      status: campaign?.status || "PLANNING",
-      notes: campaign?.notes || "",
+      name: source?.name || "",
+      clientId: source?.clientId || "",
+      budget: source?.budget || 0,
+      deliverables: source?.deliverables || "",
+      startDate: source?.startDate ? new Date(source.startDate).toISOString().split('T')[0] : "",
+      endDate: source?.endDate ? new Date(source.endDate).toISOString().split('T')[0] : "",
+      status: source?.status || "PLANNING",
+      notes: source?.notes || "",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: source?.name || "",
+        clientId: source?.clientId || "",
+        budget: source?.budget || 0,
+        deliverables: source?.deliverables || "",
+        startDate: source?.startDate ? new Date(source.startDate).toISOString().split('T')[0] : "",
+        endDate: source?.endDate ? new Date(source.endDate).toISOString().split('T')[0] : "",
+        status: source?.status || "PLANNING",
+        notes: source?.notes || "",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, campaign, prefill]);
 
   const onSubmit = async (data: CampaignInput) => {
     setIsSubmitting(true);
