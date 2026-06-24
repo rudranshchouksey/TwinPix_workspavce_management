@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/auth-utils";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BreadcrumbProvider } from "@/contexts/breadcrumb-context";
+import { TwinAIPanel } from "@/components/copilot/twin-ai-panel";
 
 /**
  * Dashboard layout — wraps all /app/(dashboard) routes.
@@ -36,6 +37,8 @@ export default async function DashboardLayout({
           </main>
         </div>
       </div>
+
+      <TwinAIPanel />
     </BreadcrumbProvider>
   );
 }
