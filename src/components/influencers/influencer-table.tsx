@@ -8,6 +8,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import Link from "next/link";
 import { format } from "date-fns";
 
 import {
@@ -151,9 +152,12 @@ export function InfluencerTable({
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-[var(--color-text-primary)] truncate max-w-[150px]">
+            <Link
+              href={`/influencers/${row.original.id}`}
+              className="font-bold text-[var(--color-text-primary)] truncate max-w-[150px] hover:text-[var(--color-brand-600)] hover:underline cursor-pointer transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-[var(--color-brand-500)] focus-visible:outline-offset-2"
+            >
               {row.original.influencerName || "Unnamed"}
-            </span>
+            </Link>
             <div className="flex items-center text-xs font-medium text-[var(--color-text-muted)] mt-0.5">
               {row.original.platform?.toLowerCase() === 'instagram' ? <AtSign className="w-3 h-3 mr-1" /> :
                row.original.platform?.toLowerCase() === 'youtube' ? <Video className="w-3 h-3 mr-1" /> :

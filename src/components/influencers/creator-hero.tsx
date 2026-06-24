@@ -370,6 +370,27 @@ export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
               {formatNumber(influencer.posts)}
             </span>
           </div>
+          {influencer.creatorIntelligence?.intelligenceScore != null && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                Creator Score
+              </span>
+              <span className="text-2xl font-black text-violet-600">
+                {influencer.creatorIntelligence.intelligenceScore}
+                <span className="text-xs text-[var(--color-text-muted)] font-bold"> /100</span>
+              </span>
+            </div>
+          )}
+          {influencer.assignedManager && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                Manager
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                {influencer.assignedManager.name}
+              </span>
+            </div>
+          )}
           {influencer.lastSyncDate && (
             <div className="flex flex-col gap-1 ml-auto">
               <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">

@@ -1,22 +1,19 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
-import { getInfluencerByIdAction, getInfluencerNameAction } from "@/actions/influencers";
+import { getInfluencerByIdAction, getInfluencerNameAction, getInfluencerActivityAction } from "@/actions/influencers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { CreatorHero } from "@/components/influencers/creator-hero";
-import { PerformanceOverview } from "@/components/influencers/performance-overview";
-import { CreatorInsights } from "@/components/influencers/creator-insights";
+import { CreatorKpiOverview } from "@/components/influencers/creator-kpi-overview";
 import { CreatorAIIntelligence } from "@/components/influencers/creator-ai-intelligence";
-import { ContactInfoCard } from "@/components/influencers/contact-info-card";
-import { ContentPerformance } from "@/components/influencers/content-performance";
-import { InfluencerPostsGrid } from "@/components/influencers/influencer-posts-grid";
 import { CampaignHistorySection } from "@/components/influencers/campaigns/campaign-history-section";
-import { InternalNotes } from "@/components/influencers/internal-notes";
-import { SyncDiagnosticsPanel } from "@/components/influencers/sync-diagnostics-panel";
+import { CreatorContentGallery } from "@/components/influencers/creator-content-gallery";
+import { CreatorAnalyticsSection } from "@/components/influencers/creator-analytics-section";
+import { CreatorCollaborationSection } from "@/components/influencers/creator-collaboration-section";
+import { CreatorRightSidebar } from "@/components/influencers/creator-right-sidebar";
 
 import { Suspense } from "react";
 
@@ -74,63 +71,76 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
   if (!rawInfluencer) {
     notFound();
   }
+  const rawActivity = await getInfluencerActivityAction(id);
+
   // Serialize to plain JSON to prevent Next.js Client Component serialization errors with Dates
   const influencer = JSON.parse(JSON.stringify(rawInfluencer));
+  const activity = JSON.parse(JSON.stringify(rawActivity));
 
   // Format campaigns for the new system
   const campaignAssignments = influencer.campaigns || [];
 
   return (
-    <div className="grid grid-cols-12 gap-8">
+    <div className="flex flex-col gap-8">
       <BreadcrumbLabel label={influencer.influencerName || influencer.instagramHandle} />
 
       {/* Section 1: Hero (includes status dropdown, quick actions, sync button) */}
       <CreatorHero influencer={influencer} isAdmin={isAdmin} />
 
-      {/* Section 2: Performance + Contact Info (side by side) */}
-      <PerformanceOverview influencer={influencer} analytics={influencer.analytics} />
-      <ContactInfoCard influencer={influencer} />
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Main content column */}
+        <div className="flex-1 min-w-0 flex flex-col gap-10">
+          {/* Section 2: KPI Overview */}
+          <CreatorKpiOverview influencer={influencer} />
 
-      {/* Section 3: Content Performance */}
-      <ContentPerformance posts={influencer.recentPosts || []} reels={influencer.recentReels || []} analytics={influencer.analytics} />
+          {/* Section 3: AI Creator Intelligence */}
+          <CreatorAIIntelligence influencerId={influencer.id} insights={influencer.creatorIntelligence} />
 
-      {/* Section 4: Feed Posts */}
-      <InfluencerPostsGrid posts={influencer.recentPosts || []} influencerHandle={influencer.instagramHandle} />
+          {/* Section 4: Campaign History */}
+          <CampaignHistorySection
+            influencerId={influencer.id}
+            campaigns={campaignAssignments}
+            isAdmin={isAdmin}
+          />
 
-      {/* Divider */}
-      <div className="col-span-12 h-px bg-[var(--color-border)] my-4" />
+          {/* Section 5: Content Gallery */}
+          <CreatorContentGallery
+            posts={influencer.recentPosts || []}
+            reels={influencer.recentReels || []}
+            analytics={influencer.analytics}
+            influencerHandle={influencer.instagramHandle}
+          />
 
-      {/* Section 5: AI Creator Intelligence */}
-      <CreatorAIIntelligence influencerId={influencer.id} insights={influencer.creatorIntelligence} />
+          {/* Section 6: Analytics */}
+          <CreatorAnalyticsSection influencer={influencer} />
 
-      {/* Divider */}
-      <div className="col-span-12 h-px bg-[var(--color-border)] my-8" />
+          {/* Section 7: Internal Collaboration */}
+          <CreatorCollaborationSection influencer={influencer} activity={activity} />
+        </div>
 
-      {/* Section 6: Campaign History + AI Insights + Notes */}
-      <div className="col-span-12">
-        <CampaignHistorySection
-          influencerId={influencer.id}
-          campaigns={campaignAssignments}
-          isAdmin={isAdmin}
-        />
+        {/* Sticky right sidebar */}
+        <CreatorRightSidebar influencer={influencer} activity={activity} />
       </div>
-
-      <CreatorInsights analytics={influencer.analytics} />
-
-      {/* Section 7: Internal Notes */}
-      <InternalNotes influencerId={influencer.id} initialNotes={influencer.notes} />
-
     </div>
   );
 }
 
 function InfluencerSkeleton() {
   return (
-    <div className="grid grid-cols-12 gap-8 animate-pulse">
-      <div className="col-span-12 h-70 bg-stone-100 rounded-3xl" />
-      <div className="col-span-12 md:col-span-8 h-48 bg-stone-100 rounded-2xl" />
-      <div className="col-span-12 md:col-span-4 h-48 bg-stone-100 rounded-2xl" />
-      <div className="col-span-12 h-64 bg-stone-100 rounded-2xl" />
+    <div className="flex flex-col gap-8 animate-pulse">
+      <div className="h-70 bg-stone-100 rounded-3xl" />
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-32 bg-stone-100 rounded-2xl" />
+          ))}
+        </div>
+        <div className="w-full lg:w-80 shrink-0 space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 bg-stone-100 rounded-2xl" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

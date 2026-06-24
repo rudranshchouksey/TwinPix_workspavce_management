@@ -45,7 +45,7 @@ export function CampaignHistorySection({ influencerId, campaigns, isAdmin }: Cam
         <div className="flex items-center justify-between mb-4">
           <TabsList className="bg-stone-100/80 p-1">
             <TabsTrigger value="cards" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4 py-1.5 flex items-center gap-2">
-              <ListFilter className="w-3.5 h-3.5" /> List View
+              <ListFilter className="w-3.5 h-3.5" /> Card View
             </TabsTrigger>
             <TabsTrigger value="timeline" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-4 py-1.5 flex items-center gap-2">
               <CalendarIcon className="w-3.5 h-3.5" /> Timeline View

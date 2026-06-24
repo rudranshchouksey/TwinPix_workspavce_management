@@ -35,6 +35,16 @@ function growthPct(series: number[]): number | null {
   return Math.round(((curr - prev) / prev) * 100);
 }
 
+function buildWeekLabels(weeks: number, now: Date): string[] {
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const labels: string[] = [];
+  for (let w = weeks - 1; w >= 0; w--) {
+    const d = new Date(now.getTime() - w * msPerWeek);
+    labels.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+  }
+  return labels;
+}
+
 export interface CreatorKpis {
   followers: number;
   following: number;
@@ -44,6 +54,9 @@ export interface CreatorKpis {
   campaignCount: number;
   responseRate: number;
   creatorScore: number | null;
+  weekLabels: string[];
+  postsCount: number;
+  reelsCount: number;
   series: {
     followers: number[];
     following: number[];
@@ -128,6 +141,9 @@ export function computeCreatorKpis(influencer: any): CreatorKpis {
     campaignCount: assignments.length,
     responseRate,
     creatorScore: influencer.creatorIntelligence?.intelligenceScore ?? null,
+    weekLabels: buildWeekLabels(WEEKS, now),
+    postsCount: posts.length,
+    reelsCount: reels.length,
     series: {
       followers: followersSeries,
       following: followingSeries,
