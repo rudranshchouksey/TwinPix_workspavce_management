@@ -3,6 +3,7 @@
 import { motion, Variants } from "framer-motion";
 import { Users, Building2, Megaphone, DollarSign, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PremiumCard } from "@/components/ui/premium-card";
 
 interface KPICardsProps {
   data: {
@@ -22,7 +23,7 @@ export function KPICards({ data }: KPICardsProps) {
       icon: DollarSign,
       trend: "+12.5%",
       trendUp: true,
-      accent: "bg-emerald-500/10 text-emerald-500",
+      accent: "bg-emerald-50 text-emerald-600",
     },
     {
       title: "Active Campaigns",
@@ -30,7 +31,7 @@ export function KPICards({ data }: KPICardsProps) {
       icon: Megaphone,
       trend: "+4.1%",
       trendUp: true,
-      accent: "bg-blue-500/10 text-blue-500",
+      accent: "bg-blue-50 text-blue-600",
     },
     {
       title: "Influencers",
@@ -38,7 +39,7 @@ export function KPICards({ data }: KPICardsProps) {
       icon: Users,
       trend: "+21.2%",
       trendUp: true,
-      accent: "bg-violet-500/10 text-violet-500",
+      accent: "bg-violet-50 text-violet-600",
     },
     {
       title: "Team Productivity",
@@ -46,7 +47,7 @@ export function KPICards({ data }: KPICardsProps) {
       icon: Activity,
       trend: "+5.4%",
       trendUp: true,
-      accent: "bg-orange-500/10 text-orange-500",
+      accent: "bg-amber-50 text-amber-600",
     },
   ];
 
@@ -73,27 +74,24 @@ export function KPICards({ data }: KPICardsProps) {
       className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
     >
       {cards.map((card, index) => (
-        <motion.div
-          key={index}
-          variants={item}
-          className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col justify-between overflow-hidden relative group"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-muted-foreground">{card.title}</h3>
-            <div className={cn("p-2 rounded-lg transition-colors", card.accent)}>
-              <card.icon className="w-4 h-4" />
+        <motion.div key={index} variants={item}>
+          <PremiumCard hoverEffect="lift" className="h-full flex flex-col justify-between overflow-hidden relative group p-6 border-[rgba(0,0,0,0.08)]">
+            <div className="flex items-center justify-between relative z-10">
+              <h3 className="text-xs font-semibold text-[var(--color-text-muted)] tracking-wide uppercase">{card.title}</h3>
+              <div className={cn("p-2 rounded-xl shadow-sm transition-colors", card.accent)}>
+                <card.icon className="w-5 h-5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl font-bold tracking-tight">{card.value}</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center">
-              <span className={cn("mr-1 font-medium", card.trendUp ? "text-emerald-500" : "text-red-500")}>
-                {card.trend}
-              </span>
-              from last month
-            </p>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 dark:to-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="mt-4 relative z-10">
+              <div className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">{card.value}</div>
+              <p className="text-xs font-medium text-[var(--color-text-muted)] mt-2 flex items-center">
+                <span className={cn("mr-1.5 px-1.5 py-0.5 rounded-full inline-flex items-center text-[10px]", card.trendUp ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>
+                  {card.trend}
+                </span>
+                vs last month
+              </p>
+            </div>
+          </PremiumCard>
         </motion.div>
       ))}
     </motion.div>

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Settings, Save, Loader2, Key } from "lucide-react";
 import { toast } from "sonner";
-import { SectionHeader } from "@/components/dashboard/section-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { PremiumCard } from "@/components/ui/premium-card";
 import { useSession } from "next-auth/react";
 import { updateProfileSettingsAction } from "@/actions/users";
 
@@ -50,12 +51,12 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <SectionHeader
-        label="Settings"
+      <PageHeader
+        title="Settings"
         description="Manage your account preferences and configurations"
       />
 
-      <div className="bg-[var(--color-surface-800)] border border-[rgba(0,0,0,0.08)] rounded-2xl p-8 shadow-xl">
+      <PremiumCard className="p-8 shadow-executive-lg border-0">
         <div className="flex items-center gap-4 mb-6 pb-6 border-b border-[rgba(0,0,0,0.08)]">
           <div className="p-3 bg-[rgba(0,0,0,0.03)] rounded-xl">
             <Settings className="w-6 h-6 text-[var(--color-brand-400)]" />
@@ -132,7 +133,7 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
-      </div>
+      </PremiumCard>
     </div>
   );
 }

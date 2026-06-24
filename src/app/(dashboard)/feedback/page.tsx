@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { submitFeedbackAction, getUserFeedbackAction } from "@/actions/feedback";
-import { SectionHeader } from "@/components/dashboard/section-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { PremiumCard } from "@/components/ui/premium-card";
 import { Loader2, MessageSquareText, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -45,14 +46,14 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
-      <SectionHeader
-        label="Feedback & Support"
+      <PageHeader
+        title="Feedback & Support"
         description="Share your thoughts, report issues, or request new features"
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Submit Form */}
-        <div className="bg-[var(--color-surface-800)] border border-[rgba(0,0,0,0.08)] rounded-2xl p-6 shadow-xl">
+        <PremiumCard className="p-6 shadow-executive-lg border-0">
           <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Submit Feedback</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -89,10 +90,10 @@ export default function FeedbackPage() {
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Feedback"}
             </button>
           </form>
-        </div>
+        </PremiumCard>
 
         {/* History */}
-        <div className="bg-[var(--color-surface-800)] border border-[rgba(0,0,0,0.08)] rounded-2xl p-6 shadow-xl flex flex-col">
+        <PremiumCard className="p-6 shadow-executive-lg border-0 flex flex-col">
           <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Your History</h3>
           
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[400px]">
@@ -128,7 +129,7 @@ export default function FeedbackPage() {
               </div>
             )}
           </div>
-        </div>
+        </PremiumCard>
       </div>
     </div>
   );

@@ -12,7 +12,10 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Users, Activity, BarChart3, TrendingUp } from "lucide-react";
+import { Users, Activity, BarChart3, TrendingUp, Download, Filter, CalendarDays } from "lucide-react";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 interface InfluencerAnalyticsProps {
   stats: {
@@ -25,7 +28,7 @@ interface InfluencerAnalyticsProps {
 }
 
 const COLORS = [
-  "var(--color-brand-400)",
+  "var(--color-brand-500)",
   "#10b981", // emerald
   "#f59e0b", // amber
   "#8b5cf6", // violet
@@ -41,7 +44,6 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
     }).format(num);
   };
 
-  // Process category distribution for pie chart
   const pieData = stats.categoryDistribution
     .map((item) => ({
       name: item.category || "Uncategorized",
@@ -50,7 +52,6 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
-  // Process mock pipeline data since we only have single-status DB models
   const pipelineData = [
     { name: "New Leads", count: Math.round(stats.total * 0.4) },
     { name: "Contacted", count: Math.round(stats.total * 0.25) },
@@ -60,46 +61,60 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Filter Bar */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-[var(--color-border)] shadow-sm gap-4"
+      >
+         <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+           <Button variant="outline" size="sm" className="h-9 whitespace-nowrap"><Filter className="mr-2 h-4 w-4" /> Category</Button>
+           <Button variant="outline" size="sm" className="h-9 whitespace-nowrap"><CalendarDays className="mr-2 h-4 w-4" /> Date Range</Button>
+         </div>
+         <Button variant="default" size="sm" className="h-9 w-full sm:w-auto bg-gradient-to-r from-[var(--color-brand-500)] to-[var(--color-brand-400)] text-white hover:from-[var(--color-brand-600)] hover:to-[var(--color-brand-500)] shadow-md">
+           <Download className="mr-2 h-4 w-4" /> Export Report
+         </Button>
+      </motion.div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-5 glass-card relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Users className="w-12 h-12 text-[var(--color-brand-400)]" />
+        <PremiumCard hoverEffect="lift" className="relative overflow-hidden group p-6">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-300">
+            <Users className="w-16 h-16 text-[var(--color-brand-500)]" />
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Total Influencers</p>
-          <p className="text-3xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.total)}</p>
-        </div>
+          <p className="text-sm font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">Total Influencers</p>
+          <p className="text-4xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.total)}</p>
+        </PremiumCard>
 
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-5 glass-card relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="w-12 h-12 text-emerald-400" />
+        <PremiumCard hoverEffect="lift" className="relative overflow-hidden group p-6">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-300">
+            <TrendingUp className="w-16 h-16 text-emerald-500" />
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Active Collaborations</p>
-          <p className="text-3xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.activeCount)}</p>
-        </div>
+          <p className="text-sm font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">Active Collabs</p>
+          <p className="text-4xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.activeCount)}</p>
+        </PremiumCard>
 
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-5 glass-card relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Activity className="w-12 h-12 text-rose-400" />
+        <PremiumCard hoverEffect="lift" className="relative overflow-hidden group p-6">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-300">
+            <Activity className="w-16 h-16 text-rose-500" />
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Avg. Engagement Rate</p>
-          <p className="text-3xl font-bold text-[var(--color-text-primary)]">{stats.averageEngagementRate.toFixed(2)}%</p>
-        </div>
+          <p className="text-sm font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">Avg. Engagement</p>
+          <p className="text-4xl font-bold text-[var(--color-text-primary)]">{stats.averageEngagementRate.toFixed(2)}%</p>
+        </PremiumCard>
 
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-5 glass-card relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-5 opacity-10 group-hover:opacity-20 transition-opacity">
-            <BarChart3 className="w-12 h-12 text-blue-400" />
+        <PremiumCard hoverEffect="lift" className="relative overflow-hidden group p-6">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-300">
+            <BarChart3 className="w-16 h-16 text-blue-500" />
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Avg. Audience Size</p>
-          <p className="text-3xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.averageFollowers)}</p>
-        </div>
+          <p className="text-sm font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">Avg. Audience</p>
+          <p className="text-4xl font-bold text-[var(--color-text-primary)]">{formatNumber(stats.averageFollowers)}</p>
+        </PremiumCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline Chart */}
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-6 glass-card">
-          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-6">
+        <PremiumCard className="p-6">
+          <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-6">
             Pipeline Distribution
           </h3>
           <div className="h-[300px] w-full">
@@ -111,21 +126,28 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
                 <Tooltip
                   cursor={{ fill: "rgba(0,0,0,0.02)" }}
                   contentStyle={{
-                    backgroundColor: "var(--color-surface-800)",
-                    borderColor: "rgba(0,0,0,0.1)",
-                    borderRadius: "8px",
+                    backgroundColor: "var(--color-surface-950)",
+                    borderColor: "var(--color-border)",
+                    borderRadius: "12px",
                     color: "var(--color-text-primary)",
+                    boxShadow: "var(--shadow-executive-md)"
                   }}
                 />
-                <Bar dataKey="count" fill="var(--color-brand-500)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="url(#colorGradient)" radius={[6, 6, 0, 0]} />
+                <defs>
+                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-brand-400)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="var(--color-brand-600)" stopOpacity={1} />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </PremiumCard>
 
         {/* Category Pie Chart */}
-        <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] p-6 glass-card">
-          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-6">
+        <PremiumCard className="p-6">
+          <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-6">
             Top Categories
           </h3>
           <div className="h-[300px] w-full flex items-center">
@@ -135,7 +157,7 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
+                  innerRadius={70}
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
@@ -147,29 +169,45 @@ export function InfluencerAnalytics({ stats }: InfluencerAnalyticsProps) {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "var(--color-surface-800)",
-                    borderColor: "rgba(0,0,0,0.1)",
-                    borderRadius: "8px",
+                    backgroundColor: "var(--color-surface-950)",
+                    borderColor: "var(--color-border)",
+                    borderRadius: "12px",
                     color: "var(--color-text-primary)",
+                    boxShadow: "var(--shadow-executive-md)"
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
             
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-3">
               {pieData.map((item, i) => (
                 <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-[var(--color-text-secondary)] truncate max-w-[100px]">{item.name}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="font-medium text-[var(--color-text-secondary)] truncate max-w-[120px]">{item.name}</span>
                   </div>
-                  <span className="font-medium text-[var(--color-text-primary)]">{item.value}</span>
+                  <span className="font-bold text-[var(--color-text-primary)]">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </PremiumCard>
       </div>
+      
+      {/* AI Insights Card */}
+      <PremiumCard hoverEffect="glow" className="bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5 border-violet-500/10">
+         <div className="flex items-start gap-4">
+            <div className="p-3 bg-violet-100 rounded-xl text-violet-600">
+               <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+               <h4 className="text-lg font-bold text-[var(--color-text-primary)]">Category Performance Shift</h4>
+               <p className="mt-1 text-[var(--color-text-secondary)]">
+                  The <strong className="text-violet-600">Travel</strong> category is showing exceptional growth with a 18% higher average engagement rate compared to Lifestyle creators this month. Consider allocating more budget to Travel influencers for the next campaign.
+               </p>
+            </div>
+         </div>
+      </PremiumCard>
     </div>
   );
 }

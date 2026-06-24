@@ -8,6 +8,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { PremiumCard } from "@/components/ui/premium-card";
+
 export default function MessagesPage() {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -106,7 +108,7 @@ export default function MessagesPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-800)] shadow-xl overflow-hidden">
+    <PremiumCard className="flex h-[calc(100vh-8rem)] p-0 overflow-hidden shadow-executive-lg border-0">
       
       {/* Sidebar: Users List */}
       <div className="w-1/3 min-w-[280px] max-w-[360px] flex flex-col border-r border-[rgba(0,0,0,0.08)] bg-[rgba(0,0,0,0.02)]">
@@ -258,6 +260,6 @@ export default function MessagesPage() {
         )}
       </div>
 
-    </div>
+    </PremiumCard>
   );
 }

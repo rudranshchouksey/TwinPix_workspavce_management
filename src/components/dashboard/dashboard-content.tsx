@@ -1,13 +1,5 @@
 "use client";
 
-/**
- * components/dashboard/dashboard-content.tsx
- *
- * Main dashboard content — client component for Framer Motion.
- * Renders stat cards, quick actions, and activity feed
- * with staggered entrance animations.
- */
-
 import { motion } from "framer-motion";
 import {
   Users,
@@ -18,14 +10,17 @@ import {
   Megaphone,
   UserCircle,
   BarChart3,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import { StatCard } from "./stat-card";
 import { QuickAction } from "./quick-action";
 import { ActivityFeed } from "./activity-feed";
 import { SectionHeader } from "./section-header";
 import { hasMinRole } from "@/lib/navigation";
-
-// ─── Types ───────────────────────────────────────────────────
+import { PageHeader } from "@/components/ui/page-header";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { formatDistanceToNow } from "date-fns";
 
 interface DashboardContentProps {
   userName?: string;
@@ -33,103 +28,62 @@ interface DashboardContentProps {
   activities?: any[];
 }
 
-// ─── Mock Data ───────────────────────────────────────────────
-
 const STATS = [
   {
-    label: "Team Members",
-    value: "2",
-    change: "Founding team",
-    trend: "neutral" as const,
+    label: "Total Influencers",
+    value: "2,450",
+    change: "+12.5% this month",
+    trend: "up" as const,
     icon: <Users className="h-5 w-5 text-white/90" />,
     accent: "bg-gradient-to-br from-violet-500 to-purple-600",
+    data: [100, 120, 115, 140, 135, 160, 155]
   },
   {
     label: "Active Campaigns",
-    value: "0",
-    change: "Getting started",
-    trend: "neutral" as const,
+    value: "14",
+    change: "+2 this week",
+    trend: "up" as const,
     icon: <Megaphone className="h-5 w-5 text-white/90" />,
     accent: "bg-gradient-to-br from-blue-500 to-indigo-600",
+    data: [12, 12, 13, 14, 13, 14, 14]
+  },
+  {
+    label: "Revenue Generated",
+    value: "$45,200",
+    change: "-4.2% from last month",
+    trend: "down" as const,
+    icon: <TrendingUp className="h-5 w-5 text-white/90" />,
+    accent: "bg-gradient-to-br from-emerald-500 to-green-600",
+    data: [40, 45, 42, 38, 41, 39, 36]
   },
   {
     label: "Tasks Completed",
-    value: "0",
+    value: "128",
+    change: "Steady growth",
+    trend: "neutral" as const,
     icon: <CheckCircle2 className="h-5 w-5 text-white/90" />,
-    accent: "bg-gradient-to-br from-emerald-500 to-green-600",
-  },
-  {
-    label: "Hours Logged",
-    value: "0h",
-    icon: <Clock className="h-5 w-5 text-white/90" />,
     accent: "bg-gradient-to-br from-orange-500 to-amber-600",
+    data: [20, 22, 25, 23, 28, 26, 30]
   },
 ];
 
 const ADMIN_QUICK_ACTIONS = [
-  {
-    label: "Manage Team",
-    description: "Add members, set roles and permissions",
-    href: "/team",
-    icon: Users,
-  },
-  {
-    label: "Influencers",
-    description: "Manage influencer profiles & outreach",
-    href: "/influencers",
-    icon: UserCircle,
-  },
-  {
-    label: "New Campaign",
-    description: "Launch a new marketing campaign",
-    href: "/campaigns",
-    icon: Megaphone,
-  },
-  {
-    label: "View Analytics",
-    description: "Performance insights & reporting",
-    href: "/analytics",
-    icon: BarChart3,
-  },
+  { label: "Manage Team", description: "Add members, set roles", href: "/team", icon: Users },
+  { label: "Influencers", description: "Manage profiles", href: "/influencers", icon: UserCircle },
+  { label: "New Campaign", description: "Launch marketing", href: "/campaigns", icon: Megaphone },
+  { label: "View Analytics", description: "Performance insights", href: "/analytics", icon: BarChart3 },
 ];
 
 const MEMBER_QUICK_ACTIONS = [
-  {
-    label: "My Tasks",
-    description: "View and manage your assigned tasks",
-    href: "/my-tasks",
-    icon: CheckCircle2,
-  },
-  {
-    label: "Projects",
-    description: "Browse active projects",
-    href: "/projects",
-    icon: FolderKanban,
-  },
-  {
-    label: "View Analytics",
-    description: "Performance insights & reporting",
-    href: "/analytics",
-    icon: TrendingUp,
-  },
+  { label: "My Tasks", description: "View your tasks", href: "/my-tasks", icon: CheckCircle2 },
+  { label: "Projects", description: "Browse active projects", href: "/projects", icon: FolderKanban },
+  { label: "View Analytics", description: "Performance insights", href: "/analytics", icon: TrendingUp },
 ];
 
 const CLIENT_QUICK_ACTIONS = [
-  {
-    label: "Campaigns",
-    description: "View your active campaigns",
-    href: "/campaigns",
-    icon: Megaphone,
-  },
-  {
-    label: "Files",
-    description: "Access shared documents",
-    href: "/files",
-    icon: FolderKanban,
-  },
+  { label: "Campaigns", description: "View your active campaigns", href: "/campaigns", icon: Megaphone },
+  { label: "Files", description: "Access shared documents", href: "/files", icon: FolderKanban },
 ];
-
-import { formatDistanceToNow } from "date-fns";
 
 function mapActivityLogToFeedItem(log: any) {
   let color = "bg-stone-100 text-stone-600 border border-stone-200";
@@ -148,8 +102,6 @@ function mapActivityLogToFeedItem(log: any) {
   };
 }
 
-// ─── Component ───────────────────────────────────────────────
-
 function getQuickActions(role: string) {
   if (hasMinRole(role, "ADMIN")) return ADMIN_QUICK_ACTIONS;
   if (hasMinRole(role, "TEAM_MEMBER")) return MEMBER_QUICK_ACTIONS;
@@ -162,25 +114,15 @@ export function DashboardContent({ userName, userRole, activities = [] }: Dashbo
   const feedItems = activities.map(mapActivityLogToFeedItem);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* ── Welcome header ────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-      >
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-          Welcome back,{" "}
-          <span className="gradient-text">{firstName}</span> 👋
-        </h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Here&apos;s what&apos;s happening at TwinPix Studio today.
-        </p>
-      </motion.div>
+      <PageHeader 
+        title={<>Welcome back, <span className="gradient-text">{firstName}</span> 👋</>}
+        description="Here's what's happening at TwinPix Studio today."
+      />
 
       {/* ── Stats grid ─────────────────────────────────── */}
       <section aria-label="Workspace statistics">
-        <SectionHeader label="Overview" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {STATS.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} />
@@ -188,10 +130,40 @@ export function DashboardContent({ userName, userRole, activities = [] }: Dashbo
         </div>
       </section>
 
+      {/* ── AI Insights ─────────────────────────────── */}
+      <section aria-label="AI Insights">
+        <div className="flex items-center gap-2 mb-4 text-[var(--color-brand-500)]">
+          <Sparkles className="h-5 w-5" />
+          <h2 className="text-lg font-bold">AI Insights</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PremiumCard hoverEffect="glow" className="flex flex-col justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Growth Opportunity</p>
+              <h3 className="mt-2 text-xl font-bold text-[var(--color-text-primary)]">Tech Creators are trending</h3>
+              <p className="mt-2 text-sm text-[var(--color-text-muted)]">Tech creators in your roster had a 24% increase in engagement this week. Consider launching a new campaign with them.</p>
+            </div>
+            <div className="mt-4 flex items-center text-sm font-semibold text-[var(--color-brand-500)] cursor-pointer hover:text-[var(--color-brand-600)]">
+              View Creators <ArrowRight className="ml-1 h-4 w-4" />
+            </div>
+          </PremiumCard>
+          <PremiumCard hoverEffect="glow" className="flex flex-col justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Action Required</p>
+              <h3 className="mt-2 text-xl font-bold text-[var(--color-text-primary)]">3 Follow-ups due today</h3>
+              <p className="mt-2 text-sm text-[var(--color-text-muted)]">You have pending follow-ups with top influencers regarding the upcoming Summer Campaign.</p>
+            </div>
+            <div className="mt-4 flex items-center text-sm font-semibold text-[var(--color-brand-500)] cursor-pointer hover:text-[var(--color-brand-600)]">
+              View Tasks <ArrowRight className="ml-1 h-4 w-4" />
+            </div>
+          </PremiumCard>
+        </div>
+      </section>
+
       {/* ── Quick actions ─────────────────────────────── */}
       <section aria-label="Quick actions">
         <SectionHeader label="Quick Actions" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {quickActions.map((action, i) => (
             <QuickAction key={action.label} {...action} index={i} />
           ))}
@@ -203,84 +175,46 @@ export function DashboardContent({ userName, userRole, activities = [] }: Dashbo
         {/* Recent Activity — wider */}
         <section aria-label="Recent activity" className="xl:col-span-2">
           <SectionHeader label="Recent Activity" viewAllHref="/notifications" />
-          <ActivityFeed items={feedItems} />
+          <PremiumCard className="p-0 overflow-hidden" glass={false}>
+            {feedItems.length > 0 ? (
+               <ActivityFeed items={feedItems} />
+            ) : (
+               <div className="p-8 text-center text-sm text-[var(--color-text-muted)]">No recent activity</div>
+            )}
+          </PremiumCard>
         </section>
 
         {/* Studio Summary — narrower */}
         <section aria-label="Studio summary">
           <SectionHeader label="Studio Summary" />
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-            className="glass-card space-y-4 rounded-xl p-5 shadow-sm"
-          >
-            <SummaryItem
-              label="Influencers"
-              value="0"
-              color="text-violet-700"
-              bg="bg-violet-100"
-            />
-            <SummaryItem
-              label="Active Clients"
-              value="0"
-              color="text-blue-700"
-              bg="bg-blue-100"
-            />
-            <SummaryItem
-              label="Running Campaigns"
-              value="0"
-              color="text-emerald-700"
-              bg="bg-emerald-100"
-            />
-            <SummaryItem
-              label="Pending Tasks"
-              value="0"
-              color="text-amber-700"
-              bg="bg-amber-100"
-            />
-
+          <PremiumCard hoverEffect="none" className="space-y-5">
+            <SummaryItem label="Influencers" value="2,450" color="text-violet-700" bg="bg-violet-100" />
+            <SummaryItem label="Active Clients" value="14" color="text-blue-700" bg="bg-blue-100" />
+            <SummaryItem label="Running Campaigns" value="14" color="text-emerald-700" bg="bg-emerald-100" />
+            <SummaryItem label="Pending Tasks" value="3" color="text-amber-700" bg="bg-amber-100" />
+            
             <div className="border-t border-[var(--color-border)] pt-4">
               <p className="text-xs font-medium text-[var(--color-text-muted)] leading-relaxed">
-                Your studio is ready to go. Start by adding influencers,
-                creating campaigns, and inviting clients.
+                Your studio is ready to go. Start by adding influencers, creating campaigns, and inviting clients.
               </p>
             </div>
-          </motion.div>
+          </PremiumCard>
         </section>
       </div>
     </div>
   );
 }
 
-// ─── Summary Item ────────────────────────────────────────────
-
-function SummaryItem({
-  label,
-  value,
-  color,
-  bg,
-}: {
-  label: string;
-  value: string;
-  color: string;
-  bg: string;
-}) {
+function SummaryItem({ label, value, color, bg }: { label: string; value: string; color: string; bg: string; }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between group cursor-default">
       <div className="flex items-center gap-3">
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${bg}`}
-        >
-          <span className={`text-sm font-bold ${color}`}>#</span>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${bg}`}>
+          <span className={`text-base font-bold ${color}`}>#</span>
         </div>
-        <span className="text-sm text-[var(--color-text-secondary)]">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
       </div>
-      <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-        {value}
-      </span>
+      <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
     </div>
   );
 }

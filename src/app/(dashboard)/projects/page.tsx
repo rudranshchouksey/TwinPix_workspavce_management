@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth-utils";
 import { ProjectsView } from "@/components/projects/projects-view";
 import { FolderKanban } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Projects",
@@ -24,17 +25,10 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-            <FolderKanban className="w-6 h-6 text-[var(--color-brand-500)]" />
-            Projects
-          </h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            Group multiple campaigns into higher-level projects.
-          </p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Projects" 
+        description="Group multiple campaigns into higher-level projects." 
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard

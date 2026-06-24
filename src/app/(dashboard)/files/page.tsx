@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { getAllFilesAction } from "@/app/actions/file-actions";
 import { FileUploader } from "@/components/files/file-uploader";
 import { FileCard } from "@/components/files/file-card";
-import { SectionHeader } from "@/components/dashboard/section-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Loader2, FolderOpen } from "lucide-react";
 
 export default function FilesPage() {
@@ -26,8 +26,8 @@ export default function FilesPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeader
-        label="Global File Manager"
+      <PageHeader
+        title="Global File Manager"
         description="View and manage all files across your workspace"
       />
 

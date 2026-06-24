@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { FolderKanban, Plus, Trash2, Edit2, Loader2, MoreVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PremiumCard } from "@/components/ui/premium-card";
+import { Button } from "@/components/ui/button";
 
 interface ProjectsViewProps {
   initialProjects: any[];
@@ -67,11 +69,13 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
     <div className="space-y-6">
       <div className="flex justify-end">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger render={<button className="flex items-center gap-2 bg-[var(--color-brand-500)] hover:bg-[var(--color-brand-600)] text-white px-4 py-2 rounded-lg font-medium transition-colors" />}>
-            <Plus className="w-4 h-4" />
-            New Project
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-[var(--color-brand-500)] to-[var(--color-brand-400)] text-white hover:from-[var(--color-brand-600)] hover:to-[var(--color-brand-500)] shadow-md transition-all duration-200">
+              <Plus className="w-4 h-4 mr-2" />
+              New Project
+            </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] bg-[var(--color-surface-900)] border-[rgba(0,0,0,0.1)] text-[var(--color-text-primary)]">
+          <DialogContent className="sm:max-w-[425px] bg-[var(--color-surface-950)] border-[var(--color-border)] text-[var(--color-text-primary)] shadow-executive-lg">
             <DialogHeader>
               <DialogTitle>Create New Project</DialogTitle>
             </DialogHeader>
@@ -134,12 +138,14 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {projects.map((project) => (
-            <div key={project.id} className="bg-[var(--color-surface-800)] border border-[rgba(0,0,0,0.08)] rounded-2xl p-5 hover:border-[rgba(0,0,0,0.15)] transition-colors group relative flex flex-col">
+            <PremiumCard key={project.id} hoverEffect="lift" className="p-5 group relative flex flex-col h-full border-[rgba(0,0,0,0.08)]">
               
               <div className="absolute top-4 right-4">
                 <DropdownMenu>
-                  <DropdownMenuTrigger render={<button className="p-1 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100" />}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1.5 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100">
                       <MoreVertical className="w-4 h-4" />
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40 bg-[var(--color-surface-900)] border-[rgba(0,0,0,0.1)]">
                     <DropdownMenuItem onClick={() => handleStatusChange(project.id, project.status === "ACTIVE" ? "COMPLETED" : "ACTIVE")} className="cursor-pointer text-sm py-2">
@@ -174,11 +180,11 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
                   {project.status}
                 </span>
                 
-                <span className="text-xs text-[var(--color-text-muted)] font-medium">
+                <span className="text-xs text-[var(--color-text-muted)] font-bold">
                   {project.campaigns?.length || 0} Campaigns
                 </span>
               </div>
-            </div>
+            </PremiumCard>
           ))}
         </div>
       )}

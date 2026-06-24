@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
 import { getInfluencerStatsAction } from "@/actions/influencers";
-import { SectionHeader } from "@/components/dashboard/section-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { InfluencerAnalytics } from "@/components/influencers/analytics/influencer-analytics";
 
 export const metadata: Metadata = {
@@ -16,8 +16,8 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        label="Influencer Analytics"
+      <PageHeader
+        title="Influencer Analytics"
         description="High-level metrics and performance trends across your influencer pipeline."
       />
       

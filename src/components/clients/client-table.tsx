@@ -39,6 +39,7 @@ import { ClientDialog } from "./client-dialog";
 import { DeleteClientAlert } from "./delete-client-alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
+import { PremiumCard } from "@/components/ui/premium-card";
 
 interface ClientTableProps {
   data: any[];
@@ -267,13 +268,13 @@ export function ClientTable({ data }: ClientTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] overflow-hidden glass-card">
+      <PremiumCard className="overflow-hidden p-0 border-0 shadow-executive-sm rounded-xl">
         <Table>
           <TableHeader className="bg-[rgba(0,0,0,0.02)] border-b border-[rgba(0,0,0,0.08)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-none hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-11">
+                  <TableHead key={header.id} className="h-11 px-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -291,10 +292,10 @@ export function ClientTable({ data }: ClientTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-b border-[rgba(0,0,0,0.04)] hover:bg-[rgba(0,0,0,0.02)] transition-colors"
+                  className="border-b border-[rgba(0,0,0,0.04)] hover:bg-[rgba(0,0,0,0.02)] transition-colors group"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
+                    <TableCell key={cell.id} className="py-3 px-4">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -311,7 +312,7 @@ export function ClientTable({ data }: ClientTableProps) {
                       <Button
                         onClick={() => setIsCreateOpen(true)}
                         variant="default"
-                        className="shadow-lg shadow-[var(--color-brand-500)]/20"
+                        className="bg-gradient-to-r from-[var(--color-brand-500)] to-[var(--color-brand-400)] text-white hover:from-[var(--color-brand-600)] hover:to-[var(--color-brand-500)] shadow-md"
                       >
                         <Plus className="mr-2 h-4 w-4" />
                         Add Client
@@ -323,7 +324,7 @@ export function ClientTable({ data }: ClientTableProps) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </PremiumCard>
 
       {/* Pagination */}
       <div className="flex items-center justify-end space-x-2">

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getEventsAction } from "@/actions/calendar";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { requireAuth } from "@/lib/auth-utils";
-import { SectionHeader } from "@/components/dashboard/section-header";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Calendar & Scheduling | TwinPix Studio",
@@ -16,8 +16,8 @@ export default async function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader 
-        label="Calendar & Scheduling" 
+      <PageHeader 
+        title="Calendar & Scheduling" 
         description="Manage your team's deadlines, meetings, and content schedules."
       />
 
