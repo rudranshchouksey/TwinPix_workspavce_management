@@ -89,10 +89,10 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const revMonthly = groupMonthly(campaignsRecent.map(c => ({ createdAt: c.createdAt, value: c.budget ?? 0 })));
   const tasksMonthly = groupMonthly(tasksRecent.map(t => ({ createdAt: t.createdAt })));
 
-  const getChangeAndTrend = (current: number, previous: number, isCurrency: boolean = false) => {
+  const getChangeAndTrend = (current: number, previous: number, isCurrency: boolean = false): { change: string; trend: "up" | "down" | "neutral" } => {
     if (previous === 0) {
-      if (current === 0) return { change: "No historical trend available", trend: "neutral" as const };
-      return { change: `100% this month`, trend: "up" as const };
+      if (current === 0) return { change: "No historical trend available", trend: "neutral" };
+      return { change: `100% this month`, trend: "up" };
     }
     const percent = ((current - previous) / previous) * 100;
     const absPercent = Math.abs(percent).toFixed(1);
