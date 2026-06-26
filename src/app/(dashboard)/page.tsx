@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { getActivityLogsAction } from "@/actions/activity";
+import { getDashboardMetrics } from "@/services/dashboard.service";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -20,8 +21,12 @@ export default async function DashboardPage() {
 }
 
 async function DashboardDataLoader({ userName, userRole }: { userName?: string, userRole: string }) {
-  const activities = await getActivityLogsAction(10);
-  return <DashboardContent userName={userName} userRole={userRole} activities={activities} />;
+  const [activities, metrics] = await Promise.all([
+    getActivityLogsAction(10),
+    getDashboardMetrics()
+  ]);
+  
+  return <DashboardContent userName={userName} userRole={userRole} activities={activities} metrics={metrics} />;
 }
 
 function DashboardSkeleton() {

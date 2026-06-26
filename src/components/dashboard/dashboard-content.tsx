@@ -21,51 +21,15 @@ import { hasMinRole } from "@/lib/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
+import type { DashboardMetrics } from "@/services/dashboard.service";
 
 interface DashboardContentProps {
   userName?: string;
   userRole: string;
   activities?: any[];
+  metrics?: DashboardMetrics;
 }
-
-const STATS = [
-  {
-    label: "Total Influencers",
-    value: "2,450",
-    change: "+12.5% this month",
-    trend: "up" as const,
-    icon: <Users className="h-5 w-5 text-white/90" />,
-    accent: "bg-gradient-to-br from-violet-500 to-purple-600",
-    data: [100, 120, 115, 140, 135, 160, 155]
-  },
-  {
-    label: "Active Campaigns",
-    value: "14",
-    change: "+2 this week",
-    trend: "up" as const,
-    icon: <Megaphone className="h-5 w-5 text-white/90" />,
-    accent: "bg-gradient-to-br from-blue-500 to-indigo-600",
-    data: [12, 12, 13, 14, 13, 14, 14]
-  },
-  {
-    label: "Revenue Generated",
-    value: "$45,200",
-    change: "-4.2% from last month",
-    trend: "down" as const,
-    icon: <TrendingUp className="h-5 w-5 text-white/90" />,
-    accent: "bg-gradient-to-br from-emerald-500 to-green-600",
-    data: [40, 45, 42, 38, 41, 39, 36]
-  },
-  {
-    label: "Tasks Completed",
-    value: "128",
-    change: "Steady growth",
-    trend: "neutral" as const,
-    icon: <CheckCircle2 className="h-5 w-5 text-white/90" />,
-    accent: "bg-gradient-to-br from-orange-500 to-amber-600",
-    data: [20, 22, 25, 23, 28, 26, 30]
-  },
-];
 
 const ADMIN_QUICK_ACTIONS = [
   { label: "Manage Team", description: "Add members, set roles", href: "/team", icon: Users },
@@ -108,10 +72,49 @@ function getQuickActions(role: string) {
   return CLIENT_QUICK_ACTIONS;
 }
 
-export function DashboardContent({ userName, userRole, activities = [] }: DashboardContentProps) {
+export function DashboardContent({ userName, userRole, activities = [], metrics }: DashboardContentProps) {
   const firstName = userName?.split(" ")[0] ?? "there";
   const quickActions = getQuickActions(userRole);
   const feedItems = activities.map(mapActivityLogToFeedItem);
+
+  const dynamicStats = metrics ? [
+    {
+      label: "Total Influencers",
+      value: metrics.kpis.influencers.total.toLocaleString(),
+      change: metrics.kpis.influencers.change,
+      trend: metrics.kpis.influencers.trend,
+      icon: <Users className="h-5 w-5 text-white/90" />,
+      accent: "bg-gradient-to-br from-violet-500 to-purple-600",
+      data: metrics.kpis.influencers.data
+    },
+    {
+      label: "Active Campaigns",
+      value: metrics.kpis.campaigns.total.toLocaleString(),
+      change: metrics.kpis.campaigns.change,
+      trend: metrics.kpis.campaigns.trend,
+      icon: <Megaphone className="h-5 w-5 text-white/90" />,
+      accent: "bg-gradient-to-br from-blue-500 to-indigo-600",
+      data: metrics.kpis.campaigns.data
+    },
+    {
+      label: "Revenue Generated",
+      value: `$${metrics.kpis.revenue.total.toLocaleString()}`,
+      change: metrics.kpis.revenue.change,
+      trend: metrics.kpis.revenue.trend,
+      icon: <TrendingUp className="h-5 w-5 text-white/90" />,
+      accent: "bg-gradient-to-br from-emerald-500 to-green-600",
+      data: metrics.kpis.revenue.data
+    },
+    {
+      label: "Tasks Completed",
+      value: metrics.kpis.tasks.total.toLocaleString(),
+      change: metrics.kpis.tasks.change,
+      trend: metrics.kpis.tasks.trend,
+      icon: <CheckCircle2 className="h-5 w-5 text-white/90" />,
+      accent: "bg-gradient-to-br from-orange-500 to-amber-600",
+      data: metrics.kpis.tasks.data
+    },
+  ] : [];
 
   return (
     <div className="space-y-10">
@@ -122,43 +125,39 @@ export function DashboardContent({ userName, userRole, activities = [] }: Dashbo
       />
 
       {/* ── Stats grid ─────────────────────────────────── */}
-      <section aria-label="Workspace statistics">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {STATS.map((stat, i) => (
-            <StatCard key={stat.label} {...stat} index={i} />
-          ))}
-        </div>
-      </section>
+      {dynamicStats.length > 0 && (
+        <section aria-label="Workspace statistics">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {dynamicStats.map((stat, i) => (
+              <StatCard key={stat.label} {...stat} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── AI Insights ─────────────────────────────── */}
-      <section aria-label="AI Insights">
-        <div className="flex items-center gap-2 mb-4 text-[var(--color-brand-500)]">
-          <Sparkles className="h-5 w-5" />
-          <h2 className="text-lg font-bold">AI Insights</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PremiumCard hoverEffect="glow" className="flex flex-col justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Growth Opportunity</p>
-              <h3 className="mt-2 text-xl font-bold text-[var(--color-text-primary)]">Tech Creators are trending</h3>
-              <p className="mt-2 text-sm text-[var(--color-text-muted)]">Tech creators in your roster had a 24% increase in engagement this week. Consider launching a new campaign with them.</p>
-            </div>
-            <div className="mt-4 flex items-center text-sm font-semibold text-[var(--color-brand-500)] cursor-pointer hover:text-[var(--color-brand-600)]">
-              View Creators <ArrowRight className="ml-1 h-4 w-4" />
-            </div>
-          </PremiumCard>
-          <PremiumCard hoverEffect="glow" className="flex flex-col justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">Action Required</p>
-              <h3 className="mt-2 text-xl font-bold text-[var(--color-text-primary)]">3 Follow-ups due today</h3>
-              <p className="mt-2 text-sm text-[var(--color-text-muted)]">You have pending follow-ups with top influencers regarding the upcoming Summer Campaign.</p>
-            </div>
-            <div className="mt-4 flex items-center text-sm font-semibold text-[var(--color-brand-500)] cursor-pointer hover:text-[var(--color-brand-600)]">
-              View Tasks <ArrowRight className="ml-1 h-4 w-4" />
-            </div>
-          </PremiumCard>
-        </div>
-      </section>
+      {metrics && metrics.insights.length > 0 && (
+        <section aria-label="AI Insights">
+          <div className="flex items-center gap-2 mb-4 text-[var(--color-brand-500)]">
+            <Sparkles className="h-5 w-5" />
+            <h2 className="text-lg font-bold">AI Insights</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {metrics.insights.map((insight, index) => (
+              <PremiumCard key={index} hoverEffect="glow" className="flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text-secondary)]">{insight.subtitle}</p>
+                  <h3 className="mt-2 text-xl font-bold text-[var(--color-text-primary)]">{insight.title}</h3>
+                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">{insight.description}</p>
+                </div>
+                <Link href={insight.href} className="mt-4 flex items-center text-sm font-semibold text-[var(--color-brand-500)] cursor-pointer hover:text-[var(--color-brand-600)]">
+                  {insight.actionText} <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </PremiumCard>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Quick actions ─────────────────────────────── */}
       <section aria-label="Quick actions">
@@ -188,10 +187,10 @@ export function DashboardContent({ userName, userRole, activities = [] }: Dashbo
         <section aria-label="Studio summary">
           <SectionHeader label="Studio Summary" />
           <PremiumCard hoverEffect="none" className="space-y-5">
-            <SummaryItem label="Influencers" value="2,450" color="text-violet-700" bg="bg-violet-100" />
-            <SummaryItem label="Active Clients" value="14" color="text-blue-700" bg="bg-blue-100" />
-            <SummaryItem label="Running Campaigns" value="14" color="text-emerald-700" bg="bg-emerald-100" />
-            <SummaryItem label="Pending Tasks" value="3" color="text-amber-700" bg="bg-amber-100" />
+            <SummaryItem label="Influencers" value={metrics?.summary.influencers.toLocaleString() ?? "0"} color="text-violet-700" bg="bg-violet-100" />
+            <SummaryItem label="Active Clients" value={metrics?.summary.activeClients.toLocaleString() ?? "0"} color="text-blue-700" bg="bg-blue-100" />
+            <SummaryItem label="Running Campaigns" value={metrics?.summary.runningCampaigns.toLocaleString() ?? "0"} color="text-emerald-700" bg="bg-emerald-100" />
+            <SummaryItem label="Pending Tasks" value={metrics?.summary.pendingTasks.toLocaleString() ?? "0"} color="text-amber-700" bg="bg-amber-100" />
             
             <div className="border-t border-[var(--color-border)] pt-4">
               <p className="text-xs font-medium text-[var(--color-text-muted)] leading-relaxed">
