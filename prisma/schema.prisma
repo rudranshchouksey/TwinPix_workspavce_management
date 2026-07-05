@@ -103,6 +103,13 @@ model AuditLog {
 // CRM Models
 // ─────────────────────────────────────────────
 
+enum SyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 enum InfluencerStatus {
   NEW_LEAD
   CONTACTED
@@ -130,7 +137,9 @@ model Influencer {
   profileDescription String?
   engagementRate     Float?
   status             InfluencerStatus @default(NEW_LEAD)
-  notes              String?
+  syncStatus         SyncStatus?      @default(COMPLETED)
+  syncProgress       String?
+  notes              String?          @db.Text
   negotiationTerms   String?
   profileImage       String?
   assignedManagerId  String?

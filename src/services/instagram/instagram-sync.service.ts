@@ -58,31 +58,55 @@ export class InstagramSyncService {
     });
 
     if (!influencer || !influencer.instagramHandle) {
+      await prisma.influencer.update({
+        where: { id: influencerId },
+        data: { syncStatus: "FAILED", syncProgress: "Missing Instagram handle" }
+      }).catch(() => {});
       throw new Error(`Influencer not found or missing instagram handle for ID: ${influencerId}`);
     }
 
     const username = influencer.instagramHandle;
+
+    await prisma.influencer.update({
+      where: { id: influencerId },
+      data: { syncStatus: "RUNNING", syncProgress: "Fetching Instagram data..." }
+    });
+
     let instagramData;
 
     // ─── Step 2: Fetch Instagram data ───────────────────────────
     console.log(`[Sync:2/7] Fetching Instagram data for @${username}...`);
 
-    try {
-      if (this.apify) {
-        instagramData = await this.apify.fetchInfluencerData(username);
-        dataSource = "apify";
-        console.log(`[Sync:2/7] ✓ Apify provider succeeded.`);
-      } else {
-        throw new Error("Apify not configured");
+    let retryCount = 0;
+    const maxRetries = 3;
+    let lastError = null;
+
+    while (retryCount < maxRetries && !instagramData) {
+      try {
+        if (this.apify) {
+          instagramData = await this.apify.fetchInfluencerData(username);
+          dataSource = "apify";
+          console.log(`[Sync:2/7] ✓ Apify provider succeeded on attempt ${retryCount + 1}.`);
+        } else {
+          throw new Error("Apify not configured");
+        }
+      } catch (error: any) {
+        lastError = error;
+        retryCount++;
+        console.warn(`[Sync:2/7] Apify attempt ${retryCount} failed: ${error.message}`);
+        if (retryCount < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
+        }
       }
-    } catch (error: any) {
-      errors.push(`Apify failed: ${error.message}`);
-      console.warn(`[Sync:2/7] Apify failed: ${error.message}. No providers left.`);
-      throw new Error("All data providers failed to fetch live Instagram data.");
     }
 
     if (!instagramData) {
-      throw new Error("Failed to fetch data from all providers");
+      errors.push(`Apify failed after ${maxRetries} attempts: ${lastError?.message}`);
+      await prisma.influencer.update({
+        where: { id: influencerId },
+        data: { syncStatus: "FAILED", syncProgress: "Failed to fetch Instagram data" }
+      });
+      throw new Error("All data providers failed to fetch live Instagram data.");
     }
 
     console.log(
@@ -91,6 +115,10 @@ export class InstagramSyncService {
 
     // ─── Step 3: Upload Profile Image to Cloudinary ─────────────
     console.log(`[Sync:3/7] Uploading profile image to Cloudinary...`);
+    await prisma.influencer.update({
+      where: { id: influencerId },
+      data: { syncProgress: "Uploading media to Cloudinary..." }
+    });
 
     let profileImageUrl = influencer.profileImage;
     if (instagramData.profile.profileImageUrl) {
@@ -351,6 +379,10 @@ export class InstagramSyncService {
 
     // ─── Step 7: Generate AI Creator Intelligence ───────────────
     console.log(`[Sync:7/7] Generating AI creator intelligence...`);
+    await prisma.influencer.update({
+      where: { id: influencerId },
+      data: { syncProgress: "Generating AI insights..." }
+    });
 
     let aiInsightsGenerated = false;
     try {
@@ -367,6 +399,21 @@ export class InstagramSyncService {
     console.log(
       `[Sync] ✓ Complete for @${username} via ${dataSource}. ${errors.length > 0 ? `(${errors.length} non-fatal errors)` : ""}`
     );
+
+    await prisma.influencer.update({
+      where: { id: influencerId },
+      data: { syncStatus: "COMPLETED", syncProgress: "Profile Ready" }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "INFLUENCER_SYNC_COMPLETED",
+        entityType: "INFLUENCER",
+        entityId: influencerId,
+        adminId: "SYSTEM",
+        details: `Background sync completed for @${username}. Posts: ${postsSynced}, Reels: ${reelsSynced}`,
+      },
+    });
 
     return {
       success: true,

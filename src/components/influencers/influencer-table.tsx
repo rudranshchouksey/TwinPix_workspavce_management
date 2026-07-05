@@ -22,9 +22,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Search, ExternalLink, Phone, Mail, AtSign, Users, Globe, Video, MessageCircle, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Search, ExternalLink, Phone, Mail, AtSign, Users, Globe, Video, MessageCircle, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InfluencerActionsDropdown } from "./influencer-actions-dropdown";
+import { AutoRefresh } from "@/components/ui/auto-refresh";
 
 interface InfluencerTableProps {
   data: any[];
@@ -152,12 +153,19 @@ export function InfluencerTable({
             )}
           </div>
           <div className="flex flex-col">
-            <Link
-              href={`/influencers/${row.original.id}`}
-              className="font-bold text-[var(--color-text-primary)] truncate max-w-[150px] hover:text-[var(--color-brand-600)] hover:underline cursor-pointer transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-[var(--color-brand-500)] focus-visible:outline-offset-2"
-            >
-              {row.original.influencerName || "Unnamed"}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/influencers/${row.original.id}`}
+                className="font-bold text-[var(--color-text-primary)] truncate max-w-[150px] hover:text-[var(--color-brand-600)] hover:underline cursor-pointer transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-[var(--color-brand-500)] focus-visible:outline-offset-2"
+              >
+                {row.original.influencerName || "Unnamed"}
+              </Link>
+              {(row.original.syncStatus === "PENDING" || row.original.syncStatus === "RUNNING") && (
+                <div className="flex items-center" title={row.original.syncProgress || "Syncing..."}>
+                  <Loader2 className="w-3 h-3 text-violet-500 animate-spin" />
+                </div>
+              )}
+            </div>
             <div className="flex items-center text-xs font-medium text-[var(--color-text-muted)] mt-0.5">
               {row.original.platform?.toLowerCase() === 'instagram' ? <AtSign className="w-3 h-3 mr-1" /> :
                row.original.platform?.toLowerCase() === 'youtube' ? <Video className="w-3 h-3 mr-1" /> :
@@ -454,8 +462,11 @@ export function InfluencerTable({
   const startEntry = (currentPage - 1) * pageSize + 1;
   const endEntry = Math.min(currentPage * pageSize, total);
 
+  const hasSyncingItems = data.some(item => item.syncStatus === "PENDING" || item.syncStatus === "RUNNING");
+
   return (
     <div className="space-y-4">
+      {hasSyncingItems && <AutoRefresh intervalMs={3000} />}
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">

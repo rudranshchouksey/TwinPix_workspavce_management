@@ -27,6 +27,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { InfluencerActionsDropdown } from "./influencer-actions-dropdown";
+import { AutoRefresh } from "@/components/ui/auto-refresh";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface CreatorHeroProps {
   influencer: any;
@@ -248,6 +250,27 @@ export function CreatorHero({ influencer, isAdmin = false }: CreatorHeroProps) {
                       </>
                     )}
                   </div>
+
+                  {/* Sync Status Badge */}
+                  {(influencer.syncStatus === "PENDING" || influencer.syncStatus === "RUNNING") && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {influencer.syncProgress || "Syncing..."}
+                      <AutoRefresh intervalMs={2000} />
+                    </div>
+                  )}
+                  {influencer.syncStatus === "FAILED" && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      <AlertCircle className="w-3 h-3" />
+                      {influencer.syncProgress || "Sync Failed"}
+                    </div>
+                  )}
+                  {influencer.syncStatus === "COMPLETED" && influencer.syncProgress === "Profile Ready" && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold uppercase tracking-wider transition-opacity duration-1000 opacity-0 animate-[fadeInOut_5s_ease-in-out_forwards]">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Profile Ready
+                    </div>
+                  )}
                 </div>
               </div>
 

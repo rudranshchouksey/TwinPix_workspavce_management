@@ -93,6 +93,7 @@ export async function getInfluencerNameAction(id: string) {
 
 // Get single influencer by ID
 export async function getInfluencerByIdAction(id: string) {
+  console.log("[getInfluencerByIdAction] Called with ID:", id, "Type:", typeof id, "Length:", id.length);
   await requireAuth();
 
   const influencer = await prisma.influencer.findUnique({
@@ -125,6 +126,11 @@ export async function getInfluencerByIdAction(id: string) {
     },
   });
 
+  console.log("[getInfluencerByIdAction] Found:", !!influencer);
+  if (!influencer) {
+    console.log("[getInfluencerByIdAction] Failed to find influencer with ID:", id);
+  }
+
   return influencer;
 }
 
@@ -153,7 +159,11 @@ export async function createInfluencerAction(input: InfluencerInput) {
 
   const influencer = await prisma.$transaction(async (tx: any) => {
     const newInfluencer = await tx.influencer.create({
-      data: parsed.data,
+      data: {
+        ...parsed.data,
+        syncStatus: "PENDING",
+        syncProgress: "Queued for sync",
+      },
     });
 
     await tx.auditLog.create({
@@ -558,6 +568,8 @@ export async function importInstagramInfluencer(data: {
         profileLink: data.externalUrl,
         platform: "Instagram",
         status: "NEW_LEAD",
+        syncStatus: "PENDING",
+        syncProgress: "Queued for sync",
       },
     });
 
@@ -657,6 +669,8 @@ export async function importInfluencersAction(data: any[]) {
               engagementRate: engagementRate,
               status: mappedStatus,
               notes: row["Notes"],
+              syncStatus: "PENDING",
+              syncProgress: "Queued for sync",
             },
           });
 
