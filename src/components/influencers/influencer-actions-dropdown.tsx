@@ -19,6 +19,7 @@ import {
   History
 } from "lucide-react";
 import { AddToCampaignModal } from "./campaigns/add-to-campaign-modal";
+import { EditInfluencerModal } from "./edit/EditInfluencerModal";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +76,7 @@ export function InfluencerActionsDropdown({ influencer, isAdmin, align = "end" }
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isAddToCampaignOpen, setIsAddToCampaignOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleCopy = async (text: string, field: string) => {
     if (!text) return;
@@ -132,8 +134,8 @@ export function InfluencerActionsDropdown({ influencer, isAdmin, align = "end" }
             <span>View Details</span>
           </DropdownMenuItem>
 
-          {/* Edit Influencer (For now, just points to Detail page) */}
-          <DropdownMenuItem onClick={() => router.push(`/influencers/${influencer.id}`)}>
+          {/* Edit Influencer — opens modal */}
+          <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
             <span>Edit Influencer</span>
           </DropdownMenuItem>
@@ -266,6 +268,12 @@ export function InfluencerActionsDropdown({ influencer, isAdmin, align = "end" }
         isOpen={isAddToCampaignOpen}
         onClose={() => setIsAddToCampaignOpen(false)}
         existingCampaignIds={[]}
+      />
+
+      <EditInfluencerModal
+        influencerId={influencer.id}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
       />
     </>
   );

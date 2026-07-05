@@ -180,7 +180,7 @@ export async function createInfluencerAction(input: InfluencerInput) {
   return influencer;
 }
 
-// Update existing influencer
+// Update existing influencer (enhanced with field-level diff, audit, activity, notifications)
 export async function updateInfluencerAction(id: string, input: Partial<InfluencerInput>) {
   const user = await requireAuth();
 
@@ -191,10 +191,20 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
     throw new Error(parsed.error.issues[0].message);
   }
 
+  // Fetch current state for diffing
+  const current = await prisma.influencer.findUnique({
+    where: { id },
+    include: { assignedManager: { select: { name: true } } },
+  });
+  if (!current) throw new Error("Influencer not found");
+
   if (parsed.data.instagramHandle) {
     const existing = await prisma.influencer.findFirst({
       where: {
-        instagramHandle: parsed.data.instagramHandle,
+        instagramHandle: {
+          equals: parsed.data.instagramHandle,
+          mode: "insensitive",
+        },
         id: { not: id },
       },
     });
@@ -204,12 +214,79 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
     }
   }
 
+  // Build diff: only include changed fields
+  const changedFields: Record<string, any> = {};
+  const changeDescriptions: string[] = [];
+  const data = parsed.data as Record<string, any>;
+  const currentData = current as Record<string, any>;
+
+  for (const key of Object.keys(data)) {
+    if (data[key] === undefined) continue;
+    const oldVal = currentData[key];
+    const newVal = data[key];
+    // Normalize comparison: treat null, undefined, "" as equivalent for optional fields
+    const normalizedOld = oldVal === null || oldVal === undefined ? "" : String(oldVal);
+    const normalizedNew = newVal === null || newVal === undefined ? "" : String(newVal);
+    if (normalizedOld !== normalizedNew) {
+      changedFields[key] = newVal;
+      // Build human-readable change description
+      if (key === "status") {
+        const formatStatus = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+        changeDescriptions.push(`Status changed from ${formatStatus(String(oldVal || "Unknown"))} → ${formatStatus(String(newVal))}`);
+      } else if (key === "assignedManagerId") {
+        changeDescriptions.push("Assigned Manager updated");
+      } else if (key === "email") {
+        changeDescriptions.push("Email changed");
+      } else if (key === "notes") {
+        changeDescriptions.push("Notes updated");
+      } else if (key === "reelRate" || key === "storyRate") {
+        changeDescriptions.push(`${key === "reelRate" ? "Reel" : "Story"} rate updated`);
+      } else if (key === "negotiationTerms") {
+        changeDescriptions.push("Business details updated");
+      } else {
+        const fieldLabel = key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase());
+        changeDescriptions.push(`${fieldLabel} changed`);
+      }
+    }
+  }
+
+  // If nothing changed, return current state
+  if (Object.keys(changedFields).length === 0) {
+    return current;
+  }
+
+  // Handle notes history: if notes changed, preserve previous version in negotiationTerms
+  if (changedFields.notes !== undefined && current.notes) {
+    try {
+      let metadata: any = {};
+      try { metadata = current.negotiationTerms ? JSON.parse(current.negotiationTerms) : {}; } catch { /* ignore */ }
+      const notesHistory = Array.isArray(metadata.notesHistory) ? metadata.notesHistory : [];
+      notesHistory.push({ previousNotes: current.notes, changedAt: new Date().toISOString() });
+      // Keep only last 20 entries
+      if (notesHistory.length > 20) notesHistory.splice(0, notesHistory.length - 20);
+      metadata.notesHistory = notesHistory;
+      // Only set negotiationTerms if it's not already being updated
+      if (!changedFields.negotiationTerms) {
+        changedFields.negotiationTerms = JSON.stringify(metadata);
+      }
+    } catch (err) {
+      console.warn("[NotesHistory] Failed to preserve notes history:", err);
+    }
+  }
+
   const influencer = await prisma.influencer.update({
     where: { id },
-    data: parsed.data,
+    data: changedFields,
   });
 
-  // Fire-and-forget: audit logging shouldn't block the response
+  const displayName = influencer.influencerName || `@${influencer.instagramHandle}`;
+  const userName = user.name || user.email;
+
+  // Fire-and-forget: detailed audit logging
+  const auditDetails = changeDescriptions.length > 0
+    ? `${userName} updated ${displayName}: ${changeDescriptions.join(", ")}`
+    : `${userName} updated ${displayName}`;
+
   prisma.auditLog
     .create({
       data: {
@@ -217,13 +294,47 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
         entityType: "INFLUENCER",
         entityId: influencer.id,
         adminId: user.id,
-        details: `Updated influencer @${influencer.instagramHandle}`,
+        details: auditDetails,
       },
     })
     .catch((err: any) => console.warn("[AuditLog] Failed to log INFLUENCER_UPDATED:", err.message));
 
+  // Fire-and-forget: activity log
+  import("@/actions/activity")
+    .then(({ logActivity }) =>
+      logActivity({
+        userId: user.id,
+        userName: userName || undefined,
+        action: `updated ${displayName}`,
+        entityType: "INFLUENCER",
+        entityId: influencer.id,
+        targetName: displayName,
+        details: changeDescriptions.join("; ") || "Influencer information updated",
+      })
+    )
+    .catch((err: any) => console.warn("[ActivityLog] Failed:", err.message));
+
+  // Fire-and-forget: notification
+  import("@/actions/notifications")
+    .then(({ createNotification }) =>
+      createNotification({
+        userId: user.id,
+        type: "INFLUENCER_UPDATED",
+        title: "Influencer Updated",
+        message: `${displayName} information updated successfully.`,
+        link: `/influencers/${influencer.id}`,
+        entityId: influencer.id,
+      })
+    )
+    .catch((err: any) => console.warn("[Notification] Failed:", err.message));
+
+  // Revalidate all relevant paths
   revalidatePath("/influencers");
   revalidatePath(`/influencers/${id}`);
+  revalidatePath("/influencers/pipeline");
+  revalidatePath("/influencers/analytics");
+  revalidatePath("/analytics");
+  revalidatePath("/");
   return influencer;
 }
 
