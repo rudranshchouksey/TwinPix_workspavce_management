@@ -992,3 +992,53 @@ model AutomationLog {
   @@index([createdAt])
   @@map("automation_logs")
 }
+
+// ─────────────────────────────────────────────
+// Workflow Automation Builder
+// ─────────────────────────────────────────────
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  triggerType String   // e.g. "CAMPAIGN_STATUS", "TASK_OVERDUE", "MANUAL"
+  triggerData Json?    // Configuration for the trigger (e.g. { "status": "ACTIVE" })
+  
+  steps       WorkflowStep[]
+  executions  WorkflowExecution[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("workflows")
+}
+
+model WorkflowStep {
+  id          String   @id @default(cuid())
+  workflowId  String
+  type        String   // "ACTION", "CONDITION", "DELAY"
+  actionType  String?  // "SEND_EMAIL", "CREATE_TASK", "NOTIFY_TEAM", "AI_SUMMARY"
+  config      Json?    // e.g. { "template": "...", "recipient": "..." }
+  order       Int      // 0, 1, 2... for linear execution
+  
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  @@index([workflowId])
+  @@map("workflow_steps")
+}
+
+model WorkflowExecution {
+  id          String   @id @default(cuid())
+  workflowId  String
+  status      String   // "PENDING", "RUNNING", "COMPLETED", "FAILED"
+  triggerEvent Json?   // The payload that triggered the run
+  logs        Json?    // Array of step execution results
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  @@index([workflowId])
+  @@map("workflow_executions")
+}

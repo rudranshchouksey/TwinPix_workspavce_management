@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
+import { WorkflowEngine } from "@/services/workflow.engine";
 import {
   CampaignInput,
   campaignSchema,
@@ -188,6 +189,10 @@ export async function updateCampaignAction(id: string, input: UpdateCampaignInpu
 
   if (existingCampaign.status !== campaign.status) {
     await logActivity(campaign.id, "STATUS_CHANGED", `Status changed from ${existingCampaign.status} to ${campaign.status}`);
+    await WorkflowEngine.trigger("CAMPAIGN_STATUS", {
+      campaignId: campaign.id,
+      status: campaign.status
+    });
   } else {
     await logActivity(campaign.id, "CAMPAIGN_UPDATED", `Campaign details updated by ${user.name}`);
   }
