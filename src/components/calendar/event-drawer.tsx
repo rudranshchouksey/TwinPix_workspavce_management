@@ -69,12 +69,38 @@ export function EventDrawer({
 
           {/* Quick Info Grid */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
-                <Users className="h-3 w-3" /> Assignee
+            {eventData.user && (
+              <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
+                  <Users className="h-3 w-3" /> Assignee
+                </div>
+                <p className="text-sm font-medium">{eventData.user.name}</p>
               </div>
-              <p className="text-sm font-medium">{eventData.user?.name || "Unassigned"}</p>
-            </div>
+            )}
+            
+            {eventData.influencer && (
+              <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
+                  <Users className="h-3 w-3" /> Influencer
+                </div>
+                <div className="flex items-center gap-2">
+                  {eventData.influencer.profileImage && (
+                    <img src={eventData.influencer.profileImage} alt="" className="w-5 h-5 rounded-full" />
+                  )}
+                  <p className="text-sm font-medium truncate">@{eventData.influencer.instagramHandle || eventData.influencer.influencerName}</p>
+                </div>
+              </div>
+            )}
+            
+            {eventData.client && (
+              <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3" /> Client
+                </div>
+                <p className="text-sm font-medium truncate">{eventData.client.companyName}</p>
+              </div>
+            )}
+
             {eventData.campaign && (
               <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
@@ -83,6 +109,18 @@ export function EventDrawer({
                 <p className="text-sm font-medium truncate">{eventData.campaign.name}</p>
               </div>
             )}
+            
+            {eventData.status && (
+              <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm col-span-2 sm:col-span-1">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3 w-3" /> Status
+                </div>
+                <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                  {eventData.status}
+                </div>
+              </div>
+            )}
+
             <div className="rounded-xl bg-white p-3 border border-[rgba(0,0,0,0.05)] shadow-sm col-span-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1 flex items-center gap-1.5">
                 <FileText className="h-3 w-3" /> Description

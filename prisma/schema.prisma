@@ -32,6 +32,32 @@ enum EventType {
   MEETING
   CONTENT_POST
   DEADLINE
+
+  // New Calendar Event Types
+  CAMPAIGN_LAUNCH
+  CAMPAIGN_DEADLINE
+  CAMPAIGN_REVIEW
+  INSTAGRAM_POST
+  INSTAGRAM_REEL
+  INSTAGRAM_STORY
+  YOUTUBE_UPLOAD
+  BRAND_COLLABORATION
+  CLIENT_MEETING
+  DISCOVERY_CALL
+  TEAM_MEETING
+  INTERNAL_STANDUP
+  FOLLOW_UP_REMINDER
+  CONTRACT_REMINDER
+  PAYMENT_REMINDER
+  DELIVERABLE_DUE
+  APPROVAL_DEADLINE
+  CONTENT_APPROVAL
+  INFLUENCER_PHOTOSHOOT
+  VIDEO_SHOOT
+  LIVE_EVENT
+  PODCAST_RECORDING
+  CONTRACT_SIGNING
+  INVOICE_DUE
 }
 
 // ─────────────────────────────────────────────
@@ -53,22 +79,22 @@ model User {
   updatedAt   DateTime   @updatedAt
 
   // Relations
-  createdBy     User?                @relation("CreatedByAdmin", fields: [createdById], references: [id])
-  createdUsers  User[]               @relation("CreatedByAdmin")
-  campaigns     CampaignTeamMember[]
-  assignedTasks Task[]               @relation("TaskAssignee")
-  authoredTasks Task[]               @relation("TaskAuthor")
-  taskComments  TaskComment[]
-  uploadedFiles File[]               @relation("UploadedFiles")
-  notifications Notification[]
-  activityLogs  ActivityLog[]
-  events        Event[]
-  sentMessages  Message[]            @relation("SentMessages")
-  receivedMessages Message[]         @relation("ReceivedMessages")
-  feedback      Feedback[]           @relation("UserFeedback")
+  createdBy        User?                @relation("CreatedByAdmin", fields: [createdById], references: [id])
+  createdUsers     User[]               @relation("CreatedByAdmin")
+  campaigns        CampaignTeamMember[]
+  assignedTasks    Task[]               @relation("TaskAssignee")
+  authoredTasks    Task[]               @relation("TaskAuthor")
+  taskComments     TaskComment[]
+  uploadedFiles    File[]               @relation("UploadedFiles")
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+  events           Event[]
+  sentMessages     Message[]            @relation("SentMessages")
+  receivedMessages Message[]            @relation("ReceivedMessages")
+  feedback         Feedback[]           @relation("UserFeedback")
 
-  managedInfluencers Influencer[]         @relation("InfluencerManager")
-  outreachMessages   OutreachMessage[]
+  managedInfluencers   Influencer[]          @relation("InfluencerManager")
+  outreachMessages     OutreachMessage[]
   copilotConversations CopilotConversation[]
 
   @@index([email])
@@ -149,20 +175,21 @@ model Influencer {
   lastContactDate    DateTime?
   lastSyncDate       DateTime?
 
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  assignedManager    User?                @relation("InfluencerManager", fields: [assignedManagerId], references: [id], onDelete: SetNull)
-  campaigns          CampaignInfluencer[]
-  files              File[]
-  events             Event[]
-  recentPosts        InfluencerPost[]
-  recentReels        InfluencerReel[]
-  analytics          InfluencerContentAnalytics?
+  assignedManager     User?                       @relation("InfluencerManager", fields: [assignedManagerId], references: [id], onDelete: SetNull)
+  campaigns           CampaignInfluencer[]
+  files               File[]
+  events              Event[]
+  recentPosts         InfluencerPost[]
+  recentReels         InfluencerReel[]
+  analytics           InfluencerContentAnalytics?
   creatorIntelligence CreatorAIInsights?
   brandMatches        BrandMatchAnalysis[]
   outreachMessages    OutreachMessage[]
   metricSnapshots     InfluencerMetricSnapshot[]
+  contentSchedules    ContentSchedule[]
 
   @@index([status])
   @@index([category])
@@ -201,8 +228,8 @@ model InfluencerPost {
   postUrl         String
   createdAt       DateTime @default(now())
 
-  influencer      Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
-  
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
   @@index([influencerId])
   @@map("influencer_posts")
 }
@@ -219,26 +246,26 @@ model InfluencerReel {
   reelUrl         String
   createdAt       DateTime @default(now())
 
-  influencer      Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
-  
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
   @@index([influencerId])
   @@map("influencer_reels")
 }
 
 model InfluencerContentAnalytics {
-  id                     String   @id @default(cuid())
-  influencerId           String   @unique
-  avgEngagementRate      Float    @default(0.0)
-  avgReelViews           Int      @default(0)
-  avgPostLikes           Int      @default(0)
-  avgPostComments        Int      @default(0)
-  topPostId              String?
-  topReelId              String?
-  contentConsistencyScore Float   @default(0.0)
-  aiInsights             String[] @default([])
-  updatedAt              DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  influencerId            String   @unique
+  avgEngagementRate       Float    @default(0.0)
+  avgReelViews            Int      @default(0)
+  avgPostLikes            Int      @default(0)
+  avgPostComments         Int      @default(0)
+  topPostId               String?
+  topReelId               String?
+  contentConsistencyScore Float    @default(0.0)
+  aiInsights              String[] @default([])
+  updatedAt               DateTime @updatedAt
 
-  influencer             Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
 
   @@map("influencer_content_analytics")
 }
@@ -257,19 +284,19 @@ enum CollaborationRecommendation {
 }
 
 model CreatorAIInsights {
-  id                           String                      @id @default(cuid())
-  influencerId                 String                      @unique
-  summary                      String
-  strengths                    String[]                    @default([])
-  weaknesses                   String[]                    @default([])
-  recommendedCategories        String[]                    @default([])
-  brandSafetyScore             BrandSafetyLevel             @default(MEDIUM)
-  brandSafetyReason            String?
-  collaborationRecommendation  CollaborationRecommendation @default(NEUTRAL)
-  intelligenceScore            Int                          @default(0)
-  modelUsed                    String?
-  generatedAt                  DateTime                     @default(now())
-  updatedAt                    DateTime                     @updatedAt
+  id                          String                      @id @default(cuid())
+  influencerId                String                      @unique
+  summary                     String
+  strengths                   String[]                    @default([])
+  weaknesses                  String[]                    @default([])
+  recommendedCategories       String[]                    @default([])
+  brandSafetyScore            BrandSafetyLevel            @default(MEDIUM)
+  brandSafetyReason           String?
+  collaborationRecommendation CollaborationRecommendation @default(NEUTRAL)
+  intelligenceScore           Int                         @default(0)
+  modelUsed                   String?
+  generatedAt                 DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
 
   influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
 
@@ -361,11 +388,12 @@ model Client {
   updatedAt     DateTime     @updatedAt
 
   // Relations
-  clientNotes ClientNote[]
-  activities  ClientActivity[]
-  campaigns   Campaign[]
-  projects    Project[]
+  clientNotes      ClientNote[]
+  activities       ClientActivity[]
+  campaigns        Campaign[]
+  projects         Project[]
   outreachMessages OutreachMessage[]
+  invoices         Invoice[]
 
   @@index([status])
   @@index([industry])
@@ -430,18 +458,20 @@ model Campaign {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   // Relations to explicit join tables
-  influencers CampaignInfluencer[]
-  teamMembers CampaignTeamMember[]
-  activities  CampaignActivity[]
-  tasks       Task[]
-  files       File[]
-  brandMatches BrandMatchAnalysis[]
+  influencers      CampaignInfluencer[]
+  teamMembers      CampaignTeamMember[]
+  activities       CampaignActivity[]
+  tasks            Task[]
+  files            File[]
+  brandMatches     BrandMatchAnalysis[]
   outreachMessages OutreachMessage[]
-  events      Event[]
+  events           Event[]
+  contentSchedules ContentSchedule[]
+  invoices         Invoice[]
 
   @@index([clientId])
   @@index([status])
@@ -452,16 +482,16 @@ model Campaign {
 }
 
 model CampaignInfluencer {
-  id           String   @id @default(cuid())
-  campaignId   String
-  influencerId String
-  fee          Float    @default(0.0)
-  deliverables String? // Influencer-specific deliverables
-  status       String   @default("PENDING") // e.g. PENDING, ACCEPTED, IN_PROGRESS, DELIVERED
-  notes        String?
+  id                 String   @id @default(cuid())
+  campaignId         String
+  influencerId       String
+  fee                Float    @default(0.0)
+  deliverables       String? // Influencer-specific deliverables
+  status             String   @default("PENDING") // e.g. PENDING, ACCEPTED, IN_PROGRESS, DELIVERED
+  notes              String?
   performanceMetrics String? // JSON string
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
@@ -729,16 +759,17 @@ model Feedback {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
-  clientId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  status        String    @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  clientId      String?
+  milestoneDate DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  campaigns   Campaign[]
+  client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
 
   @@index([clientId])
   @@index([status])
@@ -765,8 +796,8 @@ model InfluencerLead {
   dateAdded           DateTime?
   notes               String?
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([platform])
   @@index([status])
@@ -827,4 +858,42 @@ model CopilotMessage {
 
   @@index([conversationId])
   @@map("copilot_messages")
+}
+
+model ContentSchedule {
+  id           String   @id @default(cuid())
+  platform     String // e.g. INSTAGRAM_POST, INSTAGRAM_REEL, YOUTUBE_UPLOAD
+  publishDate  DateTime
+  status       String   @default("DRAFT") // DRAFT, SCHEDULED, PUBLISHED
+  caption      String?
+  mediaUrl     String?
+  influencerId String
+  campaignId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  campaign   Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([influencerId])
+  @@index([campaignId])
+  @@map("content_schedules")
+}
+
+model Invoice {
+  id         String   @id @default(cuid())
+  amount     Float
+  dueDate    DateTime
+  status     String   @default("PENDING") // PENDING, PAID, OVERDUE
+  clientId   String?
+  campaignId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  client   Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([campaignId])
+  @@map("invoices")
 }

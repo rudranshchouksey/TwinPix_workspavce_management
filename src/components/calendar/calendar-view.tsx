@@ -42,9 +42,16 @@ export function CalendarView({ dashboardData }: { dashboardData: any }) {
   
   const calendarRef = useRef<FullCalendar>(null);
   const [viewMode, setViewMode] = useState("dayGridMonth");
+  const [isContentMode, setIsContentMode] = useState(false);
 
   // Filter events before passing to FullCalendar
-  const filteredEvents = events.filter((e: any) => selectedTypes.includes(e.type)).map((e: any) => ({
+  const filteredEvents = events.filter((e: any) => {
+    if (isContentMode) {
+      // Content only mode: only show content-related events
+      return ["CONTENT_POST", "INSTAGRAM_POST", "INSTAGRAM_REEL", "INSTAGRAM_STORY", "YOUTUBE_UPLOAD", "BRAND_COLLABORATION"].includes(e.type);
+    }
+    return selectedTypes.includes(e.type);
+  }).map((e: any) => ({
     id: e.id,
     title: e.title,
     start: e.start,
@@ -151,23 +158,41 @@ export function CalendarView({ dashboardData }: { dashboardData: any }) {
   // Premium Event Render
   const renderEventContent = (eventInfo: any) => {
     const isList = viewMode.includes("list");
-    const { type } = eventInfo.event.extendedProps;
+    const { type, influencer, client, status } = eventInfo.event.extendedProps;
     
     if (isList) {
       return (
         <div className="flex items-center gap-3 py-1">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: eventInfo.event.backgroundColor }} />
-          <span className="font-medium">{eventInfo.event.title}</span>
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: eventInfo.event.backgroundColor }} />
+          <div className="flex flex-col">
+            <span className="font-medium text-sm">{eventInfo.event.title}</span>
+            {influencer && <span className="text-xs text-muted-foreground">Influencer: {influencer.instagramHandle || influencer.influencerName}</span>}
+            {client && <span className="text-xs text-muted-foreground">Client: {client.companyName}</span>}
+          </div>
         </div>
       );
     }
 
+    // Determine Icon based on Type
+    let Icon = CheckCircle2; // Default
+    if (type?.includes("MEETING") || type?.includes("CALL") || type?.includes("STANDUP")) Icon = Users;
+    if (type?.includes("CAMPAIGN")) Icon = Megaphone;
+    // We can add more specific icons if imported, for now use basics
+
     return (
-      <div className="w-full flex items-center overflow-hidden px-1.5 py-0.5 rounded-md shadow-sm opacity-95 transition-opacity hover:opacity-100 gap-1.5">
-        <span className="truncate text-xs font-semibold leading-tight">{eventInfo.event.title}</span>
-        {type === 'MEETING' && <Users className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
-        {type === 'TASK' && <CheckCircle2 className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
-        {type === 'CAMPAIGN' && <Megaphone className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
+      <div className="w-full flex items-center overflow-hidden px-1.5 py-0.5 rounded-md shadow-sm opacity-95 transition-opacity hover:opacity-100 gap-1.5 bg-white/10">
+        {influencer?.profileImage ? (
+          <img src={influencer.profileImage} alt="Avatar" className="w-4 h-4 rounded-full object-cover shrink-0" />
+        ) : (
+          <Icon className="h-3 w-3 shrink-0 opacity-80" />
+        )}
+        <div className="flex flex-col min-w-0 flex-1">
+            <span className="truncate text-xs font-semibold leading-tight">{eventInfo.event.title}</span>
+            {influencer && <span className="truncate text-[10px] opacity-80 leading-none mt-0.5">@{influencer.instagramHandle}</span>}
+        </div>
+        {status && (
+           <div className="w-1.5 h-1.5 rounded-full shrink-0 opacity-70" title={status} style={{ backgroundColor: '#fff' }} />
+        )}
       </div>
     );
   };
@@ -205,12 +230,25 @@ export function CalendarView({ dashboardData }: { dashboardData: any }) {
               </div>
             </div>
 
-            <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm overflow-x-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <button
+                onClick={() => setIsContentMode(!isContentMode)}
+                className={cn(
+                  "px-4 py-1.5 rounded-xl text-sm font-semibold transition-all border shadow-sm",
+                  isContentMode 
+                    ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                    : "bg-white text-muted-foreground hover:bg-gray-50"
+                )}
+              >
+                Content Calendar
+              </button>
+              
+              <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm overflow-x-auto">
               {[
                 { id: "dayGridMonth", label: "Month" },
                 { id: "timeGridWeek", label: "Week" },
                 { id: "timeGridDay", label: "Day" },
-                { id: "listWeek", label: "Agenda" },
+                { id: "listWeek", label: "Agency Timeline" },
               ].map((view) => (
                 <button
                   key={view.id}
@@ -225,6 +263,7 @@ export function CalendarView({ dashboardData }: { dashboardData: any }) {
                   {view.label}
                 </button>
               ))}
+              </div>
             </div>
           </div>
 

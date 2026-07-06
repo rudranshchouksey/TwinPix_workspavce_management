@@ -21,6 +21,36 @@ export async function getEventsAction(filters?: { type?: string; campaignId?: st
   });
 }
 
+function getEventColor(type: string, customColor?: string) {
+  if (customColor) return customColor;
+  
+  // Campaign - Purple
+  if (["CAMPAIGN", "CAMPAIGN_LAUNCH", "CAMPAIGN_DEADLINE", "CAMPAIGN_REVIEW"].includes(type)) return "#8b5cf6"; // Purple
+  
+  // Content - Green
+  if (["CONTENT_POST", "INSTAGRAM_POST", "INSTAGRAM_REEL", "INSTAGRAM_STORY", "YOUTUBE_UPLOAD", "BRAND_COLLABORATION"].includes(type)) return "#10b981"; // Green
+  
+  // Meetings - Blue
+  if (["MEETING", "CLIENT_MEETING", "DISCOVERY_CALL", "TEAM_MEETING", "INTERNAL_STANDUP"].includes(type)) return "#3b82f6"; // Blue
+  
+  // Deliverables - Red
+  if (["TASK", "DEADLINE", "DELIVERABLE_DUE"].includes(type)) return "#ef4444"; // Red
+  
+  // Approvals/Reminders - Orange
+  if (["FOLLOW_UP_REMINDER", "CONTRACT_REMINDER", "PAYMENT_REMINDER", "APPROVAL_DEADLINE", "CONTENT_APPROVAL"].includes(type)) return "#f97316"; // Orange
+  
+  // Shoots - Pink
+  if (["INFLUENCER_PHOTOSHOOT", "VIDEO_SHOOT", "LIVE_EVENT", "PODCAST_RECORDING"].includes(type)) return "#ec4899"; // Pink
+  
+  // Payments - Yellow
+  if (["INVOICE_DUE"].includes(type)) return "#eab308"; // Yellow
+  
+  // Contracts - Slate
+  if (["CONTRACT_SIGNING"].includes(type)) return "#64748b"; // Slate
+
+  return "#3b82f6"; // Default Blue
+}
+
 export async function createEventAction(data: {
   title: string;
   description?: string;
@@ -34,16 +64,8 @@ export async function createEventAction(data: {
   influencerId?: string;
 }) {
   const user = await requireAuth();
-
-  // Enforce colors based on type to ensure consistency
-  let color = data.color || "#3b82f6";
-  switch (data.type) {
-    case "MEETING": color = "#8b5cf6"; break; // Purple
-    case "TASK": color = "#3b82f6"; break; // Blue
-    case "CAMPAIGN": color = "#10b981"; break; // Green
-    case "CONTENT_POST": color = "#ec4899"; break; // Pink
-    case "DEADLINE": color = "#ef4444"; break; // Red
-  }
+  
+  const color = getEventColor(data.type, data.color);
 
   const event = await db.event.create({
     data: {
@@ -61,15 +83,7 @@ export async function updateEventAction(id: string, data: any) {
   await requireAuth();
 
   if (data.type) {
-    let color = data.color || "#3b82f6";
-    switch (data.type) {
-      case "MEETING": color = "#8b5cf6"; break;
-      case "TASK": color = "#3b82f6"; break;
-      case "CAMPAIGN": color = "#10b981"; break;
-      case "CONTENT_POST": color = "#ec4899"; break;
-      case "DEADLINE": color = "#ef4444"; break;
-    }
-    data.color = color;
+    data.color = getEventColor(data.type, data.color);
   }
 
   const event = await db.event.update({
@@ -99,23 +113,42 @@ export async function getCalendarDashboardDataAction() {
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const next7Days = new Date(endOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const [dbEvents, tasks, campaigns] = await Promise.all([
+  // Fetch from ALL unified sources
+  const [dbEvents, tasks, campaigns, projects, contentSchedules, invoices] = await Promise.all([
     db.event.findMany({
       include: {
         campaign: { select: { id: true, name: true } },
         user: { select: { id: true, name: true } },
+        influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
       }
     }),
     db.task.findMany({
       where: { dueDate: { not: null } },
       include: {
-        assignee: { select: { id: true, name: true } },
+        assignee: { select: { id: true, name: true, image: true } },
         campaign: { select: { id: true, name: true } },
       }
     }),
     db.campaign.findMany({
-      where: { startDate: { not: null } },
       include: {
+        client: { select: { id: true, companyName: true } }
+      }
+    }),
+    db.project.findMany({
+      where: { milestoneDate: { not: null } },
+      include: {
+        client: { select: { id: true, companyName: true } }
+      }
+    }),
+    db.contentSchedule.findMany({
+      include: {
+        campaign: { select: { id: true, name: true } },
+        influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
+      }
+    }),
+    db.invoice.findMany({
+      include: {
+        campaign: { select: { id: true, name: true } },
         client: { select: { id: true, companyName: true } }
       }
     })
@@ -133,10 +166,11 @@ export async function getCalendarDashboardDataAction() {
       start: e.start,
       end: e.end,
       allDay: e.allDay,
-      type: e.type, // 'MEETING', 'CONTENT_POST', 'DEADLINE'
-      color: e.color || "#8b5cf6",
+      type: e.type, 
+      color: getEventColor(e.type, e.color || undefined),
       campaign: e.campaign,
       user: e.user,
+      influencer: e.influencer,
       isRealEvent: true
     });
   });
@@ -151,8 +185,8 @@ export async function getCalendarDashboardDataAction() {
         start: t.dueDate,
         end: t.dueDate,
         allDay: true,
-        type: 'TASK',
-        color: '#3b82f6', // Blue for tasks
+        type: 'DELIVERABLE_DUE',
+        color: getEventColor('DELIVERABLE_DUE'),
         campaign: t.campaign,
         user: t.assignee,
         status: t.status,
@@ -161,25 +195,97 @@ export async function getCalendarDashboardDataAction() {
     }
   });
 
-  // 3. Campaigns
+  // 3. Campaigns (Launch and Deadline)
   campaigns.forEach(c => {
     if (c.startDate) {
       normalizedEvents.push({
-        id: `campaign-${c.id}`,
-        title: `Campaign: ${c.name}`,
+        id: `campaign-launch-${c.id}`,
+        title: `Launch: ${c.name}`,
         description: c.deliverables || c.notes,
         start: c.startDate,
-        end: c.endDate || c.startDate,
+        end: c.startDate,
         allDay: true,
-        type: 'CAMPAIGN',
-        color: '#10b981', // Green for campaigns
+        type: 'CAMPAIGN_LAUNCH',
+        color: getEventColor('CAMPAIGN_LAUNCH'),
+        client: c.client,
+        status: c.status,
+        originalId: c.id
+      });
+    }
+    if (c.endDate) {
+      normalizedEvents.push({
+        id: `campaign-deadline-${c.id}`,
+        title: `Deadline: ${c.name}`,
+        description: c.deliverables || c.notes,
+        start: c.endDate,
+        end: c.endDate,
+        allDay: true,
+        type: 'CAMPAIGN_DEADLINE',
+        color: getEventColor('CAMPAIGN_DEADLINE'),
+        client: c.client,
         status: c.status,
         originalId: c.id
       });
     }
   });
 
-  // KPI Calculations
+  // 4. Projects (Milestones)
+  projects.forEach(p => {
+    if (p.milestoneDate) {
+      normalizedEvents.push({
+        id: `project-${p.id}`,
+        title: `Milestone: ${p.name}`,
+        description: p.description,
+        start: p.milestoneDate,
+        end: p.milestoneDate,
+        allDay: true,
+        type: 'CAMPAIGN_REVIEW', // Using campaign review color logic
+        color: getEventColor('CAMPAIGN_REVIEW'),
+        client: p.client,
+        status: p.status,
+        originalId: p.id
+      });
+    }
+  });
+
+  // 5. Scheduled Content
+  contentSchedules.forEach(cs => {
+    normalizedEvents.push({
+      id: `content-${cs.id}`,
+      title: `${cs.platform.replace("_", " ")}: ${cs.influencer.instagramHandle}`,
+      description: cs.caption,
+      start: cs.publishDate,
+      end: cs.publishDate,
+      allDay: true, // or specific time if available
+      type: cs.platform, 
+      color: getEventColor(cs.platform),
+      campaign: cs.campaign,
+      influencer: cs.influencer,
+      status: cs.status,
+      originalId: cs.id,
+      mediaUrl: cs.mediaUrl
+    });
+  });
+
+  // 6. Invoices
+  invoices.forEach(i => {
+    normalizedEvents.push({
+      id: `invoice-${i.id}`,
+      title: `Invoice Due: ${i.client?.companyName || 'Client'}`,
+      description: `Amount: $${i.amount}`,
+      start: i.dueDate,
+      end: i.dueDate,
+      allDay: true,
+      type: 'INVOICE_DUE',
+      color: getEventColor('INVOICE_DUE'),
+      campaign: i.campaign,
+      client: i.client,
+      status: i.status,
+      originalId: i.id
+    });
+  });
+
+  // KPI Calculations & Intelligence Generation
   let todaysEventsCount = 0;
   let upcomingDeadlinesCount = 0;
   let meetingsCount = 0;
@@ -187,6 +293,10 @@ export async function getCalendarDashboardDataAction() {
   let tasksDueTodayCount = 0;
   let contentScheduledCount = 0;
   let overdueItemsCount = 0;
+  
+  // Conflict tracking variables
+  const influencerDays: Record<string, string[]> = {};
+  const campaignContentCount: Record<string, number> = {};
 
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
@@ -202,40 +312,46 @@ export async function getCalendarDashboardDataAction() {
     const dStart = new Date(e.start);
     const dEnd = e.end ? new Date(e.end) : dStart;
 
-    // Today's events
+    // Stats
     if ((dStart <= endOfToday && dEnd >= startOfToday) || (dStart >= startOfToday && dStart <= endOfToday)) {
       todaysEventsCount++;
     }
 
-    // Upcoming Deadlines (Tasks & Campaigns ending next 7 days)
-    if ((e.type === 'TASK' || e.type === 'CAMPAIGN') && dEnd > endOfToday && dEnd <= next7Days) {
+    if ((['DELIVERABLE_DUE', 'CAMPAIGN_DEADLINE'].includes(e.type)) && dEnd > endOfToday && dEnd <= next7Days) {
       upcomingDeadlinesCount++;
     }
 
-    // Meetings (Future)
-    if (e.type === 'MEETING' && dStart >= startOfToday) {
+    if (['MEETING', 'CLIENT_MEETING', 'DISCOVERY_CALL', 'TEAM_MEETING'].includes(e.type) && dStart >= startOfToday) {
       meetingsCount++;
     }
 
-    // Campaign Launches
-    if (e.type === 'CAMPAIGN' && dStart >= weekStart && dStart <= weekEnd) {
+    if (e.type === 'CAMPAIGN_LAUNCH' && dStart >= weekStart && dStart <= weekEnd) {
       campaignLaunchesCount++;
     }
 
-    // Tasks Due Today
-    if (e.type === 'TASK' && dStart >= startOfToday && dStart <= endOfToday && e.status !== 'DONE') {
+    if (e.type === 'DELIVERABLE_DUE' && dStart >= startOfToday && dStart <= endOfToday && e.status !== 'DONE') {
       tasksDueTodayCount++;
     }
 
-    // Content Scheduled
-    if (e.type === 'CONTENT_POST' && dStart >= startOfToday) {
+    if (['CONTENT_POST', 'INSTAGRAM_POST', 'INSTAGRAM_REEL', 'INSTAGRAM_STORY', 'YOUTUBE_UPLOAD'].includes(e.type) && dStart >= startOfToday) {
       contentScheduledCount++;
+      
+      if (e.campaign?.id) {
+        campaignContentCount[e.campaign.id] = (campaignContentCount[e.campaign.id] || 0) + 1;
+      }
     }
 
-    // Overdue Items
-    if ((e.type === 'TASK' && e.status !== 'DONE' && dStart < startOfToday) || 
-        (e.type === 'CAMPAIGN' && e.status !== 'COMPLETED' && dEnd < startOfToday)) {
+    if ((e.type === 'DELIVERABLE_DUE' && e.status !== 'DONE' && dStart < startOfToday) || 
+        (e.type === 'CAMPAIGN_DEADLINE' && e.status !== 'COMPLETED' && dEnd < startOfToday)) {
       overdueItemsCount++;
+    }
+    
+    // Conflict Detection Logic (Influencer overlapping)
+    if (['INFLUENCER_PHOTOSHOOT', 'VIDEO_SHOOT', 'LIVE_EVENT'].includes(e.type) && e.influencer?.id) {
+      const dateKey = dStart.toISOString().split('T')[0];
+      const key = `${e.influencer.id}-${dateKey}`;
+      if (!influencerDays[key]) influencerDays[key] = [];
+      influencerDays[key].push(e.id);
     }
   });
 
@@ -259,19 +375,47 @@ export async function getCalendarDashboardDataAction() {
   // AI Insights Generation
   const insights: any[] = [];
   
+  if (contentScheduledCount > 0 && contentScheduledCount < 3) {
+      insights.push({
+          type: "warning",
+          title: "Low Content Volume",
+          description: "Content posting frequency is lower this week. Consider scheduling more posts."
+      });
+  }
+
+  // Detect overlapping shoots
+  let overlappingShoots = 0;
+  for (const key in influencerDays) {
+      if (influencerDays[key].length > 1) overlappingShoots++;
+  }
+  if (overlappingShoots > 0) {
+      insights.push({
+          type: "danger",
+          title: "Scheduling Conflict",
+          description: `Influencer booked multiple times on the same day (${overlappingShoots} conflicts).`
+      });
+  }
+  
+  const upcomingCampaignsWithoutContent = campaigns.filter(c => {
+      if (c.status === 'ACTIVE' || c.status === 'PLANNING') {
+          return !campaignContentCount[c.id] || campaignContentCount[c.id] === 0;
+      }
+      return false;
+  });
+  
+  if (upcomingCampaignsWithoutContent.length > 0) {
+      insights.push({
+          type: "warning",
+          title: "Missing Content",
+          description: `Campaign ${upcomingCampaignsWithoutContent[0].name} has no scheduled content.`
+      });
+  }
+
   if (tasksDueTodayCount > 0) {
     insights.push({
       type: "warning",
       title: "Tasks Due",
       description: `You have ${tasksDueTodayCount} tasks due today.`
-    });
-  }
-
-  if (meetingsCount === 0) {
-    insights.push({
-      type: "success",
-      title: "Clear Schedule",
-      description: "No meetings scheduled today. Great time for deep work."
     });
   }
 
@@ -285,7 +429,7 @@ export async function getCalendarDashboardDataAction() {
     insights.push({
       type: "info",
       title: "Campaign Launch",
-      description: `Campaign ${upcomingCampaigns[0].name} starts soon.`
+      description: `Campaign ${upcomingCampaigns[0].name} starts in a few days.`
     });
   }
 
@@ -299,9 +443,9 @@ export async function getCalendarDashboardDataAction() {
 
   if (insights.length === 0) {
     insights.push({
-      type: "info",
+      type: "success",
       title: "All Caught Up",
-      description: "You have no pressing items or conflicts right now."
+      description: "You have no pressing items or conflicts right now. Everything is running smoothly."
     });
   }
 

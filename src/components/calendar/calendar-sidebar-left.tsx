@@ -122,13 +122,11 @@ export function CalendarSidebarLeft({
                 )}
               >
                 <div
-                  className="h-3.5 w-3.5 rounded-full ring-2 ring-offset-2 ring-transparent transition-all shrink-0"
-                  style={{
-                    backgroundColor: type.color,
-                    ...(isSelected && {
-                      boxShadow: `0 0 0 2px white, 0 0 0 4px ${type.color}40`,
-                    }),
-                  }}
+                  className={cn(
+                    "h-3.5 w-3.5 rounded-full ring-2 ring-offset-2 ring-transparent transition-all shrink-0",
+                    type.color
+                  )}
+                  style={isSelected ? { boxShadow: `0 0 0 2px white, 0 0 0 4px rgba(0,0,0,0.1)` } : {}}
                 />
                 <span className={cn("flex-1", isSelected ? "text-[var(--color-text-primary)]" : "")}>
                   {type.label} ({count})
