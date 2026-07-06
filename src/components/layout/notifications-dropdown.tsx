@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * components/layout/notifications-dropdown.tsx
+ *
+ * Topbar bell dropdown — now powered by the shared Zustand store.
+ * Receives real-time updates via the SSE stream (no more polling).
+ */
+
 import { formatDistanceToNow } from "date-fns";
-import { getNotificationsAction, markAsReadAction, markAllAsReadAction } from "@/actions/notifications";
+import { markAsReadAction, markAllAsReadAction } from "@/actions/notifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,71 +18,74 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CheckCircle2, MessageSquare, FolderKanban, CheckCheck, UploadCloud, Users } from "lucide-react";
+import {
+  Bell,
+  CheckSquare,
+  Megaphone,
+  Building2,
+  FolderKanban,
+  MessageSquare,
+  CreditCard,
+  Sparkles,
+  Shield,
+  Users,
+  CalendarDays,
+  CheckCheck,
+  CheckCircle2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useNotificationStore } from "@/store/notification-store";
 
-export function NotificationsDropdown() {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+// ─── Icon + Color Map ─────────────────────────────────────────────
+function getIconForType(type: string) {
+  const baseType = type.split("_")[0];
 
-  const fetchNotifications = async () => {
-    try {
-      const data = await getNotificationsAction();
-      setNotifications(data);
-      setUnreadCount(data.filter((n: any) => !n.isRead).length);
-    } catch (e) {
-      console.error("Failed to fetch notifications", e);
-    }
+  const map: Record<string, { icon: typeof Bell; color: string }> = {
+    TASK:       { icon: CheckSquare,   color: "text-emerald-600 bg-emerald-50" },
+    CAMPAIGN:   { icon: Megaphone,     color: "text-blue-600 bg-blue-50" },
+    CLIENT:     { icon: Building2,     color: "text-amber-600 bg-amber-50" },
+    PROJECT:    { icon: FolderKanban,  color: "text-indigo-600 bg-indigo-50" },
+    MESSAGE:    { icon: MessageSquare, color: "text-violet-600 bg-violet-50" },
+    COMMENT:    { icon: MessageSquare, color: "text-violet-600 bg-violet-50" },
+    PAYMENT:    { icon: CreditCard,    color: "text-green-600 bg-green-50" },
+    AI:         { icon: Sparkles,      color: "text-fuchsia-600 bg-fuchsia-50" },
+    SYSTEM:     { icon: Shield,        color: "text-slate-600 bg-slate-100" },
+    INFLUENCER: { icon: Users,         color: "text-rose-600 bg-rose-50" },
+    CALENDAR:   { icon: CalendarDays,  color: "text-cyan-600 bg-cyan-50" },
+    FILE:       { icon: FolderKanban,  color: "text-cyan-600 bg-cyan-50" },
   };
 
-  useEffect(() => {
-    fetchNotifications();
-    
-    // Only poll every 60s, and only if the window is in focus to save DB calls
-    const interval = setInterval(() => {
-      if (document.hasFocus()) {
-        fetchNotifications();
-      }
-    }, 60000); 
-    
-    return () => clearInterval(interval);
-  }, []);
+  return map[baseType] || { icon: Bell, color: "text-gray-400 bg-gray-500/10" };
+}
+
+export function NotificationsDropdown() {
+  const { notifications, unreadCount, markAsRead, markAllAsRead: storeMarkAllAsRead } = useNotificationStore();
+
+  // Show the most recent 10 in the dropdown
+  const displayed = notifications.slice(0, 10);
 
   const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     try {
+      // Optimistic update
+      markAsRead(id);
       await markAsReadAction(id);
-      await fetchNotifications();
-    } catch (e) {
+    } catch {
       toast.error("Failed to mark as read");
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
+      // Optimistic update
+      storeMarkAllAsRead();
       await markAllAsReadAction();
-      await fetchNotifications();
       toast.success("All notifications marked as read");
-    } catch (e) {
+    } catch {
       toast.error("Failed to mark all as read");
-    }
-  };
-
-  const getIconForType = (type: string) => {
-    switch (type) {
-      case "TASK_ASSIGNED":
-        return { icon: CheckCircle2, color: "text-emerald-400 bg-emerald-500/10" };
-      case "CAMPAIGN_UPDATED":
-        return { icon: FolderKanban, color: "text-blue-400 bg-blue-500/10" };
-      case "COMMENT_ADDED":
-        return { icon: MessageSquare, color: "text-violet-400 bg-violet-500/10" };
-      case "FILE_UPLOADED":
-        return { icon: UploadCloud, color: "text-cyan-400 bg-cyan-500/10" };
-      default:
-        return { icon: Bell, color: "text-gray-400 bg-gray-500/10" };
     }
   };
 
@@ -129,12 +138,12 @@ export function NotificationsDropdown() {
         <DropdownMenuSeparator className="bg-[rgba(0,0,0,0.06)]" />
 
         <div className="max-h-[320px] overflow-y-auto">
-          {notifications.length === 0 ? (
+          {displayed.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
               No notifications yet.
             </div>
           ) : (
-            notifications.map((notif) => {
+            displayed.map((notif) => {
               const { icon: NotifIcon, color } = getIconForType(notif.type);
               return (
                 <DropdownMenuItem
@@ -143,7 +152,7 @@ export function NotificationsDropdown() {
                     "cursor-pointer rounded-none px-4 py-3 focus:bg-[rgba(0,0,0,0.03)]",
                     !notif.isRead && "bg-[rgba(99,102,241,0.04)]"
                   )}
-                  render={<Link href={notif.link || "#"} onClick={() => { if (!notif.isRead) markAsReadAction(notif.id) }} />}
+                  render={<Link href={notif.link || "#"} onClick={() => { if (!notif.isRead) { markAsRead(notif.id); markAsReadAction(notif.id); } }} />}
                 >
                     <div className="flex w-full items-start gap-3">
                       <div

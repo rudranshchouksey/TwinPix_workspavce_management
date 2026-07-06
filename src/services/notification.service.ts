@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { notificationBroadcaster } from "@/lib/notification-broadcaster";
 
 export type NotificationType = 
   | "TASK" 
@@ -34,13 +35,18 @@ export class NotificationService {
   static async createNotification(payload: CreateNotificationPayload) {
     try {
       const { metadata, ...rest } = payload;
-      return await db.notification.create({
+      const notification = await db.notification.create({
         data: {
           ...rest,
           priority: payload.priority || "MEDIUM",
           metadata: metadata ? JSON.stringify(metadata) : null,
         },
       });
+
+      // Broadcast to connected SSE clients
+      notificationBroadcaster.broadcast(payload.userId, notification);
+
+      return notification;
     } catch (error) {
       console.error("[NotificationService] Failed to create notification:", error);
       throw error;
@@ -60,9 +66,27 @@ export class NotificationService {
         metadata: metadata ? JSON.stringify(metadata) : null,
       }));
 
-      return await db.notification.createMany({
+      const result = await db.notification.createMany({
         data,
       });
+
+      // Broadcast to each user's connected SSE clients.
+      // createMany doesn't return records, so we fetch them for broadcast.
+      const created = await db.notification.findMany({
+        where: {
+          userId: { in: userIds },
+          title: payload.title,
+          message: payload.message,
+        },
+        orderBy: { createdAt: "desc" },
+        take: userIds.length,
+      });
+
+      for (const notification of created) {
+        notificationBroadcaster.broadcast(notification.userId, notification);
+      }
+
+      return result;
     } catch (error) {
       console.error("[NotificationService] Failed to notify users:", error);
       throw error;

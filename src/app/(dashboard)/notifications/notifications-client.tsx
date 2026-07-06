@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { formatDistanceToNow, isToday, isYesterday, subDays, isAfter } from "date-fns";
 import {
-  getNotificationsAction,
   markAsReadAction,
   markAllAsReadAction,
   deleteNotificationAction,
@@ -36,22 +35,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useNotificationStore, type NotificationItem } from "@/store/notification-store";
 
 // ─── Types ────────────────────────────────────────────────────────
-type Notification = {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: string;
-  priority: string | null;
-  entityType: string | null;
-  entityId: string | null;
-  metadata: string | null;
-  isRead: boolean;
-  link: string | null;
-  createdAt: Date;
-};
+type Notification = NotificationItem;
 
 type DateGroup = "Today" | "Yesterday" | "This Week" | "Earlier";
 
@@ -170,10 +157,17 @@ function NotificationSkeleton() {
 
 // ─── Main Component ───────────────────────────────────────────────
 export function NotificationsClient() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  // ── Shared store (real-time via SSE) ──────────────────────────
+  const {
+    notifications,
+    unreadCount,
+    initialized,
+    markAsRead: storeMarkAsRead,
+    markAllAsRead: storeMarkAllAsRead,
+    removeNotification: storeRemoveNotification,
+  } = useNotificationStore();
+
+  // ── Local UI state ────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -181,40 +175,6 @@ export function NotificationsClient() {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
-
-  // ── Fetch ─────────────────────────────────────────────────────
-  const fetchNotifications = useCallback(async (append = false) => {
-    try {
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-
-      const data = await getNotificationsAction();
-
-      if (append) {
-        setNotifications((prev) => {
-          const ids = new Set(prev.map((n) => n.id));
-          const newOnes = (data as Notification[]).filter((n) => !ids.has(n.id));
-          return [...prev, ...newOnes];
-        });
-      } else {
-        setNotifications(data as Notification[]);
-      }
-
-      // Since the backend currently uses a fixed limit of 50,
-      // we handle "infinite scroll" client-side by paginating the results.
-      setHasMore(false); // All data loaded in one call
-    } catch (e) {
-      console.error("Failed to fetch notifications", e);
-      toast.error("Failed to load notifications");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
 
   // ── Close filter menu on outside click ────────────────────────
   useEffect(() => {
@@ -227,13 +187,11 @@ export function NotificationsClient() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Actions ───────────────────────────────────────────────────
+  // ── Actions (optimistic store update + server call) ───────────
   const handleMarkAsRead = async (id: string) => {
     try {
+      storeMarkAsRead(id);
       await markAsReadAction(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
     } catch {
       toast.error("Failed to mark as read");
     }
@@ -241,8 +199,8 @@ export function NotificationsClient() {
 
   const handleMarkAllAsRead = async () => {
     try {
+      storeMarkAllAsRead();
       await markAllAsReadAction();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success("All notifications marked as read");
     } catch {
       toast.error("Failed to mark all as read");
@@ -251,10 +209,8 @@ export function NotificationsClient() {
 
   const handleArchive = async (id: string) => {
     try {
+      storeMarkAsRead(id);
       await archiveNotificationAction(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
       toast.success("Notification archived");
     } catch {
       toast.error("Failed to archive notification");
@@ -264,8 +220,8 @@ export function NotificationsClient() {
   const handleDelete = async (id: string) => {
     try {
       setDeletingId(id);
+      storeRemoveNotification(id);
       await deleteNotificationAction(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
       toast.success("Notification deleted");
     } catch {
       toast.error("Failed to delete notification");
@@ -296,11 +252,6 @@ export function NotificationsClient() {
 
     return result;
   }, [notifications, typeFilter, searchQuery]);
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
-  );
 
   // ── Paginated + Grouped ───────────────────────────────────────
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -349,7 +300,7 @@ export function NotificationsClient() {
   }, [paginated]);
 
   // ── Loading State ─────────────────────────────────────────────
-  if (loading) {
+  if (!initialized) {
     return (
       <div className="flex flex-col">
         {/* Skeleton toolbar */}
