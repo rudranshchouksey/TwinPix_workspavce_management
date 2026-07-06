@@ -77,6 +77,8 @@ model User {
   emailPreferences Json? // e.g. { "TASK": true, "CAMPAIGN": true }
   phoneNumber      String? // Used for WhatsApp notifications
   whatsappPreferences Json? // e.g. { "TASK": true, "CAMPAIGN": true }
+  inAppPreferences Json?
+  pushPreferences  Json?
   createdById String? // cuid of admin who created this account
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -835,8 +837,21 @@ model Project {
   campaigns Campaign[]
 
   @@index([clientId])
-  @@index([status])
+  @@index([clientId])
   @@map("projects")
+}
+
+// ─────────────────────────────────────────────
+// System Configurations
+// ─────────────────────────────────────────────
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // Optional track who updated it
+
+  @@map("system_settings")
 }
 
 model InfluencerLead {
