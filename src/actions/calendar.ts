@@ -113,46 +113,53 @@ export async function getCalendarDashboardDataAction() {
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const next7Days = new Date(endOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // Fetch from ALL unified sources
-  const [dbEvents, tasks, campaigns, projects, contentSchedules, invoices] = await Promise.all([
-    db.event.findMany({
-      include: {
-        campaign: { select: { id: true, name: true } },
-        user: { select: { id: true, name: true } },
-        influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
-      }
-    }),
-    db.task.findMany({
-      where: { dueDate: { not: null } },
-      include: {
-        assignee: { select: { id: true, name: true, image: true } },
-        campaign: { select: { id: true, name: true } },
-      }
-    }),
-    db.campaign.findMany({
-      include: {
-        client: { select: { id: true, companyName: true } }
-      }
-    }),
-    db.project.findMany({
-      where: { milestoneDate: { not: null } },
-      include: {
-        client: { select: { id: true, companyName: true } }
-      }
-    }),
-    db.contentSchedule.findMany({
-      include: {
-        campaign: { select: { id: true, name: true } },
-        influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
-      }
-    }),
-    db.invoice.findMany({
-      include: {
-        campaign: { select: { id: true, name: true } },
-        client: { select: { id: true, companyName: true } }
-      }
-    })
-  ]);
+  // Fetch from ALL unified sources with graceful fallbacks
+  let dbEvents: any[] = [], tasks: any[] = [], campaigns: any[] = [], projects: any[] = [], contentSchedules: any[] = [], invoices: any[] = [];
+  try {
+    const results = await Promise.all([
+      db.event.findMany({
+        include: {
+          campaign: { select: { id: true, name: true } },
+          user: { select: { id: true, name: true } },
+          influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
+        }
+      }),
+      db.task.findMany({
+        where: { dueDate: { not: null } },
+        include: {
+          assignee: { select: { id: true, name: true, image: true } },
+          campaign: { select: { id: true, name: true } },
+        }
+      }),
+      db.campaign.findMany({
+        include: {
+          client: { select: { id: true, companyName: true } }
+        }
+      }),
+      db.project.findMany({
+        where: { milestoneDate: { not: null } },
+        include: {
+          client: { select: { id: true, companyName: true } }
+        }
+      }),
+      db.contentSchedule.findMany({
+        include: {
+          campaign: { select: { id: true, name: true } },
+          influencer: { select: { id: true, influencerName: true, instagramHandle: true, profileImage: true } }
+        }
+      }),
+      db.invoice.findMany({
+        include: {
+          campaign: { select: { id: true, name: true } },
+          client: { select: { id: true, companyName: true } }
+        }
+      })
+    ]);
+    [dbEvents, tasks, campaigns, projects, contentSchedules, invoices] = results;
+  } catch (error) {
+    console.error("Database query failed in calendar (likely unmigrated tables):", error);
+    // Continue with empty arrays if DB fails, so the UI doesn't completely crash
+  }
 
   // Normalize all entities into FullCalendar Event format
   const normalizedEvents: any[] = [];
