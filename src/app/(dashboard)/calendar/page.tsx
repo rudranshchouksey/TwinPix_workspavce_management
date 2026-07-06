@@ -14,14 +14,5 @@ export default async function CalendarPage() {
 
   const events = await getEventsAction();
 
-  return (
-    <div className="space-y-6">
-      <PageHeader 
-        title="Calendar & Scheduling" 
-        description="Manage your team's deadlines, meetings, and content schedules."
-      />
-
-      <CalendarView initialEvents={events} />
-    </div>
-  );
+  return <CalendarView initialEvents={events} />;
 }
