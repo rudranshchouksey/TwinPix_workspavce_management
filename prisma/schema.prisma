@@ -975,3 +975,20 @@ model Invoice {
   @@index([campaignId])
   @@map("invoices")
 }
+
+// ─────────────────────────────────────────────
+// Automation Logs
+// ─────────────────────────────────────────────
+
+model AutomationLog {
+  id          String   @id @default(cuid())
+  ruleType    String   // e.g. "CAMPAIGN_DEADLINE", "TASK_OVERDUE", "TASK_ESCALATION", "DAILY_DIGEST"
+  entityId    String   // e.g. Campaign ID, Task ID, User ID
+  status      String   @default("SENT")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([ruleType, entityId])
+  @@index([createdAt])
+  @@map("automation_logs")
+}
