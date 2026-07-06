@@ -126,7 +126,9 @@ export async function createTaskAction(input: TaskInput) {
       title: "New Task Assigned",
       message: `${user.name} assigned you: ${task.title}`,
       link: `/tasks`,
-      entityId: task.id
+      entityId: task.id,
+      entityType: "TASK",
+      priority: "HIGH"
     });
   }
 
@@ -166,7 +168,9 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
         title: "Task Assigned",
         message: `${user.name} assigned you to: ${task.title}`,
         link: `/tasks`,
-        entityId: task.id
+        entityId: task.id,
+        entityType: "TASK",
+        priority: "HIGH"
       });
     }
   } else {
@@ -221,7 +225,9 @@ export async function addTaskCommentAction(taskId: string, input: TaskCommentInp
       title: "New Comment on Task",
       message: `${user.name} commented: "${validatedData.content.substring(0, 30)}..."`,
       link: `/tasks`,
-      entityId: taskId
+      entityId: taskId,
+      entityType: "TASK",
+      priority: "MEDIUM"
     });
   }
 

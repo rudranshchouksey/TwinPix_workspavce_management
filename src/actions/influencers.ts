@@ -334,6 +334,8 @@ export async function updateInfluencerAction(id: string, input: Partial<Influenc
         message: `${displayName} information updated successfully.`,
         link: `/influencers/${influencer.id}`,
         entityId: influencer.id,
+        entityType: "INFLUENCER",
+        priority: "LOW",
       })
     )
     .catch((err: any) => console.warn("[Notification] Failed:", err.message));

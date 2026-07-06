@@ -1,34 +1,11 @@
 "use server";
 
-import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth-utils";
+import { NotificationService, CreateNotificationPayload } from "@/services/notification.service";
 
-export async function createNotification({
-  userId,
-  type,
-  title,
-  message,
-  link,
-  entityId
-}: {
-  userId: string;
-  type: string;
-  title: string;
-  message: string;
-  link?: string;
-  entityId?: string;
-}) {
+export async function createNotification(payload: CreateNotificationPayload) {
   try {
-    await db.notification.create({
-      data: {
-        userId,
-        type,
-        title,
-        message,
-        link,
-        entityId
-      }
-    });
+    return await NotificationService.createNotification(payload);
   } catch (error) {
     console.error("Failed to create notification:", error);
   }
@@ -38,11 +15,7 @@ export async function getNotificationsAction() {
   const user = await requireAuth();
   
   try {
-    return await db.notification.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 50
-    });
+    return await NotificationService.getNotifications(user.id, 50);
   } catch (error) {
     console.error("Failed to fetch notifications:", error);
     return []; // Return empty array on DB timeout or error
@@ -51,16 +24,10 @@ export async function getNotificationsAction() {
 
 export async function markAsReadAction(id: string) {
   const user = await requireAuth();
-  await db.notification.update({
-    where: { id, userId: user.id },
-    data: { isRead: true }
-  });
+  await NotificationService.markAsRead(id, user.id);
 }
 
 export async function markAllAsReadAction() {
   const user = await requireAuth();
-  await db.notification.updateMany({
-    where: { userId: user.id, isRead: false },
-    data: { isRead: true }
-  });
+  await NotificationService.markAllAsRead(user.id);
 }
