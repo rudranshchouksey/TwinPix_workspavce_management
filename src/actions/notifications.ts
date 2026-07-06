@@ -31,3 +31,18 @@ export async function markAllAsReadAction() {
   const user = await requireAuth();
   await NotificationService.markAllAsRead(user.id);
 }
+
+export async function deleteNotificationAction(id: string) {
+  const user = await requireAuth();
+  await NotificationService.deleteNotification(id, user.id);
+}
+
+export async function archiveNotificationAction(id: string) {
+  const user = await requireAuth();
+  await NotificationService.archiveNotification(id, user.id);
+}
+
+export async function getUnreadCountAction() {
+  const user = await requireAuth();
+  return await NotificationService.getUnreadCount(user.id);
+}

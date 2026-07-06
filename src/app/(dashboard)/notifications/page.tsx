@@ -15,9 +15,9 @@ export default async function NotificationsPage() {
     <div className="space-y-6">
       <SectionHeader 
         label="Notifications" 
-        description="View your recent activity, alerts, and mentions across the platform."
+        description="Stay on top of tasks, campaigns, and activity across the platform."
       />
-      <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[var(--color-surface-900)] overflow-hidden">
+      <div className="rounded-xl border border-[rgba(0,0,0,0.06)] bg-[var(--color-surface-900)] overflow-hidden shadow-sm">
         <NotificationsClient />
       </div>
     </div>
