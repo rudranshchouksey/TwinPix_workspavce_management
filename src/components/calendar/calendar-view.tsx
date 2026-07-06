@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useTransition, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -17,14 +17,22 @@ import { CalendarDashboardCards } from "./calendar-dashboard-cards";
 import { CalendarHero } from "./calendar-hero";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Users, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, Megaphone } from "lucide-react";
 import { format } from "date-fns";
-import "./calendar.css"; // Optional overrides for styling
+import { useRouter } from "next/navigation";
+import "./calendar.css"; 
 
-export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
-  const [events, setEvents] = useState(initialEvents);
+export function CalendarView({ dashboardData }: { dashboardData: any }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const [events, setEvents] = useState(dashboardData.events);
   const [selectedTypes, setSelectedTypes] = useState(EVENT_TYPES.map((t) => t.id));
   
+  useEffect(() => {
+    setEvents(dashboardData.events);
+  }, [dashboardData.events]);
+
   // Modals/Drawers state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -36,7 +44,7 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
   const [viewMode, setViewMode] = useState("dayGridMonth");
 
   // Filter events before passing to FullCalendar
-  const filteredEvents = events.filter((e) => selectedTypes.includes(e.type)).map((e) => ({
+  const filteredEvents = events.filter((e: any) => selectedTypes.includes(e.type)).map((e: any) => ({
     id: e.id,
     title: e.title,
     start: e.start,
@@ -65,14 +73,19 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
   };
 
   const handleEventDrop = async (dropInfo: any) => {
+    if (!dropInfo.event.extendedProps.isRealEvent) {
+      toast.error("Can only reschedule Calendar Events directly");
+      dropInfo.revert();
+      return;
+    }
     try {
-      const updated = await updateEventAction(dropInfo.event.id, {
+      await updateEventAction(dropInfo.event.id, {
         start: dropInfo.event.start,
         end: dropInfo.event.end,
         allDay: dropInfo.event.allDay,
       });
-      setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       toast.success("Event rescheduled");
+      refreshEvents();
     } catch (e) {
       dropInfo.revert();
       toast.error("Failed to reschedule event");
@@ -80,12 +93,17 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
   };
 
   const handleEventResize = async (resizeInfo: any) => {
+    if (!resizeInfo.event.extendedProps.isRealEvent) {
+      toast.error("Can only resize Calendar Events directly");
+      resizeInfo.revert();
+      return;
+    }
     try {
-      const updated = await updateEventAction(resizeInfo.event.id, {
+      await updateEventAction(resizeInfo.event.id, {
         end: resizeInfo.event.end,
       });
-      setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       toast.success("Event duration updated");
+      refreshEvents();
     } catch (e) {
       resizeInfo.revert();
       toast.error("Failed to update duration");
@@ -98,14 +116,20 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
   };
 
   const refreshEvents = () => {
-    window.location.reload(); 
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   const handleDelete = async () => {
-    if (!selectedEvent?.id) return;
+    if (!selectedEvent?.id || !selectedEvent?.isRealEvent) {
+      toast.error("Cannot delete tasks/campaigns from calendar");
+      return;
+    }
     try {
       await deleteEventAction(selectedEvent.id);
       toast.success("Event deleted");
+      setIsDrawerOpen(false);
       refreshEvents();
     } catch (e) {
       toast.error("Failed to delete event");
@@ -122,11 +146,12 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
     calendarRef.current?.getApi().changeView(view);
   };
 
-  const currentTitle = calendarRef.current?.getApi().view.title || format(new Date(), "MMMM yyyy");
+  const currentTitle = calendarRef.current?.getApi().view?.title || format(new Date(), "MMMM yyyy");
 
   // Premium Event Render
   const renderEventContent = (eventInfo: any) => {
     const isList = viewMode.includes("list");
+    const { type } = eventInfo.event.extendedProps;
     
     if (isList) {
       return (
@@ -140,29 +165,31 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
     return (
       <div className="w-full flex items-center overflow-hidden px-1.5 py-0.5 rounded-md shadow-sm opacity-95 transition-opacity hover:opacity-100 gap-1.5">
         <span className="truncate text-xs font-semibold leading-tight">{eventInfo.event.title}</span>
-        {eventInfo.event.extendedProps.type === 'MEETING' && <Users className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
-        {eventInfo.event.extendedProps.type === 'TASK' && <CheckCircle2 className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
+        {type === 'MEETING' && <Users className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
+        {type === 'TASK' && <CheckCircle2 className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
+        {type === 'CAMPAIGN' && <Megaphone className="h-2.5 w-2.5 ml-auto shrink-0 opacity-80" />}
       </div>
     );
   };
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6 transition-opacity duration-200", isPending && "opacity-60")}>
       <CalendarHero onCreateClick={handleCreateNew} />
-      <CalendarDashboardCards />
+      <CalendarDashboardCards kpis={dashboardData.kpis} />
 
       <div className="flex flex-col lg:flex-row gap-6">
         <CalendarSidebarLeft 
           selectedTypes={selectedTypes} 
           onChange={setSelectedTypes} 
           onCreateNew={handleCreateNew} 
+          events={events}
         />
 
         <div className="flex-1 flex flex-col min-w-0 bg-white/60 backdrop-blur-md border border-[rgba(0,0,0,0.06)] rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           {/* Custom Calendar Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-4">
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-text-primary)] w-48">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-text-primary)] min-w-40">
                 {currentTitle}
               </h2>
               <div className="flex items-center rounded-xl border bg-white p-0.5 shadow-sm">
@@ -178,7 +205,7 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
               </div>
             </div>
 
-            <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm">
+            <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm overflow-x-auto">
               {[
                 { id: "dayGridMonth", label: "Month" },
                 { id: "timeGridWeek", label: "Week" },
@@ -189,7 +216,7 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
                   key={view.id}
                   onClick={() => changeView(view.id)}
                   className={cn(
-                    "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    "px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
                     viewMode === view.id 
                       ? "bg-[rgba(0,0,0,0.05)] text-[var(--color-text-primary)] shadow-sm" 
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.02)]"
@@ -226,7 +253,11 @@ export function CalendarView({ initialEvents }: { initialEvents: any[] }) {
           </div>
         </div>
 
-        <CalendarSidebarRight events={filteredEvents} />
+        <CalendarSidebarRight 
+          events={filteredEvents} 
+          insights={dashboardData.insights} 
+          pendingApprovals={dashboardData.pendingApprovals} 
+        />
       </div>
 
       {/* Modals & Drawers */}

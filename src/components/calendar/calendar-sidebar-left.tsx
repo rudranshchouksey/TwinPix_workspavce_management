@@ -9,10 +9,12 @@ export function CalendarSidebarLeft({
   selectedTypes,
   onChange,
   onCreateNew,
+  events,
 }: {
   selectedTypes: string[];
   onChange: (types: string[]) => void;
   onCreateNew: () => void;
+  events?: any[];
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -107,6 +109,7 @@ export function CalendarSidebarLeft({
         <div className="flex flex-col gap-2">
           {EVENT_TYPES.map((type) => {
             const isSelected = selectedTypes.includes(type.id);
+            const count = events?.filter(e => e.type === type.id).length || 0;
             return (
               <button
                 key={type.id}
@@ -119,7 +122,7 @@ export function CalendarSidebarLeft({
                 )}
               >
                 <div
-                  className="h-3.5 w-3.5 rounded-full ring-2 ring-offset-2 ring-transparent transition-all"
+                  className="h-3.5 w-3.5 rounded-full ring-2 ring-offset-2 ring-transparent transition-all shrink-0"
                   style={{
                     backgroundColor: type.color,
                     ...(isSelected && {
@@ -128,7 +131,7 @@ export function CalendarSidebarLeft({
                   }}
                 />
                 <span className={cn("flex-1", isSelected ? "text-[var(--color-text-primary)]" : "")}>
-                  {type.label}
+                  {type.label} ({count})
                 </span>
               </button>
             );

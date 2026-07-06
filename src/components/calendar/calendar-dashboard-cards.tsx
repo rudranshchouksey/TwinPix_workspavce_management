@@ -1,17 +1,17 @@
 import { CalendarCheck, Clock, Users, Megaphone, CheckCircle2, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STATS = [
-  { label: "Today's Events", value: "4", icon: CalendarCheck, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-200" },
-  { label: "Upcoming Deadlines", value: "12", icon: Clock, color: "text-orange-600", bg: "bg-orange-100", border: "border-orange-200" },
-  { label: "Meetings", value: "3", icon: Users, color: "text-purple-600", bg: "bg-purple-100", border: "border-purple-200" },
-  { label: "Campaign Launches", value: "1", icon: Megaphone, color: "text-green-600", bg: "bg-green-100", border: "border-green-200" },
-  { label: "Tasks Due", value: "8", icon: CheckCircle2, color: "text-indigo-600", bg: "bg-indigo-100", border: "border-indigo-200" },
-  { label: "Content Scheduled", value: "5", icon: ImageIcon, color: "text-pink-600", bg: "bg-pink-100", border: "border-pink-200" },
-  { label: "Overdue Items", value: "0", icon: AlertCircle, color: "text-red-600", bg: "bg-red-100", border: "border-red-200" },
-];
+export function CalendarDashboardCards({ kpis }: { kpis?: any }) {
+  const STATS = [
+    { label: "Today's Events", value: kpis?.todaysEvents || 0, icon: CalendarCheck, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-200" },
+    { label: "Upcoming Deadlines", value: kpis?.upcomingDeadlines || 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-100", border: "border-orange-200" },
+    { label: "Meetings", value: kpis?.meetings || 0, icon: Users, color: "text-purple-600", bg: "bg-purple-100", border: "border-purple-200" },
+    { label: "Campaign Launches", value: kpis?.campaignLaunches || 0, icon: Megaphone, color: "text-green-600", bg: "bg-green-100", border: "border-green-200" },
+    { label: "Tasks Due", value: kpis?.tasksDue || 0, icon: CheckCircle2, color: "text-indigo-600", bg: "bg-indigo-100", border: "border-indigo-200" },
+    { label: "Content Scheduled", value: kpis?.contentScheduled || 0, icon: ImageIcon, color: "text-pink-600", bg: "bg-pink-100", border: "border-pink-200" },
+    { label: "Overdue Items", value: kpis?.overdueItems || 0, icon: AlertCircle, color: "text-red-600", bg: "bg-red-100", border: "border-red-200" },
+  ];
 
-export function CalendarDashboardCards() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       {STATS.map((stat, i) => {

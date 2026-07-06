@@ -1,10 +1,10 @@
 import { format, isToday } from "date-fns";
-import { Sparkles, Calendar, Clock, AlertCircle, CheckCircle2, ChevronRight, X } from "lucide-react";
+import { Sparkles, Calendar, Clock, AlertCircle, CheckCircle2, ChevronRight, X, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-export function CalendarSidebarRight({ events }: { events: any[] }) {
+export function CalendarSidebarRight({ events, insights = [], pendingApprovals = [] }: { events: any[], insights?: any[], pendingApprovals?: any[] }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const todaysEvents = events.filter((e) => isToday(new Date(e.start))).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
@@ -43,22 +43,30 @@ export function CalendarSidebarRight({ events }: { events: any[] }) {
           AI Insights
         </div>
         <div className="space-y-3">
-          <div className="rounded-xl bg-white p-3 shadow-sm border border-[rgba(0,0,0,0.04)] text-sm">
-            <p className="font-medium text-[var(--color-text-primary)] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-green-500" /> Low Workload Tomorrow
-            </p>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              You only have 1 meeting scheduled. Good time for deep work.
-            </p>
-          </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm border border-[rgba(0,0,0,0.04)] text-sm">
-            <p className="font-medium text-[var(--color-text-primary)] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-orange-500" /> Deadline Approaching
-            </p>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              Summer Collection content is due in 3 days.
-            </p>
-          </div>
+          {insights.length === 0 ? (
+             <div className="rounded-xl bg-white p-3 shadow-sm border border-[rgba(0,0,0,0.04)] text-sm text-[var(--color-text-muted)] text-center">
+               No insights available.
+             </div>
+          ) : (
+            insights.map((insight, idx) => {
+              let dotColor = "bg-purple-500";
+              if (insight.type === 'warning') dotColor = "bg-orange-500";
+              if (insight.type === 'danger') dotColor = "bg-red-500";
+              if (insight.type === 'success') dotColor = "bg-green-500";
+              if (insight.type === 'info') dotColor = "bg-blue-500";
+
+              return (
+                <div key={idx} className="rounded-xl bg-white p-3 shadow-sm border border-[rgba(0,0,0,0.04)] text-sm">
+                  <p className="font-medium text-[var(--color-text-primary)] flex items-center gap-1.5">
+                    <span className={cn("w-2 h-2 rounded-full", dotColor)} /> {insight.title}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                    {insight.description}
+                  </p>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -89,6 +97,12 @@ export function CalendarSidebarRight({ events }: { events: any[] }) {
                       <Clock className="h-3 w-3" />
                       {format(new Date(event.start), "h:mm a")} {event.end && `- ${format(new Date(event.end), "h:mm a")}`}
                     </span>
+                    {event.extendedProps?.campaign?.name && (
+                       <span className="flex items-center gap-1 text-green-600 mt-1">
+                         <Megaphone className="h-3 w-3" />
+                         {event.extendedProps.campaign.name}
+                       </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -103,26 +117,25 @@ export function CalendarSidebarRight({ events }: { events: any[] }) {
           <CheckCircle2 className="h-4 w-4 text-[var(--color-text-muted)]" />
           Pending Approvals
         </h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-[rgba(0,0,0,0.03)] transition-colors cursor-pointer border border-transparent hover:border-[rgba(0,0,0,0.05)]">
-            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Q3 Budget Review</p>
-              <p className="text-xs text-[var(--color-text-muted)] truncate">Requested by Sarah</p>
-            </div>
+        {pendingApprovals.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[rgba(0,0,0,0.1)] p-6 text-center text-sm text-[var(--color-text-muted)]">
+            No pending approvals.
           </div>
-          <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-[rgba(0,0,0,0.03)] transition-colors cursor-pointer border border-transparent hover:border-[rgba(0,0,0,0.05)]">
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">New Influencer Brief</p>
-              <p className="text-xs text-[var(--color-text-muted)] truncate">Requires sign-off</p>
-            </div>
+        ) : (
+          <div className="space-y-2">
+            {pendingApprovals.map((approval, idx) => (
+              <div key={idx} className="flex items-center gap-3 rounded-xl p-2 hover:bg-[rgba(0,0,0,0.03)] transition-colors cursor-pointer border border-transparent hover:border-[rgba(0,0,0,0.05)]">
+                <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{approval.title}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] truncate">{approval.type} • Req. by {approval.requester}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
