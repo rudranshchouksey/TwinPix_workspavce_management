@@ -75,6 +75,8 @@ model User {
   jobTitle    String?
   department  String?
   emailPreferences Json? // e.g. { "TASK": true, "CAMPAIGN": true }
+  phoneNumber      String? // Used for WhatsApp notifications
+  whatsappPreferences Json? // e.g. { "TASK": true, "CAMPAIGN": true }
   createdById String? // cuid of admin who created this account
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -668,6 +670,7 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   emailDeliveries EmailDelivery[]
+  whatsappDeliveries WhatsAppDelivery[]
 
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
@@ -699,6 +702,35 @@ model EmailDelivery {
   @@index([status])
   @@index([notificationId])
   @@map("email_deliveries")
+}
+
+enum WhatsAppDeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model WhatsAppDelivery {
+  id             String                 @id @default(cuid())
+  notificationId String?
+  toPhone        String
+  templateName   String? // For template expansion
+  messageType    String                 @default("TEXT") // TEXT, TEMPLATE
+  content        Json?                  // The actual payload sent
+  status         WhatsAppDeliveryStatus @default(PENDING)
+  attempts       Int                    @default(0)
+  lastError      String?                @db.Text
+  messageId      String?                // WhatsApp Message ID for webhooks
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([notificationId])
+  @@map("whatsapp_deliveries")
 }
 
 model ActivityLog {
