@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db as prisma } from "@/lib/db";
 import { requireAdmin, requireAuth } from "@/lib/auth-utils";
 
-export const NOTIFICATION_DEFAULTS_KEY = "NOTIFICATION_DEFAULTS";
+const NOTIFICATION_DEFAULTS_KEY = "NOTIFICATION_DEFAULTS";
 
 export async function getNotificationDefaultsAction() {
   await requireAuth();
