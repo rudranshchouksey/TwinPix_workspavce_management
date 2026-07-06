@@ -115,6 +115,24 @@ export async function getCalendarDashboardDataAction() {
 
   // Fetch from ALL unified sources with graceful fallbacks
   let dbEvents: any[] = [], tasks: any[] = [], campaigns: any[] = [], projects: any[] = [], contentSchedules: any[] = [], invoices: any[] = [];
+  
+  // KPI Calculations & Intelligence Generation
+  let todaysEventsCount = 0;
+  let upcomingDeadlinesCount = 0;
+  let meetingsCount = 0;
+  let campaignLaunchesCount = 0;
+  let tasksDueTodayCount = 0;
+  let contentScheduledCount = 0;
+  let overdueItemsCount = 0;
+  
+  // Conflict tracking variables
+  const influencerDays: Record<string, string[]> = {};
+  const campaignContentCount: Record<string, number> = {};
+  
+  const normalizedEvents: any[] = [];
+  const pendingApprovals: any[] = [];
+  const insights: any[] = [];
+
   try {
     const results = await Promise.all([
       db.event.findMany({
@@ -156,304 +174,305 @@ export async function getCalendarDashboardDataAction() {
       })
     ]);
     [dbEvents, tasks, campaigns, projects, contentSchedules, invoices] = results;
-  } catch (error) {
-    console.error("Database query failed in calendar (likely unmigrated tables):", error);
-    // Continue with empty arrays if DB fails, so the UI doesn't completely crash
-  }
 
-  // Normalize all entities into FullCalendar Event format
-  const normalizedEvents: any[] = [];
-  
-  // 1. Regular Events
-  dbEvents.forEach(e => {
-    normalizedEvents.push({
-      id: e.id,
-      title: e.title,
-      description: e.description,
-      start: e.start,
-      end: e.end,
-      allDay: e.allDay,
-      type: e.type, 
-      color: getEventColor(e.type, e.color || undefined),
-      campaign: e.campaign,
-      user: e.user,
-      influencer: e.influencer,
-      isRealEvent: true
+    // Normalize all entities into FullCalendar Event format
+    
+    // 1. Regular Events
+    dbEvents.forEach(e => {
+      normalizedEvents.push({
+        id: e.id,
+        title: e.title || "Untitled Event",
+        description: e.description,
+        start: e.start,
+        end: e.end,
+        allDay: e.allDay,
+        type: e.type, 
+        color: getEventColor(e.type, e.color || undefined),
+        campaign: e.campaign,
+        user: e.user,
+        influencer: e.influencer,
+        isRealEvent: true
+      });
     });
-  });
 
-  // 2. Tasks
-  tasks.forEach(t => {
-    if (t.dueDate) {
-      normalizedEvents.push({
-        id: `task-${t.id}`,
-        title: `Task: ${t.title}`,
-        description: t.description,
-        start: t.dueDate,
-        end: t.dueDate,
-        allDay: true,
-        type: 'DELIVERABLE_DUE',
-        color: getEventColor('DELIVERABLE_DUE'),
-        campaign: t.campaign,
-        user: t.assignee,
-        status: t.status,
-        originalId: t.id
-      });
-    }
-  });
-
-  // 3. Campaigns (Launch and Deadline)
-  campaigns.forEach(c => {
-    if (c.startDate) {
-      normalizedEvents.push({
-        id: `campaign-launch-${c.id}`,
-        title: `Launch: ${c.name}`,
-        description: c.deliverables || c.notes,
-        start: c.startDate,
-        end: c.startDate,
-        allDay: true,
-        type: 'CAMPAIGN_LAUNCH',
-        color: getEventColor('CAMPAIGN_LAUNCH'),
-        client: c.client,
-        status: c.status,
-        originalId: c.id
-      });
-    }
-    if (c.endDate) {
-      normalizedEvents.push({
-        id: `campaign-deadline-${c.id}`,
-        title: `Deadline: ${c.name}`,
-        description: c.deliverables || c.notes,
-        start: c.endDate,
-        end: c.endDate,
-        allDay: true,
-        type: 'CAMPAIGN_DEADLINE',
-        color: getEventColor('CAMPAIGN_DEADLINE'),
-        client: c.client,
-        status: c.status,
-        originalId: c.id
-      });
-    }
-  });
-
-  // 4. Projects (Milestones)
-  projects.forEach(p => {
-    if (p.milestoneDate) {
-      normalizedEvents.push({
-        id: `project-${p.id}`,
-        title: `Milestone: ${p.name}`,
-        description: p.description,
-        start: p.milestoneDate,
-        end: p.milestoneDate,
-        allDay: true,
-        type: 'CAMPAIGN_REVIEW', // Using campaign review color logic
-        color: getEventColor('CAMPAIGN_REVIEW'),
-        client: p.client,
-        status: p.status,
-        originalId: p.id
-      });
-    }
-  });
-
-  // 5. Scheduled Content
-  contentSchedules.forEach(cs => {
-    normalizedEvents.push({
-      id: `content-${cs.id}`,
-      title: `${cs.platform.replace("_", " ")}: ${cs.influencer.instagramHandle}`,
-      description: cs.caption,
-      start: cs.publishDate,
-      end: cs.publishDate,
-      allDay: true, // or specific time if available
-      type: cs.platform, 
-      color: getEventColor(cs.platform),
-      campaign: cs.campaign,
-      influencer: cs.influencer,
-      status: cs.status,
-      originalId: cs.id,
-      mediaUrl: cs.mediaUrl
-    });
-  });
-
-  // 6. Invoices
-  invoices.forEach(i => {
-    normalizedEvents.push({
-      id: `invoice-${i.id}`,
-      title: `Invoice Due: ${i.client?.companyName || 'Client'}`,
-      description: `Amount: $${i.amount}`,
-      start: i.dueDate,
-      end: i.dueDate,
-      allDay: true,
-      type: 'INVOICE_DUE',
-      color: getEventColor('INVOICE_DUE'),
-      campaign: i.campaign,
-      client: i.client,
-      status: i.status,
-      originalId: i.id
-    });
-  });
-
-  // KPI Calculations & Intelligence Generation
-  let todaysEventsCount = 0;
-  let upcomingDeadlinesCount = 0;
-  let meetingsCount = 0;
-  let campaignLaunchesCount = 0;
-  let tasksDueTodayCount = 0;
-  let contentScheduledCount = 0;
-  let overdueItemsCount = 0;
-  
-  // Conflict tracking variables
-  const influencerDays: Record<string, string[]> = {};
-  const campaignContentCount: Record<string, number> = {};
-
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0,0,0,0);
-    return d;
-  };
-  const weekStart = getWeekStart(now);
-  const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-  weekEnd.setHours(23,59,59,999);
-
-  normalizedEvents.forEach(e => {
-    const dStart = new Date(e.start);
-    const dEnd = e.end ? new Date(e.end) : dStart;
-
-    // Stats
-    if ((dStart <= endOfToday && dEnd >= startOfToday) || (dStart >= startOfToday && dStart <= endOfToday)) {
-      todaysEventsCount++;
-    }
-
-    if ((['DELIVERABLE_DUE', 'CAMPAIGN_DEADLINE'].includes(e.type)) && dEnd > endOfToday && dEnd <= next7Days) {
-      upcomingDeadlinesCount++;
-    }
-
-    if (['MEETING', 'CLIENT_MEETING', 'DISCOVERY_CALL', 'TEAM_MEETING'].includes(e.type) && dStart >= startOfToday) {
-      meetingsCount++;
-    }
-
-    if (e.type === 'CAMPAIGN_LAUNCH' && dStart >= weekStart && dStart <= weekEnd) {
-      campaignLaunchesCount++;
-    }
-
-    if (e.type === 'DELIVERABLE_DUE' && dStart >= startOfToday && dStart <= endOfToday && e.status !== 'DONE') {
-      tasksDueTodayCount++;
-    }
-
-    if (['CONTENT_POST', 'INSTAGRAM_POST', 'INSTAGRAM_REEL', 'INSTAGRAM_STORY', 'YOUTUBE_UPLOAD'].includes(e.type) && dStart >= startOfToday) {
-      contentScheduledCount++;
-      
-      if (e.campaign?.id) {
-        campaignContentCount[e.campaign.id] = (campaignContentCount[e.campaign.id] || 0) + 1;
+    // 2. Tasks
+    tasks.forEach(t => {
+      if (t.dueDate) {
+        normalizedEvents.push({
+          id: `task-${t.id}`,
+          title: `Task: ${t.title || "Untitled"}`,
+          description: t.description,
+          start: t.dueDate,
+          end: t.dueDate,
+          allDay: true,
+          type: 'DELIVERABLE_DUE',
+          color: getEventColor('DELIVERABLE_DUE'),
+          campaign: t.campaign,
+          user: t.assignee,
+          status: t.status,
+          originalId: t.id
+        });
       }
+    });
+
+    // 3. Campaigns (Launch and Deadline)
+    campaigns.forEach(c => {
+      if (c.startDate) {
+        normalizedEvents.push({
+          id: `campaign-launch-${c.id}`,
+          title: `Launch: ${c.name || "Untitled"}`,
+          description: c.deliverables || c.notes,
+          start: c.startDate,
+          end: c.startDate,
+          allDay: true,
+          type: 'CAMPAIGN_LAUNCH',
+          color: getEventColor('CAMPAIGN_LAUNCH'),
+          client: c.client,
+          status: c.status,
+          originalId: c.id
+        });
+      }
+      if (c.endDate) {
+        normalizedEvents.push({
+          id: `campaign-deadline-${c.id}`,
+          title: `Deadline: ${c.name || "Untitled"}`,
+          description: c.deliverables || c.notes,
+          start: c.endDate,
+          end: c.endDate,
+          allDay: true,
+          type: 'CAMPAIGN_DEADLINE',
+          color: getEventColor('CAMPAIGN_DEADLINE'),
+          client: c.client,
+          status: c.status,
+          originalId: c.id
+        });
+      }
+    });
+
+    // 4. Projects (Milestones)
+    projects.forEach(p => {
+      if (p.milestoneDate) {
+        normalizedEvents.push({
+          id: `project-${p.id}`,
+          title: `Milestone: ${p.name || "Untitled"}`,
+          description: p.description,
+          start: p.milestoneDate,
+          end: p.milestoneDate,
+          allDay: true,
+          type: 'CAMPAIGN_REVIEW', 
+          color: getEventColor('CAMPAIGN_REVIEW'),
+          client: p.client,
+          status: p.status,
+          originalId: p.id
+        });
+      }
+    });
+
+    // 5. Scheduled Content
+    contentSchedules.forEach(cs => {
+      normalizedEvents.push({
+        id: `content-${cs.id}`,
+        title: `${(cs.platform || "Unknown").replace("_", " ")}: ${cs.influencer?.instagramHandle || cs.influencer?.influencerName || "Unknown"}`,
+        description: cs.caption,
+        start: cs.publishDate,
+        end: cs.publishDate,
+        allDay: true, 
+        type: cs.platform, 
+        color: getEventColor(cs.platform),
+        campaign: cs.campaign,
+        influencer: cs.influencer,
+        status: cs.status,
+        originalId: cs.id,
+        mediaUrl: cs.mediaUrl
+      });
+    });
+
+    // 6. Invoices
+    invoices.forEach(i => {
+      normalizedEvents.push({
+        id: `invoice-${i.id}`,
+        title: `Invoice Due: ${i.client?.companyName || 'Client'}`,
+        description: `Amount: $${i.amount || 0}`,
+        start: i.dueDate,
+        end: i.dueDate,
+        allDay: true,
+        type: 'INVOICE_DUE',
+        color: getEventColor('INVOICE_DUE'),
+        campaign: i.campaign,
+        client: i.client,
+        status: i.status,
+        originalId: i.id
+      });
+    });
+
+    const getWeekStart = (date: Date) => {
+      const d = new Date(date);
+      d.setDate(d.getDate() - d.getDay());
+      d.setHours(0,0,0,0);
+      return d;
+    };
+    
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const next7Days = new Date(endOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const weekStart = getWeekStart(now);
+    const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+    weekEnd.setHours(23,59,59,999);
+
+    normalizedEvents.forEach(e => {
+      if (!e.start) return; // safety check
+      
+      let dStart: Date;
+      try {
+        dStart = new Date(e.start);
+        if (isNaN(dStart.getTime())) return; // Ignore invalid dates
+      } catch (err) {
+        return;
+      }
+      
+      const dEnd = e.end ? new Date(e.end) : dStart;
+
+      // Stats
+      if ((dStart <= endOfToday && dEnd >= startOfToday) || (dStart >= startOfToday && dStart <= endOfToday)) {
+        todaysEventsCount++;
+      }
+
+      if ((['DELIVERABLE_DUE', 'CAMPAIGN_DEADLINE'].includes(e.type)) && dEnd > endOfToday && dEnd <= next7Days) {
+        upcomingDeadlinesCount++;
+      }
+
+      if (['MEETING', 'CLIENT_MEETING', 'DISCOVERY_CALL', 'TEAM_MEETING'].includes(e.type) && dStart >= startOfToday) {
+        meetingsCount++;
+      }
+
+      if (e.type === 'CAMPAIGN_LAUNCH' && dStart >= weekStart && dStart <= weekEnd) {
+        campaignLaunchesCount++;
+      }
+
+      if (e.type === 'DELIVERABLE_DUE' && dStart >= startOfToday && dStart <= endOfToday && e.status !== 'DONE') {
+        tasksDueTodayCount++;
+      }
+
+      if (['CONTENT_POST', 'INSTAGRAM_POST', 'INSTAGRAM_REEL', 'INSTAGRAM_STORY', 'YOUTUBE_UPLOAD'].includes(e.type) && dStart >= startOfToday) {
+        contentScheduledCount++;
+        
+        if (e.campaign?.id) {
+          campaignContentCount[e.campaign.id] = (campaignContentCount[e.campaign.id] || 0) + 1;
+        }
+      }
+
+      if ((e.type === 'DELIVERABLE_DUE' && e.status !== 'DONE' && dStart < startOfToday) || 
+          (e.type === 'CAMPAIGN_DEADLINE' && e.status !== 'COMPLETED' && dEnd < startOfToday)) {
+        overdueItemsCount++;
+      }
+      
+      // Conflict Detection Logic (Influencer overlapping)
+      if (['INFLUENCER_PHOTOSHOOT', 'VIDEO_SHOOT', 'LIVE_EVENT'].includes(e.type) && e.influencer?.id) {
+        try {
+          const dateKey = dStart.toISOString().split('T')[0];
+          const key = `${e.influencer.id}-${dateKey}`;
+          if (!influencerDays[key]) influencerDays[key] = [];
+          influencerDays[key].push(e.id);
+        } catch (err) {
+          // ignore invalid date errors
+        }
+      }
+    });
+
+    // Pending Approvals
+    const pendingTasks = tasks.filter(t => t.status === 'REVIEW').map(t => ({
+      id: t.id,
+      title: t.title || "Untitled",
+      type: 'Task',
+      requester: t.assignee?.name || 'System'
+    }));
+
+    const pendingCampaigns = campaigns.filter(c => c.status === 'REVIEW').map(c => ({
+      id: c.id,
+      title: c.name || "Untitled",
+      type: 'Campaign',
+      requester: c.client?.companyName || 'Client'
+    }));
+
+    pendingApprovals.push(...pendingTasks, ...pendingCampaigns);
+
+    if (contentScheduledCount > 0 && contentScheduledCount < 3) {
+        insights.push({
+            type: "warning",
+            title: "Low Content Volume",
+            description: "Content posting frequency is lower this week. Consider scheduling more posts."
+        });
     }
 
-    if ((e.type === 'DELIVERABLE_DUE' && e.status !== 'DONE' && dStart < startOfToday) || 
-        (e.type === 'CAMPAIGN_DEADLINE' && e.status !== 'COMPLETED' && dEnd < startOfToday)) {
-      overdueItemsCount++;
+    // Detect overlapping shoots
+    let overlappingShoots = 0;
+    for (const key in influencerDays) {
+        if (influencerDays[key].length > 1) overlappingShoots++;
+    }
+    if (overlappingShoots > 0) {
+        insights.push({
+            type: "danger",
+            title: "Scheduling Conflict",
+            description: `Influencer booked multiple times on the same day (${overlappingShoots} conflicts).`
+        });
     }
     
-    // Conflict Detection Logic (Influencer overlapping)
-    if (['INFLUENCER_PHOTOSHOOT', 'VIDEO_SHOOT', 'LIVE_EVENT'].includes(e.type) && e.influencer?.id) {
-      const dateKey = dStart.toISOString().split('T')[0];
-      const key = `${e.influencer.id}-${dateKey}`;
-      if (!influencerDays[key]) influencerDays[key] = [];
-      influencerDays[key].push(e.id);
+    const upcomingCampaignsWithoutContent = campaigns.filter(c => {
+        if (c.status === 'ACTIVE' || c.status === 'PLANNING') {
+            return !campaignContentCount[c.id] || campaignContentCount[c.id] === 0;
+        }
+        return false;
+    });
+    
+    if (upcomingCampaignsWithoutContent.length > 0) {
+        insights.push({
+            type: "warning",
+            title: "Missing Content",
+            description: `Campaign ${upcomingCampaignsWithoutContent[0].name} has no scheduled content.`
+        });
     }
-  });
 
-  // Pending Approvals
-  const pendingTasks = tasks.filter(t => t.status === 'REVIEW').map(t => ({
-    id: t.id,
-    title: t.title,
-    type: 'Task',
-    requester: t.assignee?.name || 'System'
-  }));
-
-  const pendingCampaigns = campaigns.filter(c => c.status === 'REVIEW').map(c => ({
-    id: c.id,
-    title: c.name,
-    type: 'Campaign',
-    requester: c.client?.companyName || 'Client'
-  }));
-
-  const pendingApprovals = [...pendingTasks, ...pendingCampaigns];
-
-  // AI Insights Generation
-  const insights: any[] = [];
-  
-  if (contentScheduledCount > 0 && contentScheduledCount < 3) {
+    if (tasksDueTodayCount > 0) {
       insights.push({
-          type: "warning",
-          title: "Low Content Volume",
-          description: "Content posting frequency is lower this week. Consider scheduling more posts."
+        type: "warning",
+        title: "Tasks Due",
+        description: `You have ${tasksDueTodayCount} tasks due today.`
       });
-  }
+    }
 
-  // Detect overlapping shoots
-  let overlappingShoots = 0;
-  for (const key in influencerDays) {
-      if (influencerDays[key].length > 1) overlappingShoots++;
-  }
-  if (overlappingShoots > 0) {
+    const upcomingCampaigns = campaigns.filter(c => {
+      if (!c.startDate) return false;
+      const d = new Date(c.startDate);
+      return !isNaN(d.getTime()) && d > endOfToday && d <= next7Days;
+    });
+
+    if (upcomingCampaigns.length > 0) {
       insights.push({
-          type: "danger",
-          title: "Scheduling Conflict",
-          description: `Influencer booked multiple times on the same day (${overlappingShoots} conflicts).`
+        type: "info",
+        title: "Campaign Launch",
+        description: `Campaign ${upcomingCampaigns[0].name} starts in a few days.`
       });
-  }
-  
-  const upcomingCampaignsWithoutContent = campaigns.filter(c => {
-      if (c.status === 'ACTIVE' || c.status === 'PLANNING') {
-          return !campaignContentCount[c.id] || campaignContentCount[c.id] === 0;
-      }
-      return false;
-  });
-  
-  if (upcomingCampaignsWithoutContent.length > 0) {
+    }
+
+    if (overdueItemsCount > 0) {
       insights.push({
-          type: "warning",
-          title: "Missing Content",
-          description: `Campaign ${upcomingCampaignsWithoutContent[0].name} has no scheduled content.`
+        type: "danger",
+        title: "Overdue Items",
+        description: `You have ${overdueItemsCount} overdue items that need attention.`
       });
-  }
+    }
 
-  if (tasksDueTodayCount > 0) {
-    insights.push({
-      type: "warning",
-      title: "Tasks Due",
-      description: `You have ${tasksDueTodayCount} tasks due today.`
-    });
-  }
-
-  const upcomingCampaigns = campaigns.filter(c => {
-    if (!c.startDate) return false;
-    const d = new Date(c.startDate);
-    return d > endOfToday && d <= next7Days;
-  });
-
-  if (upcomingCampaigns.length > 0) {
-    insights.push({
-      type: "info",
-      title: "Campaign Launch",
-      description: `Campaign ${upcomingCampaigns[0].name} starts in a few days.`
-    });
-  }
-
-  if (overdueItemsCount > 0) {
-    insights.push({
-      type: "danger",
-      title: "Overdue Items",
-      description: `You have ${overdueItemsCount} overdue items that need attention.`
-    });
-  }
-
-  if (insights.length === 0) {
-    insights.push({
-      type: "success",
-      title: "All Caught Up",
-      description: "You have no pressing items or conflicts right now. Everything is running smoothly."
-    });
+    if (insights.length === 0) {
+      insights.push({
+        type: "success",
+        title: "All Caught Up",
+        description: "You have no pressing items or conflicts right now. Everything is running smoothly."
+      });
+    }
+  } catch (error) {
+    console.error("Calendar data fetch/normalization failed:", error);
+    // On error, insights will be empty and events will be empty, preventing crash
   }
 
   const payload = {
