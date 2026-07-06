@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { notificationBroadcaster } from "@/lib/notification-broadcaster";
+import { WhatsAppService, getWhatsAppTemplateForType } from "./whatsapp.service";
 
 function getBaseUrl() {
   if (typeof window !== "undefined") return "";
@@ -97,7 +98,7 @@ export class NotificationService {
       
       const user = await db.user.findUnique({
         where: { id: payload.userId },
-        select: { email: true, emailPreferences: true }
+        select: { email: true, emailPreferences: true, phoneNumber: true, whatsappPreferences: true }
       });
 
       if (!user) {
@@ -139,6 +140,28 @@ export class NotificationService {
         }
       }
 
+      // WhatsApp Delivery Queue
+      const waPrefs = (user.whatsappPreferences as Record<string, boolean>) || {};
+      const waEnabled = waPrefs[payload.type] !== false;
+      
+      if (waEnabled && user.phoneNumber) {
+        const waTemplateInfo = getWhatsAppTemplateForType(payload.type, payload as CreateNotificationPayload);
+        if (waTemplateInfo) {
+          const waDelivery = await db.whatsAppDelivery.create({
+            data: {
+              notificationId: notification.id,
+              toPhone: user.phoneNumber,
+              messageType: waTemplateInfo.messageType,
+              templateName: waTemplateInfo.templateName,
+              content: waTemplateInfo.content,
+              status: "PENDING",
+            }
+          });
+          // Process asynchronously
+          WhatsAppService.processDelivery(waDelivery.id).catch(console.error);
+        }
+      }
+
       return notification;
     } catch (error) {
       console.error("[NotificationService] Failed to create notification:", error);
@@ -175,23 +198,26 @@ export class NotificationService {
         take: userIds.length,
       });
 
-      // Fetch users for email info
+      // Fetch users for email/WhatsApp info
       const users = await db.user.findMany({
         where: { id: { in: userIds } },
-        select: { id: true, email: true, emailPreferences: true }
+        select: { id: true, email: true, emailPreferences: true, phoneNumber: true, whatsappPreferences: true }
       });
       const userMap = new Map(users.map(u => [u.id, u]));
 
-      // Queue Emails
+      // Queue Emails & WhatsApp
       const emailDeliveriesData: any[] = [];
+      const waDeliveriesData: any[] = [];
       const templateInfo = getEmailTemplateForType(payload.type, payload as CreateNotificationPayload);
+      const waTemplateInfo = getWhatsAppTemplateForType(payload.type, payload as CreateNotificationPayload);
 
       for (const notification of created) {
         notificationBroadcaster.broadcast(notification.userId, notification);
         
-        if (templateInfo) {
-          const user = userMap.get(notification.userId);
-          if (user) {
+        const user = userMap.get(notification.userId);
+        if (user) {
+          // Email logic
+          if (templateInfo) {
             const prefs = (user.emailPreferences as Record<string, boolean>) || {};
             const isEnabled = prefs[payload.type] !== false;
             
@@ -206,6 +232,23 @@ export class NotificationService {
               });
             }
           }
+
+          // WhatsApp logic
+          if (waTemplateInfo && user.phoneNumber) {
+            const waPrefs = (user.whatsappPreferences as Record<string, boolean>) || {};
+            const waEnabled = waPrefs[payload.type] !== false;
+            
+            if (waEnabled) {
+              waDeliveriesData.push({
+                notificationId: notification.id,
+                toPhone: user.phoneNumber,
+                messageType: waTemplateInfo.messageType,
+                templateName: waTemplateInfo.templateName,
+                content: waTemplateInfo.content,
+                status: "PENDING",
+              });
+            }
+          }
         }
       }
 
@@ -214,6 +257,21 @@ export class NotificationService {
           data: emailDeliveriesData
         });
         triggerEmailProcessor();
+      }
+
+      if (waDeliveriesData.length > 0) {
+        await db.whatsAppDelivery.createMany({
+          data: waDeliveriesData
+        });
+        
+        // Fetch the newly created pending records to trigger processing
+        db.whatsAppDelivery.findMany({
+          where: { status: "PENDING" },
+          take: waDeliveriesData.length,
+          orderBy: { createdAt: "desc" }
+        }).then(deliveries => {
+          deliveries.forEach(d => WhatsAppService.processDelivery(d.id).catch(console.error));
+        }).catch(console.error);
       }
 
       return result;
