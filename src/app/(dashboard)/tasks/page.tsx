@@ -1,11 +1,10 @@
 import { Metadata } from "next";
-import { getTasksAction } from "@/actions/tasks";
+import { getTasksAction, getTaskKpisAction } from "@/actions/tasks";
+import { getTaskInsightsAction } from "@/actions/task-insights";
 import { getAllUsersBasicAction } from "@/actions/users";
 import { getCampaignsAction } from "@/actions/campaigns";
 import { requireAuth } from "@/lib/auth-utils";
-import { TaskKanban } from "@/components/tasks/task-kanban";
-import { CheckSquare } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
+import { TaskPageClient } from "@/components/tasks/task-page-client";
 
 export const metadata: Metadata = {
   title: "Tasks",
@@ -13,30 +12,24 @@ export const metadata: Metadata = {
 };
 
 export default async function TasksPage() {
-  await requireAuth();
+  const session = await requireAuth();
 
-  const [tasks, users, campaignsRes] = await Promise.all([
+  const [tasks, users, campaignsRes, kpis, insights] = await Promise.all([
     getTasksAction({}),
     getAllUsersBasicAction(),
     getCampaignsAction({ limit: 100 }),
+    getTaskKpisAction(),
+    getTaskInsightsAction(),
   ]);
 
   return (
-    <div className="h-[calc(100vh-100px)] flex flex-col space-y-6">
-      {/* Page Header */}
-      <PageHeader 
-        title="Task Management" 
-        description="Organize work, track progress, and collaborate with your team." 
-      />
-
-      {/* Main Kanban Area */}
-      <div className="flex-1 overflow-hidden">
-        <TaskKanban 
-          initialData={tasks} 
-          users={users} 
-          campaigns={campaignsRes.campaigns} 
-        />
-      </div>
-    </div>
+    <TaskPageClient
+      tasks={tasks}
+      users={users}
+      campaigns={campaignsRes.campaigns}
+      kpis={kpis}
+      insights={insights}
+      currentUserId={session.id}
+    />
   );
 }

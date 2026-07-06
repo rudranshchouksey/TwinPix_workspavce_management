@@ -244,3 +244,115 @@ export async function deleteTaskCommentAction(commentId: string) {
 
   revalidatePath(`/tasks/${comment.taskId}`);
 }
+
+// ─── Task KPIs ───────────────────────────────────────────────────
+
+export interface TaskKpis {
+  total: number;
+  todo: number;
+  inProgress: number;
+  review: number;
+  completed: number;
+  overdue: number;
+  highPriority: number;
+  dueToday: number;
+  growth: Record<string, number | null>;
+  series: Record<string, number[]>;
+}
+
+export async function getTaskKpisAction(): Promise<TaskKpis> {
+  await requireAuth();
+
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const [
+    total,
+    todo,
+    inProgress,
+    review,
+    completed,
+    overdue,
+    highPriority,
+    dueToday,
+    totalPrev,
+    completedPrev,
+    completedRecent,
+  ] = await Promise.all([
+    db.task.count(),
+    db.task.count({ where: { status: "TODO" } }),
+    db.task.count({ where: { status: "IN_PROGRESS" } }),
+    db.task.count({ where: { status: "REVIEW" } }),
+    db.task.count({ where: { status: "DONE" } }),
+    db.task.count({
+      where: { status: { not: "DONE" }, dueDate: { lt: startOfDay } },
+    }),
+    db.task.count({
+      where: { priority: { in: ["HIGH", "URGENT"] }, status: { not: "DONE" } },
+    }),
+    db.task.count({
+      where: { status: { not: "DONE" }, dueDate: { gte: startOfDay, lte: endOfDay } },
+    }),
+    // Previous period counts for growth
+    db.task.count({ where: { createdAt: { lt: sevenDaysAgo } } }),
+    db.task.count({ where: { status: "DONE", updatedAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } } }),
+    db.task.count({ where: { status: "DONE", updatedAt: { gte: sevenDaysAgo } } }),
+  ]);
+
+  // Growth calculations
+  const totalGrowth = totalPrev > 0 ? Math.round(((total - totalPrev) / totalPrev) * 100) : null;
+  const completedGrowth = completedPrev > 0 ? Math.round(((completedRecent - completedPrev) / completedPrev) * 100) : null;
+
+  // Build sparkline series (last 8 weeks of task creation)
+  const eightWeeksAgo = new Date(now.getTime() - 8 * 7 * 24 * 60 * 60 * 1000);
+  const weeklyTasks = await db.task.findMany({
+    where: { createdAt: { gte: eightWeeksAgo } },
+    select: { createdAt: true, status: true },
+  });
+
+  const weekBuckets: number[] = Array(8).fill(0);
+  const completedBuckets: number[] = Array(8).fill(0);
+  for (const t of weeklyTasks) {
+    const weeksAgo = Math.floor((now.getTime() - new Date(t.createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const idx = 7 - Math.min(weeksAgo, 7);
+    weekBuckets[idx]++;
+    if (t.status === "DONE") completedBuckets[idx]++;
+  }
+
+  return {
+    total,
+    todo,
+    inProgress,
+    review,
+    completed,
+    overdue,
+    highPriority,
+    dueToday,
+    growth: {
+      total: totalGrowth,
+      completed: completedGrowth,
+      todo: null,
+      inProgress: null,
+      review: null,
+      overdue: null,
+      highPriority: null,
+      dueToday: null,
+    },
+    series: {
+      total: weekBuckets,
+      completed: completedBuckets,
+      todo: weekBuckets.map(() => todo),
+      inProgress: weekBuckets.map(() => inProgress),
+      review: weekBuckets.map(() => review),
+      overdue: weekBuckets.map(() => overdue),
+      highPriority: weekBuckets.map(() => highPriority),
+      dueToday: weekBuckets.map(() => dueToday),
+    },
+  };
+}
