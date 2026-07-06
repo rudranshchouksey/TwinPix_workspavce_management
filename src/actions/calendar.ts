@@ -449,7 +449,7 @@ export async function getCalendarDashboardDataAction() {
     });
   }
 
-  return {
+  const payload = {
     events: normalizedEvents,
     kpis: {
       todaysEvents: todaysEventsCount,
@@ -463,4 +463,7 @@ export async function getCalendarDashboardDataAction() {
     insights,
     pendingApprovals
   };
+
+  // Stringify and parse to remove all undefined values which crash Next.js Server Components
+  return JSON.parse(JSON.stringify(payload));
 }
