@@ -74,6 +74,7 @@ model User {
   image       String? // avatar URL or local path
   jobTitle    String?
   department  String?
+  emailPreferences Json? // e.g. { "TASK": true, "CAMPAIGN": true }
   createdById String? // cuid of admin who created this account
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -666,11 +667,38 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailDeliveries EmailDelivery[]
 
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([isRead])
   @@map("notifications")
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model EmailDelivery {
+  id             String              @id @default(cuid())
+  notificationId String?
+  toEmail        String
+  subject        String
+  templateName   String
+  payload        Json?               // Data passed to the email template
+  status         EmailDeliveryStatus @default(PENDING)
+  attempts       Int                 @default(0)
+  lastError      String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([notificationId])
+  @@map("email_deliveries")
 }
 
 model ActivityLog {

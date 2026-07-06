@@ -1,6 +1,65 @@
 import { db } from "@/lib/db";
 import { notificationBroadcaster } from "@/lib/notification-broadcaster";
 
+function getBaseUrl() {
+  if (typeof window !== "undefined") return "";
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return `http://localhost:${process.env.PORT ?? 3000}`;
+}
+
+async function triggerEmailProcessor() {
+  try {
+    fetch(`${getBaseUrl()}/api/emails/process`, { method: "POST" }).catch(() => {});
+  } catch (err) {
+    // Ignore trigger errors
+  }
+}
+
+function getEmailTemplateForType(type: NotificationType, payload: CreateNotificationPayload): { templateName: string; emailPayload: any } | null {
+  const link = payload.link || "https://twinpix.studio";
+  
+  // Mapping specific types to templates based on our React Email templates
+  if (type === "TASK" || type === "TASK_ASSIGNED") {
+    return {
+      templateName: "TASK_ASSIGNED",
+      emailPayload: { taskTitle: payload.title, assignerName: "Team", link }
+    };
+  }
+  if (type === "CAMPAIGN" || type === "CAMPAIGN_ASSIGNED") {
+    return {
+      templateName: "CAMPAIGN_ASSIGNED",
+      emailPayload: { campaignName: payload.title, role: "Member", link }
+    };
+  }
+  if (type === "MEETING" || type === "CALENDAR") {
+    return {
+      templateName: "MEETING_REMINDER",
+      emailPayload: { meetingTitle: payload.title, meetingTime: "Upcoming", link }
+    };
+  }
+  if (type === "DEADLINE") {
+    return {
+      templateName: "DEADLINE_REMINDER",
+      emailPayload: { itemName: payload.title, dueDate: "Soon", link }
+    };
+  }
+  if (type === "PAYMENT") {
+    return {
+      templateName: "PAYMENT_REMINDER",
+      emailPayload: { amount: "Balance Due", dueDate: "Soon", clientName: "Client", link }
+    };
+  }
+  if (type === "AI" || type === "SUMMARY") {
+    return {
+      templateName: "AI_DAILY_SUMMARY",
+      emailPayload: { date: new Date().toLocaleDateString(), summaryText: payload.message, highlights: [], link }
+    };
+  }
+  
+  return null;
+}
+
+
 export type NotificationType = 
   | "TASK" 
   | "CAMPAIGN" 
@@ -35,6 +94,16 @@ export class NotificationService {
   static async createNotification(payload: CreateNotificationPayload) {
     try {
       const { metadata, ...rest } = payload;
+      
+      const user = await db.user.findUnique({
+        where: { id: payload.userId },
+        select: { email: true, emailPreferences: true }
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
       const notification = await db.notification.create({
         data: {
           ...rest,
@@ -45,6 +114,30 @@ export class NotificationService {
 
       // Broadcast to connected SSE clients
       notificationBroadcaster.broadcast(payload.userId, notification);
+
+      // Queue Email if user has preferences enabled for this type and we have a template
+      const prefs = (user.emailPreferences as Record<string, boolean>) || {};
+      // Default to true if not explicitly disabled for important categories, 
+      // or strictly check if true. We'll assume opt-out by default unless set to false.
+      const isEnabled = prefs[payload.type] !== false; 
+
+      if (isEnabled) {
+        const templateInfo = getEmailTemplateForType(payload.type, payload);
+        if (templateInfo) {
+          await db.emailDelivery.create({
+            data: {
+              notificationId: notification.id,
+              toEmail: user.email,
+              subject: payload.title,
+              templateName: templateInfo.templateName,
+              payload: templateInfo.emailPayload,
+              status: "PENDING",
+            }
+          });
+          // Non-blocking trigger
+          triggerEmailProcessor();
+        }
+      }
 
       return notification;
     } catch (error) {
@@ -82,8 +175,45 @@ export class NotificationService {
         take: userIds.length,
       });
 
+      // Fetch users for email info
+      const users = await db.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, email: true, emailPreferences: true }
+      });
+      const userMap = new Map(users.map(u => [u.id, u]));
+
+      // Queue Emails
+      const emailDeliveriesData: any[] = [];
+      const templateInfo = getEmailTemplateForType(payload.type, payload as CreateNotificationPayload);
+
       for (const notification of created) {
         notificationBroadcaster.broadcast(notification.userId, notification);
+        
+        if (templateInfo) {
+          const user = userMap.get(notification.userId);
+          if (user) {
+            const prefs = (user.emailPreferences as Record<string, boolean>) || {};
+            const isEnabled = prefs[payload.type] !== false;
+            
+            if (isEnabled) {
+              emailDeliveriesData.push({
+                notificationId: notification.id,
+                toEmail: user.email,
+                subject: payload.title,
+                templateName: templateInfo.templateName,
+                payload: templateInfo.emailPayload,
+                status: "PENDING",
+              });
+            }
+          }
+        }
+      }
+
+      if (emailDeliveriesData.length > 0) {
+        await db.emailDelivery.createMany({
+          data: emailDeliveriesData
+        });
+        triggerEmailProcessor();
       }
 
       return result;
