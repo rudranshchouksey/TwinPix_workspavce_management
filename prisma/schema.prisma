@@ -837,7 +837,7 @@ model Project {
   campaigns Campaign[]
 
   @@index([clientId])
-  @@index([clientId])
+  @@index([status])
   @@map("projects")
 }
 

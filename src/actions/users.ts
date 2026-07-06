@@ -276,3 +276,57 @@ export async function getAllUsersBasicAction() {
     return [];
   }
 }
+
+/**
+ * Fetch current user's notification preferences
+ */
+export async function getUserNotificationPreferencesAction() {
+  const currentUser = await requireAuth();
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: {
+        emailPreferences: true,
+        whatsappPreferences: true,
+        inAppPreferences: true,
+        pushPreferences: true,
+      }
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Failed to fetch user preferences:", error);
+    return null;
+  }
+}
+
+/**
+ * Update current user's notification preferences
+ */
+export async function updateUserNotificationPreferencesAction(input: {
+  emailPreferences?: any;
+  whatsappPreferences?: any;
+  inAppPreferences?: any;
+  pushPreferences?: any;
+}) {
+  const currentUser = await requireAuth();
+
+  try {
+    await prisma.user.update({
+      where: { id: currentUser.id },
+      data: {
+        ...(input.emailPreferences !== undefined && { emailPreferences: input.emailPreferences }),
+        ...(input.whatsappPreferences !== undefined && { whatsappPreferences: input.whatsappPreferences }),
+        ...(input.inAppPreferences !== undefined && { inAppPreferences: input.inAppPreferences }),
+        ...(input.pushPreferences !== undefined && { pushPreferences: input.pushPreferences }),
+      }
+    });
+
+    revalidatePath("/settings/notifications");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update user preferences:", error);
+    throw new Error("Failed to update preferences");
+  }
+}

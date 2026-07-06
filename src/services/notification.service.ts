@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { notificationBroadcaster } from "@/lib/notification-broadcaster";
 import { WhatsAppService, getWhatsAppTemplateForType } from "./whatsapp.service";
 
+const NOTIFICATION_DEFAULTS_KEY = "NOTIFICATION_DEFAULTS";
+
 function getBaseUrl() {
   if (typeof window !== "undefined") return "";
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
@@ -16,10 +18,32 @@ async function triggerEmailProcessor() {
   }
 }
 
+function getCategoryForType(type: string) {
+  if (type.includes("CAMPAIGN")) return "CAMPAIGN";
+  if (type.includes("TASK")) return "TASK";
+  if (type.includes("MEETING") || type === "CALENDAR") return "MEETING";
+  if (type.includes("PAYMENT") || type.includes("INVOICE")) return "PAYMENT";
+  if (type.includes("PROJECT")) return "PROJECT";
+  if (type.includes("AI") || type === "SUMMARY") return "AI";
+  return "SYSTEM"; // Default catch-all
+}
+
+function isChannelEnabled(userPrefs: any, defaultPrefs: any, channel: string, category: string) {
+  // First check user explicit preference
+  if (userPrefs && typeof userPrefs[category] === "boolean") {
+    return userPrefs[category];
+  }
+  // Fallback to admin default
+  if (defaultPrefs && defaultPrefs[channel] && typeof defaultPrefs[channel][category] === "boolean") {
+    return defaultPrefs[channel][category];
+  }
+  // Hardcoded fallback (true by default to ensure notifications go out unless opted out)
+  return true;
+}
+
 function getEmailTemplateForType(type: NotificationType, payload: CreateNotificationPayload): { templateName: string; emailPayload: any } | null {
   const link = payload.link || "https://twinpix.studio";
   
-  // Mapping specific types to templates based on our React Email templates
   if (type === "TASK" || type === "TASK_ASSIGNED") {
     return {
       templateName: "TASK_ASSIGNED",
@@ -60,7 +84,6 @@ function getEmailTemplateForType(type: NotificationType, payload: CreateNotifica
   return null;
 }
 
-
 export type NotificationType = 
   | "TASK" 
   | "CAMPAIGN" 
@@ -72,7 +95,7 @@ export type NotificationType =
   | "SYSTEM" 
   | "INFLUENCER" 
   | "CALENDAR"
-  | string; // allowing string for backwards compatibility with older types
+  | string;
 
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -98,12 +121,24 @@ export class NotificationService {
       
       const user = await db.user.findUnique({
         where: { id: payload.userId },
-        select: { email: true, emailPreferences: true, phoneNumber: true, whatsappPreferences: true }
+        select: { 
+          email: true, 
+          emailPreferences: true, 
+          phoneNumber: true, 
+          whatsappPreferences: true,
+          inAppPreferences: true,
+          pushPreferences: true
+        }
       });
 
       if (!user) {
         throw new Error("User not found");
       }
+
+      // Fetch global defaults
+      const defaultSetting = await db.systemSetting.findUnique({ where: { key: NOTIFICATION_DEFAULTS_KEY } });
+      const defaultPrefs = (defaultSetting?.value as any) || {};
+      const category = getCategoryForType(payload.type);
 
       const notification = await db.notification.create({
         data: {
@@ -113,16 +148,15 @@ export class NotificationService {
         },
       });
 
-      // Broadcast to connected SSE clients
-      notificationBroadcaster.broadcast(payload.userId, notification);
+      // 1. In-App Delivery
+      const inAppEnabled = isChannelEnabled(user.inAppPreferences, defaultPrefs, "inApp", category);
+      if (inAppEnabled) {
+        notificationBroadcaster.broadcast(payload.userId, notification);
+      }
 
-      // Queue Email if user has preferences enabled for this type and we have a template
-      const prefs = (user.emailPreferences as Record<string, boolean>) || {};
-      // Default to true if not explicitly disabled for important categories, 
-      // or strictly check if true. We'll assume opt-out by default unless set to false.
-      const isEnabled = prefs[payload.type] !== false; 
-
-      if (isEnabled) {
+      // 2. Email Delivery Queue
+      const emailEnabled = isChannelEnabled(user.emailPreferences, defaultPrefs, "email", category);
+      if (emailEnabled) {
         const templateInfo = getEmailTemplateForType(payload.type, payload);
         if (templateInfo) {
           await db.emailDelivery.create({
@@ -140,10 +174,8 @@ export class NotificationService {
         }
       }
 
-      // WhatsApp Delivery Queue
-      const waPrefs = (user.whatsappPreferences as Record<string, boolean>) || {};
-      const waEnabled = waPrefs[payload.type] !== false;
-      
+      // 3. WhatsApp Delivery Queue
+      const waEnabled = isChannelEnabled(user.whatsappPreferences, defaultPrefs, "whatsapp", category);
       if (waEnabled && user.phoneNumber) {
         const waTemplateInfo = getWhatsAppTemplateForType(payload.type, payload as CreateNotificationPayload);
         if (waTemplateInfo) {
@@ -161,6 +193,10 @@ export class NotificationService {
           WhatsAppService.processDelivery(waDelivery.id).catch(console.error);
         }
       }
+      
+      // 4. Future Push Notifications
+      // const pushEnabled = isChannelEnabled(user.pushPreferences, defaultPrefs, "push", category);
+      // if (pushEnabled) { ... }
 
       return notification;
     } catch (error) {
@@ -187,7 +223,6 @@ export class NotificationService {
       });
 
       // Broadcast to each user's connected SSE clients.
-      // createMany doesn't return records, so we fetch them for broadcast.
       const created = await db.notification.findMany({
         where: {
           userId: { in: userIds },
@@ -198,30 +233,46 @@ export class NotificationService {
         take: userIds.length,
       });
 
-      // Fetch users for email/WhatsApp info
+      // Fetch users for channel info
       const users = await db.user.findMany({
         where: { id: { in: userIds } },
-        select: { id: true, email: true, emailPreferences: true, phoneNumber: true, whatsappPreferences: true }
+        select: { 
+          id: true, 
+          email: true, 
+          emailPreferences: true, 
+          phoneNumber: true, 
+          whatsappPreferences: true,
+          inAppPreferences: true,
+          pushPreferences: true
+        }
       });
       const userMap = new Map(users.map(u => [u.id, u]));
 
-      // Queue Emails & WhatsApp
+      // Fetch global defaults
+      const defaultSetting = await db.systemSetting.findUnique({ where: { key: NOTIFICATION_DEFAULTS_KEY } });
+      const defaultPrefs = (defaultSetting?.value as any) || {};
+      const category = getCategoryForType(payload.type);
+
+      // Queue Deliveries
       const emailDeliveriesData: any[] = [];
       const waDeliveriesData: any[] = [];
       const templateInfo = getEmailTemplateForType(payload.type, payload as CreateNotificationPayload);
       const waTemplateInfo = getWhatsAppTemplateForType(payload.type, payload as CreateNotificationPayload);
 
       for (const notification of created) {
-        notificationBroadcaster.broadcast(notification.userId, notification);
-        
         const user = userMap.get(notification.userId);
         if (user) {
-          // Email logic
+          
+          // 1. In-App Delivery
+          const inAppEnabled = isChannelEnabled(user.inAppPreferences, defaultPrefs, "inApp", category);
+          if (inAppEnabled) {
+            notificationBroadcaster.broadcast(notification.userId, notification);
+          }
+          
+          // 2. Email logic
           if (templateInfo) {
-            const prefs = (user.emailPreferences as Record<string, boolean>) || {};
-            const isEnabled = prefs[payload.type] !== false;
-            
-            if (isEnabled) {
+            const emailEnabled = isChannelEnabled(user.emailPreferences, defaultPrefs, "email", category);
+            if (emailEnabled) {
               emailDeliveriesData.push({
                 notificationId: notification.id,
                 toEmail: user.email,
@@ -233,11 +284,9 @@ export class NotificationService {
             }
           }
 
-          // WhatsApp logic
+          // 3. WhatsApp logic
           if (waTemplateInfo && user.phoneNumber) {
-            const waPrefs = (user.whatsappPreferences as Record<string, boolean>) || {};
-            const waEnabled = waPrefs[payload.type] !== false;
-            
+            const waEnabled = isChannelEnabled(user.whatsappPreferences, defaultPrefs, "whatsapp", category);
             if (waEnabled) {
               waDeliveriesData.push({
                 notificationId: notification.id,
