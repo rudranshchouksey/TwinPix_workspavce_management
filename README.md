@@ -6,22 +6,6 @@
 
 TwinPix Workspace is a unified operating system for influencer marketing. It combines intelligent creator discovery, relationship management (CRM), comprehensive campaign tracking, and seamless workspace collaboration into a single, high-performance platform.
 
----
-
-## 📸 Screenshots
-
-*Placeholders for upcoming application screenshots.*
-
-| Dashboard | Influencer Profile |
-| :---: | :---: |
-| ![Dashboard](/public/screenshots/dashboard-placeholder.png) | ![Influencer Profile](/public/screenshots/influencer-placeholder.png) |
-
-| Pipeline | Analytics | Campaigns |
-| :---: | :---: | :---: |
-| ![Pipeline](/public/screenshots/pipeline-placeholder.png) | ![Analytics](/public/screenshots/analytics-placeholder.png) | ![Campaigns](/public/screenshots/campaigns-placeholder.png) |
-
----
-
 ## ✨ Features
 
 ### 🌟 Influencer Management
