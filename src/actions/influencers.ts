@@ -42,10 +42,13 @@ export async function getInfluencersAction(
   const where: any = {};
 
   if (search) {
-    where.OR = [
-      { instagramHandle: { contains: search, mode: "insensitive" } },
-      { influencerName: { contains: search, mode: "insensitive" } },
-    ];
+    const cleanSearch = search.trim();
+    if (cleanSearch) {
+      where.OR = [
+        { instagramHandle: { contains: cleanSearch, mode: "insensitive" } },
+        { influencerName: { contains: cleanSearch, mode: "insensitive" } },
+      ];
+    }
   }
 
   if (category && category !== "ALL") {
