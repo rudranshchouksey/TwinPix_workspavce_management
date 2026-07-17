@@ -82,6 +82,7 @@ export async function createUserAction(input: CreateUserInput) {
           status: data.status as any,
           jobTitle: data.jobTitle,
           department: data.department,
+          image: data.image,
           createdById: currentUser.id,
         },
       });
@@ -139,6 +140,7 @@ export async function updateUserAction(userId: string, input: UpdateUserInput) {
       status: data.status,
       jobTitle: data.jobTitle,
       department: data.department,
+      image: data.image,
     };
 
     if (data.password && data.password !== "") {
@@ -215,13 +217,17 @@ export async function deleteUserAction(userId: string) {
 /**
  * Update personal profile settings
  */
-export async function updateProfileSettingsAction(input: { name: string, password?: string }) {
+export async function updateProfileSettingsAction(input: { name: string, password?: string, image?: string }) {
   const currentUser = await requireAuth();
 
   try {
     const updateData: any = {
       name: input.name,
     };
+
+    if (input.image) {
+      updateData.image = input.image;
+    }
 
     if (input.password && input.password.trim() !== "") {
       updateData.password = await bcrypt.hash(input.password, 10);

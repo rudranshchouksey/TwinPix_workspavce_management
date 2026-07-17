@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { uploadUserImageAction } from "@/actions/upload-user-image";
 
 import {
   Dialog,
@@ -46,6 +48,8 @@ interface UserDialogProps {
 export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const isEditing = !!user;
   const [isPending, setIsPending] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Use the appropriate schema depending on whether we're editing
   const form = useForm<CreateUserInput>({
@@ -65,6 +69,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   useEffect(() => {
     if (open) {
       if (user) {
+        setImageFile(null);
+        setImagePreview(user.image || null);
         form.reset({
           name: user.name || "",
           email: user.email || "",
@@ -84,6 +90,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           jobTitle: "",
           department: "",
         });
+        setImageFile(null);
+        setImagePreview(null);
       }
     }
   }, [open, user, form]);
@@ -91,14 +99,24 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const onSubmit = async (data: any) => {
     setIsPending(true);
     try {
+      let imageUrl = data.image;
+
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        const result = await uploadUserImageAction(formData);
+        imageUrl = result.url;
+      }
+
+      const payload = { ...data, image: imageUrl };
+
       if (isEditing) {
         // If password is blank, we don't send it to update
-        const payload = { ...data };
         if (!payload.password) delete payload.password;
         await updateUserAction(user.id, payload as UpdateUserInput);
         toast.success("User updated successfully");
       } else {
-        await createUserAction(data as CreateUserInput);
+        await createUserAction(payload as CreateUserInput);
         toast.success("User created successfully");
       }
       onOpenChange(false);
@@ -125,6 +143,42 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            <div className="flex flex-col items-center justify-center mb-6">
+              <div className="relative group cursor-pointer">
+                <Avatar className="h-24 w-24 border border-[rgba(0,0,0,0.1)]">
+                  <AvatarImage src={imagePreview || ""} alt="Profile" className="object-cover" />
+                  <AvatarFallback className="bg-[rgba(0,0,0,0.05)] text-xl">
+                    {form.watch("name")?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div 
+                  className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => document.getElementById("avatar-upload")?.click()}
+                >
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                Click to upload profile image
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

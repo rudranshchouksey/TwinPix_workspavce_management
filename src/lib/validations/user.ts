@@ -8,6 +8,7 @@ export const createUserSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
+  image: z.string().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
@@ -19,6 +20,7 @@ export const updateUserSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]).optional(),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
+  image: z.string().optional(),
   password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal("")),
 });
 

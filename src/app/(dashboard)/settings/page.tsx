@@ -8,6 +8,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { useSession } from "next-auth/react";
 import { updateProfileSettingsAction } from "@/actions/users";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Camera } from "lucide-react";
+import { uploadUserImageAction } from "@/actions/upload-user-image";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
@@ -15,10 +18,15 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.user?.name) {
       setName(session.user.name);
+    }
+    if (session?.user?.image) {
+      setImagePreview(session.user.image);
     }
   }, [session]);
 
@@ -29,12 +37,21 @@ export default function SettingsPage() {
     setSaving(true);
     
     try {
-      await updateProfileSettingsAction({ name, password });
+      let imageUrl = session?.user?.image;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        const result = await uploadUserImageAction(formData);
+        imageUrl = result.url;
+      }
+
+      await updateProfileSettingsAction({ name, password, image: imageUrl || undefined });
       toast.success("Settings saved successfully!");
       setPassword(""); // Clear password field after save
+      setImageFile(null); // Clear file after save
       
       // Update next-auth session data
-      await update({ name });
+      await update({ name, image: imageUrl });
     } catch (error: any) {
       toast.error(error.message || "Failed to update settings");
     } finally {
@@ -69,6 +86,55 @@ export default function SettingsPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col mb-6">
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+              Profile Image
+            </label>
+            <div className="flex items-center gap-6">
+              <div className="relative group cursor-pointer">
+                <Avatar className="h-20 w-20 border border-[rgba(0,0,0,0.1)]">
+                  <AvatarImage src={imagePreview || ""} alt="Profile" className="object-cover" />
+                  <AvatarFallback className="bg-[rgba(0,0,0,0.05)] text-xl">
+                    {name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div 
+                  className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => document.getElementById("settings-avatar-upload")?.click()}
+                >
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+                
+                <input
+                  id="settings-avatar-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("settings-avatar-upload")?.click()}
+                  className="px-4 py-2 bg-[rgba(0,0,0,0.05)] hover:bg-[rgba(0,0,0,0.1)] text-[var(--color-text-primary)] rounded-lg font-medium transition-colors text-sm"
+                >
+                  Change Image
+                </button>
+                <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                  JPG, PNG, WebP or GIF. Max 5MB.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
