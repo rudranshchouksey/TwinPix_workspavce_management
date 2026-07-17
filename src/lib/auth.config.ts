@@ -8,13 +8,23 @@ export const authConfig = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        if (session.name) token.name = session.name;
+        if (session.image !== undefined) token.picture = session.image; // NextAuth uses 'picture' by default
+        if (session.image !== undefined) token.image = session.image;
+      }
+      
       if (user) {
         token.id = user.id!;
         token.role = user.role;
         token.status = user.status;
         token.jobTitle = user.jobTitle;
         token.department = user.department;
+        if (user.image) {
+          token.picture = user.image;
+          token.image = user.image;
+        }
       }
       return token;
     },
@@ -25,6 +35,13 @@ export const authConfig = {
         session.user.status = token.status as string;
         session.user.jobTitle = token.jobTitle as string;
         session.user.department = token.department as string;
+        
+        if (token.image || token.picture) {
+          session.user.image = (token.image || token.picture) as string;
+        }
+        if (token.name) {
+          session.user.name = token.name as string;
+        }
       }
       return session;
     },
