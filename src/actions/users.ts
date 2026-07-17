@@ -217,7 +217,13 @@ export async function deleteUserAction(userId: string) {
 /**
  * Update personal profile settings
  */
-export async function updateProfileSettingsAction(input: { name: string, password?: string, image?: string }) {
+export async function updateProfileSettingsAction(input: { 
+  name: string, 
+  password?: string, 
+  image?: string,
+  jobTitle?: string,
+  department?: string,
+}) {
   const currentUser = await requireAuth();
 
   try {
@@ -225,8 +231,16 @@ export async function updateProfileSettingsAction(input: { name: string, passwor
       name: input.name,
     };
 
-    if (input.image) {
+    if (input.image !== undefined) {
       updateData.image = input.image;
+    }
+    
+    if (input.jobTitle !== undefined) {
+      updateData.jobTitle = input.jobTitle;
+    }
+    
+    if (input.department !== undefined) {
+      updateData.department = input.department;
     }
 
     if (input.password && input.password.trim() !== "") {
@@ -334,5 +348,43 @@ export async function updateUserNotificationPreferencesAction(input: {
   } catch (error) {
     console.error("Failed to update user preferences:", error);
     throw new Error("Failed to update preferences");
+  }
+}
+
+/**
+ * Fetch detailed profile of current logged-in user
+ */
+export async function getCurrentUserProfileAction() {
+  const currentUser = await requireAuth();
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        status: true,
+        jobTitle: true,
+        department: true,
+        createdAt: true,
+        assignedTasks: {
+          where: { status: { not: "DONE" } },
+          take: 5,
+          orderBy: { dueDate: "asc" },
+        },
+        activityLogs: {
+          take: 10,
+          orderBy: { createdAt: "desc" },
+        },
+      }
+    });
+    
+    return user;
+  } catch (error) {
+    console.error("Failed to fetch current user profile:", error);
+    throw new Error("Failed to load profile");
   }
 }
