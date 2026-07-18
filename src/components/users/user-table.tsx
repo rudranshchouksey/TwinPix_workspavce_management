@@ -41,8 +41,21 @@ import { DeleteUserAlert } from "./delete-user-alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 import { PremiumCard } from "@/components/ui/premium-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { User } from "@prisma/client";
+
+function getInitials(name?: string | null, email?: string | null): string {
+  if (name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return (email?.[0] ?? "U").toUpperCase();
+}
 
 interface UserTableProps {
   data: User[];
@@ -74,13 +87,21 @@ export function UserTable({ data, currentUserRole }: UserTableProps) {
         );
       },
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-[var(--color-text-primary)]">
-            {row.original.name || "Unnamed"}
-          </span>
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {row.original.email}
-          </span>
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9 ring-1 ring-[var(--color-border)] shadow-sm">
+            <AvatarImage src={row.original.image ?? undefined} />
+            <AvatarFallback className="bg-[var(--color-brand-100)] text-[var(--color-brand-700)] text-xs font-bold">
+              {getInitials(row.original.name, row.original.email)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="font-medium text-[var(--color-text-primary)]">
+              {row.original.name || "Unnamed"}
+            </span>
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {row.original.email}
+            </span>
+          </div>
         </div>
       ),
     },
