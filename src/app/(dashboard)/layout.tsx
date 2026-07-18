@@ -4,6 +4,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { BreadcrumbProvider } from "@/contexts/breadcrumb-context";
 import { TwinAIPanel } from "@/components/copilot/twin-ai-panel";
 import { NotificationStreamProvider } from "@/components/providers/notification-stream-provider";
+import { db } from "@/lib/db";
 
 /**
  * Dashboard layout — wraps all /app/(dashboard) routes.
@@ -18,18 +19,26 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireAuth();
+  const sessionUser = await requireAuth();
+  
+  // Fetch fresh user data to ensure avatar and name are always up-to-date in layout
+  const freshUser = await db.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { name: true, email: true, image: true, role: true }
+  });
+  
+  const user = freshUser || sessionUser;
 
   return (
     <BreadcrumbProvider>
       <NotificationStreamProvider>
         <div className="flex h-dvh w-full overflow-hidden bg-[var(--color-surface-950)]">
           {/* Sidebar (desktop: inline, mobile: overlay via portal) */}
-          <Sidebar userRole={user.role} />
+          <Sidebar userRole={user.role} userOverride={user} />
 
           {/* Main area */}
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <Topbar />
+            <Topbar userOverride={user} />
 
             <main
               id="main-content"

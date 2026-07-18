@@ -91,14 +91,14 @@ function getInitials(name?: string | null, email?: string | null): string {
 
 // ─── Component ───────────────────────────────────────────────
 
-export function Topbar() {
+export function Topbar({ userOverride }: { userOverride?: any }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { openMobile } = useSidebar();
   const [isAISearchOpen, setIsAISearchOpen] = useState(false);
   const breadcrumbLabels = useBreadcrumbLabels();
   const breadcrumbs = pathToBreadcrumbs(pathname, breadcrumbLabels[pathname]);
-  const user = session?.user;
+  const user = userOverride || session?.user;
 
   return (
     <header

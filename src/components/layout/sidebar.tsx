@@ -38,14 +38,16 @@ function getInitials(name?: string | null, email?: string | null): string {
 function SidebarContent({
   isCollapsed,
   userRole,
+  userOverride,
   onNavigate,
 }: {
   isCollapsed: boolean;
   userRole?: string;
+  userOverride?: any;
   onNavigate?: () => void;
 }) {
   const { data: session } = useSession();
-  const user = session?.user;
+  const user = userOverride || session?.user;
 
   return (
     <>
@@ -104,7 +106,7 @@ function SidebarContent({
 
 // ─── Desktop Sidebar ─────────────────────────────────────────
 
-function DesktopSidebar({ userRole }: { userRole?: string }) {
+function DesktopSidebar({ userRole, userOverride }: { userRole?: string, userOverride?: any }) {
   const { isCollapsed, toggle } = useSidebar();
 
   return (
@@ -173,14 +175,14 @@ function DesktopSidebar({ userRole }: { userRole?: string }) {
         </TooltipContent>
       </Tooltip>
 
-      <SidebarContent isCollapsed={isCollapsed} userRole={userRole} />
+      <SidebarContent isCollapsed={isCollapsed} userRole={userRole} userOverride={userOverride} />
     </motion.aside>
   );
 }
 
 // ─── Mobile Sidebar Overlay ──────────────────────────────────
 
-function MobileSidebar({ userRole }: { userRole?: string }) {
+function MobileSidebar({ userRole, userOverride }: { userRole?: string, userOverride?: any }) {
   const { isMobileOpen, closeMobile } = useSidebar();
 
   return (
@@ -231,6 +233,7 @@ function MobileSidebar({ userRole }: { userRole?: string }) {
             <SidebarContent
               isCollapsed={false}
               userRole={userRole}
+              userOverride={userOverride}
               onNavigate={closeMobile}
             />
           </motion.aside>
@@ -242,11 +245,11 @@ function MobileSidebar({ userRole }: { userRole?: string }) {
 
 // ─── Exported Sidebar ────────────────────────────────────────
 
-export function Sidebar({ userRole }: { userRole?: string }) {
+export function Sidebar({ userRole, userOverride }: { userRole?: string, userOverride?: any }) {
   return (
     <>
-      <DesktopSidebar userRole={userRole} />
-      <MobileSidebar userRole={userRole} />
+      <DesktopSidebar userRole={userRole} userOverride={userOverride} />
+      <MobileSidebar userRole={userRole} userOverride={userOverride} />
     </>
   );
 }
