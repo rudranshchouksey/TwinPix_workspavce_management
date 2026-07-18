@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Camera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { uploadUserImageAction } from "@/actions/upload-user-image";
+import { compressImage } from "@/lib/image-compression";
 
 import {
   Dialog,
@@ -102,8 +103,9 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       let imageUrl = data.image;
 
       if (imageFile) {
+        const compressedFile = await compressImage(imageFile, 800);
         const formData = new FormData();
-        formData.append("file", imageFile);
+        formData.append("file", compressedFile);
         const result = await uploadUserImageAction(formData);
         imageUrl = result.url;
       }

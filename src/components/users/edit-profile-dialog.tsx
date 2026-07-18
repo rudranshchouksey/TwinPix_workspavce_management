@@ -30,6 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { updateProfileSettingsAction } from "@/actions/users";
 import { uploadUserImageAction } from "@/actions/upload-user-image";
+import { compressImage } from "@/lib/image-compression";
 
 const editProfileSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -84,8 +85,9 @@ export function EditProfileDialog({ open, onOpenChange, user, onSuccess }: EditP
       let imageUrl = user.image;
 
       if (imageFile) {
+        const compressedFile = await compressImage(imageFile, 800);
         const formData = new FormData();
-        formData.append("file", imageFile);
+        formData.append("file", compressedFile);
         const result = await uploadUserImageAction(formData);
         imageUrl = result.url;
       }
