@@ -63,6 +63,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
       reminder: null,
       recurringRule: null,
       checklist: [],
+      labels: [],
     },
   });
 
@@ -92,6 +93,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
           recurringRule: fullTask.recurringRule || null,
           attachments: fullTask.attachments || [],
           checklist: Array.isArray(fullTask.checklist) ? fullTask.checklist : [],
+          labels: fullTask.labels || [],
         });
       }
     } catch (e) {
@@ -518,9 +520,6 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                       <FileList 
                         entityId={task.id} 
                         entityType="TASK" 
-                        files={task.files || []} 
-                        onUploadComplete={loadTask}
-                        onDeleteComplete={loadTask}
                       />
                     </TabsContent>
 
@@ -530,7 +529,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           taskId={task.id} 
                           activities={task.activities} 
                           comments={task.comments || []} 
-                          currentUser={{ id: form.getValues("authorId") || "", role: "ADMIN" }} // Mock currentUser for timeline props
+                          currentUser={{ id: task?.authorId || "system", role: "ADMIN" }} // Mock currentUser for timeline props
                         />
                       ) : (
                         <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" /></div>
