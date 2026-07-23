@@ -3,6 +3,7 @@ import {
   X, 
   Filter, 
   Check, 
+  CheckCircle2,
   ChevronDown,
   Calendar,
   Flag,
