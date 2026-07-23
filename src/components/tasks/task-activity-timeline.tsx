@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, Zap, Clock, User as UserIcon, Tag, CheckCircle2, AlertCircle, FileText, CornerDownRight, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { MessageSquare, Zap, Clock, User as UserIcon, Tag, CheckCircle2, AlertCircle, FileText, CornerDownRight, MoreHorizontal, Pencil, Trash, CheckSquare, Folder, Briefcase, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { addTaskCommentAction, updateTaskCommentAction, deleteTaskCommentAction } from "@/actions/tasks";
@@ -20,6 +20,7 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"ALL" | "COMMENTS" | "CHANGES">("ALL");
 
   // Group comments by parent
   const topLevelComments = comments.filter(c => !c.parentId);
@@ -36,6 +37,13 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
     ...activities.map(a => ({ ...a, eventType: "ACTIVITY" })),
     ...topLevelComments.map(c => ({ ...c, eventType: "COMMENT" }))
   ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const filteredEvents = timelineEvents.filter(event => {
+    if (filter === "ALL") return true;
+    if (filter === "COMMENTS") return event.eventType === "COMMENT";
+    if (filter === "CHANGES") return event.eventType === "ACTIVITY";
+    return true;
+  });
 
   const handleAddComment = async (parentId?: string) => {
     const text = parentId ? newComment : newComment;
@@ -71,6 +79,11 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
       case "ASSIGNEE_CHANGED": return <UserIcon className="w-4 h-4 text-blue-500" />;
       case "DUE_DATE_CHANGED": return <Clock className="w-4 h-4 text-indigo-500" />;
       case "CREATED": return <Zap className="w-4 h-4 text-purple-500" />;
+      case "EDITED": return <Pencil className="w-4 h-4 text-blue-400" />;
+      case "CHECKLIST_UPDATED": return <CheckSquare className="w-4 h-4 text-teal-500" />;
+      case "CAMPAIGN_CHANGED": return <Folder className="w-4 h-4 text-orange-500" />;
+      case "PROJECT_CHANGED": return <Briefcase className="w-4 h-4 text-pink-500" />;
+      case "ATTACHMENT_ADDED": return <Paperclip className="w-4 h-4 text-cyan-500" />;
       default: return <Tag className="w-4 h-4 text-gray-400" />;
     }
   };
@@ -161,10 +174,39 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
   };
 
   return (
-    <div className="space-y-8 relative">
-      <div className="absolute top-4 bottom-8 left-[15px] w-0.5 bg-[rgba(0,0,0,0.06)] -z-10" />
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="flex items-center gap-2 border-b border-[rgba(0,0,0,0.06)] pb-4">
+        <Button 
+          variant={filter === "ALL" ? "secondary" : "ghost"} 
+          size="sm" 
+          onClick={() => setFilter("ALL")}
+          className="text-xs rounded-full h-7 px-3 font-semibold"
+        >
+          Everything
+        </Button>
+        <Button 
+          variant={filter === "COMMENTS" ? "secondary" : "ghost"} 
+          size="sm" 
+          onClick={() => setFilter("COMMENTS")}
+          className="text-xs rounded-full h-7 px-3 font-semibold"
+        >
+          Only Comments
+        </Button>
+        <Button 
+          variant={filter === "CHANGES" ? "secondary" : "ghost"} 
+          size="sm" 
+          onClick={() => setFilter("CHANGES")}
+          className="text-xs rounded-full h-7 px-3 font-semibold"
+        >
+          Only Changes
+        </Button>
+      </div>
 
-      {timelineEvents.map((event) => {
+      <div className="space-y-8 relative pl-2">
+        <div className="absolute top-4 bottom-8 left-[23px] w-0.5 bg-[rgba(0,0,0,0.06)] -z-10" />
+
+        {filteredEvents.map((event) => {
         if (event.eventType === "ACTIVITY") {
           return (
             <div key={`act-${event.id}`} className="flex gap-4 items-start">

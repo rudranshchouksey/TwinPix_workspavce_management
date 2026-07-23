@@ -294,6 +294,51 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
     }
   }
 
+  if (validatedData.title !== undefined && existingTask.title !== validatedData.title) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "EDITED",
+      details: "updated task title",
+    });
+  }
+  if (validatedData.description !== undefined && existingTask.description !== validatedData.description) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "EDITED",
+      details: "updated task description",
+    });
+  }
+  if (validatedData.checklist !== undefined) {
+    const oldChecklist = JSON.stringify(existingTask.checklist || []);
+    const newChecklist = JSON.stringify(validatedData.checklist || []);
+    if (oldChecklist !== newChecklist) {
+      activities.push({
+        taskId: id,
+        userId: user.id,
+        type: "CHECKLIST_UPDATED",
+        details: "updated the checklist",
+      });
+    }
+  }
+  if (validatedData.campaignId !== undefined && existingTask.campaignId !== validatedData.campaignId) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "CAMPAIGN_CHANGED",
+      details: validatedData.campaignId ? "moved task to another campaign" : "removed task from campaign",
+    });
+  }
+  if (validatedData.projectId !== undefined && existingTask.projectId !== validatedData.projectId) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "PROJECT_CHANGED",
+      details: validatedData.projectId ? "moved task to another project" : "removed task from project",
+    });
+  }
+
   const task = await db.task.update({
     where: { id },
     data: updateData,

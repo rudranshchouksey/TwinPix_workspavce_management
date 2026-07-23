@@ -81,6 +81,14 @@ export async function uploadFileAction(formData: FormData) {
     });
 
     if (entityType === "TASK") {
+      await db.taskActivity.create({
+        data: {
+          taskId: entityId,
+          userId: session.user.id,
+          type: "ATTACHMENT_ADDED",
+          details: `attached ${file.name}`
+        }
+      });
       revalidatePath(`/tasks/${entityId}`);
     } else if (entityType === "CAMPAIGN") {
       revalidatePath(`/campaigns/${entityId}`);
