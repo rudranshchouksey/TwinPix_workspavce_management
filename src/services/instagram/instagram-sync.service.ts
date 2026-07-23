@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { ApifyProvider } from "./apify-provider";
-import { MockProvider } from "./mock-provider";
 import {
   uploadProfileImage,
   uploadPostThumbnail,
@@ -9,7 +8,7 @@ import {
 
 export interface SyncResult {
   success: boolean;
-  source: "apify" | "mock";
+  source: "apify";
   profile: {
     name: string | null;
     followers: number;
@@ -33,10 +32,8 @@ export interface SyncResult {
 
 export class InstagramSyncService {
   private apify: ApifyProvider | null = null;
-  private mock: MockProvider;
 
   constructor() {
-    this.mock = new MockProvider();
 
     try {
       this.apify = new ApifyProvider();
@@ -48,7 +45,7 @@ export class InstagramSyncService {
   async syncInfluencer(influencerId: string): Promise<SyncResult> {
     const prisma = db as any;
     const errors: string[] = [];
-    let dataSource: "apify" | "mock" = "mock";
+    let dataSource: "apify" = "apify";
 
     // ─── Step 1: Fetch influencer from DB ───────────────────────
     console.log(`[Sync:1/7] Fetching influencer ${influencerId} from database...`);
