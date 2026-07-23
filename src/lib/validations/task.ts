@@ -15,6 +15,11 @@ export const taskSchema = z.object({
     text: z.string(),
     completed: z.boolean()
   })).default([]),
+  projectId: z.string().optional().nullable(),
+  reporterId: z.string().optional().nullable(),
+  estimatedHours: z.number().optional().nullable(),
+  actualHours: z.number().optional().nullable(),
+  storyPoints: z.number().optional().nullable(),
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;
@@ -24,6 +29,8 @@ export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 
 export const taskCommentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty").max(1000),
+  parentId: z.string().optional().nullable(),
+  attachments: z.array(z.string()).default([]),
 });
 
 export type TaskCommentInput = z.infer<typeof taskCommentSchema>;

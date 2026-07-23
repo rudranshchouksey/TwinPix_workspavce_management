@@ -71,15 +71,16 @@ export async function getTaskByIdAction(id: string) {
       assignee: { select: { id: true, name: true, image: true, email: true } },
       author: { select: { id: true, name: true, image: true } },
       campaign: { select: { id: true, name: true } },
+      project: { select: { id: true, name: true } },
       comments: {
         include: {
-          user: { select: { id: true, name: true, image: true } }
+          user: { select: { id: true, name: true, image: true, email: true } }
         },
         orderBy: { createdAt: "asc" }
       },
       activities: {
         include: {
-          task: { select: { id: true } }
+          user: { select: { id: true, name: true, image: true, email: true } }
         },
         orderBy: { createdAt: "desc" },
         take: 50
@@ -108,11 +109,23 @@ export async function createTaskAction(input: TaskInput) {
       attachments: validatedData.attachments,
       labels: validatedData.labels,
       checklist: validatedData.checklist ? (validatedData.checklist as any) : undefined,
+      projectId: validatedData.projectId,
+      reporterId: validatedData.reporterId || user.id,
+      estimatedHours: validatedData.estimatedHours,
+      actualHours: validatedData.actualHours,
+      storyPoints: validatedData.storyPoints,
       authorId: user.id,
     },
   });
 
-  await logTaskActivity(task.id, "TASK_CREATED", `Task created by ${user.name}`);
+  await db.taskActivity.create({
+    data: {
+      taskId: task.id,
+      userId: user.id,
+      type: "CREATED",
+      details: "created the task",
+    }
+  });
 
   await logActivity({
     userId: user.id,
@@ -161,11 +174,58 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
   if (validatedData.checklist !== undefined) {
     updateData.checklist = validatedData.checklist ? (validatedData.checklist as any) : undefined;
   }
+  if (validatedData.projectId !== undefined) updateData.projectId = validatedData.projectId;
+  if (validatedData.reporterId !== undefined) updateData.reporterId = validatedData.reporterId;
+  if (validatedData.estimatedHours !== undefined) updateData.estimatedHours = validatedData.estimatedHours;
+  if (validatedData.actualHours !== undefined) updateData.actualHours = validatedData.actualHours;
+  if (validatedData.storyPoints !== undefined) updateData.storyPoints = validatedData.storyPoints;
+
+  const activities: any[] = [];
+  
+  if (validatedData.status && existingTask.status !== validatedData.status) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "STATUS_CHANGED",
+      details: `changed status from ${existingTask.status} to ${validatedData.status}`,
+    });
+  }
+  if (validatedData.priority && existingTask.priority !== validatedData.priority) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "PRIORITY_CHANGED",
+      details: `changed priority from ${existingTask.priority} to ${validatedData.priority}`,
+    });
+  }
+  if (validatedData.assigneeId !== undefined && existingTask.assigneeId !== validatedData.assigneeId) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "ASSIGNEE_CHANGED",
+      details: validatedData.assigneeId ? "assigned the task" : "unassigned the task",
+    });
+  }
+  if (validatedData.dueDate !== undefined) {
+    const oldDate = existingTask.dueDate ? existingTask.dueDate.toISOString().split('T')[0] : null;
+    if (oldDate !== validatedData.dueDate) {
+      activities.push({
+        taskId: id,
+        userId: user.id,
+        type: "DUE_DATE_CHANGED",
+        details: validatedData.dueDate ? `set due date to ${validatedData.dueDate}` : "removed due date",
+      });
+    }
+  }
 
   const task = await db.task.update({
     where: { id },
     data: updateData,
   });
+
+  if (activities.length > 0) {
+    await db.taskActivity.createMany({ data: activities });
+  }
 
   if (existingTask.status !== task.status) {
     await logTaskActivity(task.id, "STATUS_CHANGED", `Moved to ${task.status}`);
@@ -220,16 +280,27 @@ export async function addTaskCommentAction(taskId: string, input: TaskCommentInp
 
   const comment = await db.taskComment.create({
     data: {
+      content: validatedData.content,
       taskId,
       userId: user.id,
-      content: validatedData.content,
+      parentId: validatedData.parentId,
+      attachments: validatedData.attachments,
     },
     include: {
-      user: { select: { id: true, name: true, image: true } }
-    }
+      user: {
+        select: { id: true, name: true, image: true, email: true },
+      },
+    },
   });
 
-  await logTaskActivity(taskId, "COMMENT_ADDED", `Comment added by ${user.name}`);
+  await db.taskActivity.create({
+    data: {
+      taskId,
+      userId: user.id,
+      type: "COMMENT_ADDED",
+      details: "added a comment",
+    }
+  });
 
   const task = await db.task.findUnique({ where: { id: taskId } });
   if (task?.assigneeId && task.assigneeId !== user.id) {
@@ -251,16 +322,62 @@ export async function addTaskCommentAction(taskId: string, input: TaskCommentInp
 
 export async function deleteTaskCommentAction(commentId: string) {
   const user = await requireAuth();
-  
-  const comment = await db.taskComment.findUnique({ where: { id: commentId } });
+
+  const comment = await db.taskComment.findUnique({
+    where: { id: commentId },
+    select: { userId: true, taskId: true },
+  });
+
   if (!comment) throw new Error("Comment not found");
 
-  // Only author or admin can delete
   if (comment.userId !== user.id && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
     throw new Error("Unauthorized to delete this comment");
   }
 
-  await db.taskComment.delete({ where: { id: commentId } });
+  await db.taskComment.delete({
+    where: { id: commentId },
+  });
+
+  revalidatePath(`/tasks/${comment.taskId}`);
+}
+
+export async function updateTaskCommentAction(commentId: string, content: string) {
+  const user = await requireAuth();
+
+  const comment = await db.taskComment.findUnique({ where: { id: commentId } });
+  if (!comment) throw new Error("Comment not found");
+
+  if (comment.userId !== user.id) {
+    throw new Error("Unauthorized to edit this comment");
+  }
+
+  await db.taskComment.update({
+    where: { id: commentId },
+    data: { content },
+  });
+
+  revalidatePath(`/tasks/${comment.taskId}`);
+}
+
+export async function toggleCommentReactionAction(commentId: string, emoji: string) {
+  const user = await requireAuth();
+
+  const comment = await db.taskComment.findUnique({ where: { id: commentId } });
+  if (!comment) throw new Error("Comment not found");
+
+  let reactions: any[] = Array.isArray(comment.reactions) ? comment.reactions : [];
+  
+  const existingIndex = reactions.findIndex(r => r.userId === user.id && r.emoji === emoji);
+  if (existingIndex > -1) {
+    reactions.splice(existingIndex, 1);
+  } else {
+    reactions.push({ userId: user.id, emoji, userName: user.name || user.email });
+  }
+
+  await db.taskComment.update({
+    where: { id: commentId },
+    data: { reactions },
+  });
 
   revalidatePath(`/tasks/${comment.taskId}`);
 }
