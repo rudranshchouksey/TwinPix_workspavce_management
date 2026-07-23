@@ -72,6 +72,8 @@ export async function getTaskByIdAction(id: string) {
       author: { select: { id: true, name: true, image: true } },
       campaign: { select: { id: true, name: true } },
       project: { select: { id: true, name: true } },
+      watchers: { select: { id: true, name: true, image: true, email: true } },
+      followers: { select: { id: true, name: true, image: true, email: true } },
       comments: {
         include: {
           user: { select: { id: true, name: true, image: true, email: true } }
@@ -114,6 +116,10 @@ export async function createTaskAction(input: TaskInput) {
       estimatedHours: validatedData.estimatedHours,
       actualHours: validatedData.actualHours,
       storyPoints: validatedData.storyPoints,
+      reminder: validatedData.reminder ? new Date(validatedData.reminder) : null,
+      recurringRule: validatedData.recurringRule,
+      watchers: validatedData.watcherIds ? { connect: validatedData.watcherIds.map(id => ({ id })) } : undefined,
+      followers: validatedData.followerIds ? { connect: validatedData.followerIds.map(id => ({ id })) } : undefined,
       authorId: user.id,
     },
   });
@@ -179,6 +185,14 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
   if (validatedData.estimatedHours !== undefined) updateData.estimatedHours = validatedData.estimatedHours;
   if (validatedData.actualHours !== undefined) updateData.actualHours = validatedData.actualHours;
   if (validatedData.storyPoints !== undefined) updateData.storyPoints = validatedData.storyPoints;
+  if (validatedData.reminder !== undefined) updateData.reminder = validatedData.reminder ? new Date(validatedData.reminder) : null;
+  if (validatedData.recurringRule !== undefined) updateData.recurringRule = validatedData.recurringRule;
+  if (validatedData.watcherIds !== undefined) {
+    updateData.watchers = { set: validatedData.watcherIds.map(id => ({ id })) };
+  }
+  if (validatedData.followerIds !== undefined) {
+    updateData.followers = { set: validatedData.followerIds.map(id => ({ id })) };
+  }
 
   const activities: any[] = [];
   

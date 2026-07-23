@@ -20,6 +20,10 @@ export const taskSchema = z.object({
   estimatedHours: z.number().optional().nullable(),
   actualHours: z.number().optional().nullable(),
   storyPoints: z.number().optional().nullable(),
+  watcherIds: z.array(z.string()).optional(),
+  followerIds: z.array(z.string()).optional(),
+  reminder: z.string().optional().nullable(),
+  recurringRule: z.string().optional().nullable(),
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;
