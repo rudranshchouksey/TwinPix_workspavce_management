@@ -11,7 +11,7 @@ export default function DashboardNotFound() {
         </div>
         <h2 className="mb-2 text-3xl font-bold text-white">Page not found</h2>
         <p className="mb-8 text-lg text-[var(--color-surface-400)]">
-          Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+          Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
         </p>
         <Link href="/" passHref>
           <Button variant="default" size="lg">

@@ -143,7 +143,7 @@ export function ClientProfile({ client }: ClientProfileProps) {
                 <div>
                   <p className="text-xs text-[var(--color-text-muted)] mb-1">Quick Note</p>
                   <p className="text-sm text-[var(--color-text-secondary)] italic border-l-2 border-[rgba(0,0,0,0.1)] pl-3">
-                    "{client.notes}"
+                    &quot;{client.notes}&quot;
                   </p>
                 </div>
               )}

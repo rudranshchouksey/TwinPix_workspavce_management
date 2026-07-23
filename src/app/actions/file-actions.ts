@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
 import { logActivity } from "@/actions/activity";
 
@@ -99,7 +100,7 @@ export async function uploadFileAction(formData: FormData) {
       fileUrl = `/uploads/${uniqueName}`;
     }
 
-    const data: Record<string, string | number> = {
+    const data: Prisma.FileUncheckedCreateInput = {
       fileName: publicId,
       originalName: file.name,
       mimeType: file.type,

@@ -93,7 +93,7 @@ export function EventDialog({
               <div>
                 <h4 className="text-sm font-semibold text-purple-900">AI Scheduling Assistant</h4>
                 <p className="text-xs text-purple-700 mt-1 leading-relaxed">
-                  Based on your team's availability, we recommend <strong>2:00 PM - 3:00 PM</strong> tomorrow. Your workload is lightest then.
+                  Based on your team&apos;s availability, we recommend <strong>2:00 PM - 3:00 PM</strong> tomorrow. Your workload is lightest then.
                 </p>
                 <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-white text-purple-700 border-purple-200 hover:bg-purple-50">
                   Apply Suggestion

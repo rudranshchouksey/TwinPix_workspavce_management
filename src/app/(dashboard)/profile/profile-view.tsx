@@ -183,7 +183,7 @@ export function ProfileView({ initialUser }: { initialUser: any }) {
                     <div className="flex-1 pb-1">
                       <p className="text-sm text-[var(--color-text-primary)]">
                         <span className="font-semibold">{initialUser.name}</span> {log.action}{" "}
-                        {log.targetName && <span className="font-medium">"{log.targetName}"</span>}
+                        {log.targetName && <span className="font-medium">&quot;{log.targetName}&quot;</span>}
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)] mt-1">
                         {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}

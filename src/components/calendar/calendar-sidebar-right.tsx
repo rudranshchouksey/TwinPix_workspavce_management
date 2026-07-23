@@ -74,7 +74,7 @@ export function CalendarSidebarRight({ events, insights = [], pendingApprovals =
       <div>
         <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
           <Calendar className="h-4 w-4 text-[var(--color-text-muted)]" />
-          Today's Schedule
+          Today&apos;s Schedule
         </h3>
         {todaysEvents.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[rgba(0,0,0,0.1)] p-6 text-center text-sm text-[var(--color-text-muted)]">

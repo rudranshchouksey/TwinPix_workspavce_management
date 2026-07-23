@@ -26,7 +26,7 @@ export function CampaignHistorySection({ influencerId, campaigns, isAdmin }: Cam
       <div className="flex items-center justify-between mb-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">Campaign History</h2>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">Manage and track this creator's campaign participation.</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">Manage and track this creator&apos;s campaign participation.</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -61,7 +61,7 @@ export function CampaignHistorySection({ influencerId, campaigns, isAdmin }: Cam
               </div>
               <h3 className="text-lg font-bold text-[var(--color-text-primary)]">No Campaigns Yet</h3>
               <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-sm mx-auto">
-                This creator hasn't been added to any campaigns. Add them to track performance and deliverables.
+                This creator hasn&apos;t been added to any campaigns. Add them to track performance and deliverables.
               </p>
               <Button 
                 variant="outline" 

@@ -20,7 +20,7 @@ export const AIDailySummaryEmail: React.FC<AIDailySummaryEmailProps> = ({
       <Section style={content}>
         <Text style={heading}>AI Daily Summary</Text>
         <Text style={paragraph}>
-          Here's your automated brief for <strong>{date}</strong>.
+          Here&apos;s your automated brief for <strong>{date}</strong>.
         </Text>
         <Section style={box}>
           <Text style={summary}>{summaryText}</Text>

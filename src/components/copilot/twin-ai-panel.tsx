@@ -397,7 +397,7 @@ export function TwinAIPanel() {
                     <Bot className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[var(--color-text-primary)]">Hi, I'm Twin AI</div>
+                    <div className="text-sm font-semibold text-[var(--color-text-primary)]">Hi, I&apos;m Twin AI</div>
                     <div className="mt-1 text-xs text-[var(--color-text-secondary)]">
                       Ask me about influencers, campaigns, clients, or tasks — or have me take action.
                     </div>

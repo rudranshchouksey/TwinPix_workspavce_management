@@ -1,0 +1,314 @@
+[
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\feedback\\page.tsx",
+    "line": 27,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\feedback\\page.tsx:27:5\n  25 |\n  26 |   useEffect(() => {\n> 27 |     fetchFeedback();\n     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  28 |   }, []);\n  29 |\n  30 |   const handleSubmit = async (e: React.FormEvent) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\files\\page.tsx",
+    "line": 24,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\files\\page.tsx:24:5\n  22 |\n  23 |   useEffect(() => {\n> 24 |     fetchFiles();\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  25 |   }, []);\n  26 |\n  27 |   return ("
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\not-found.tsx",
+    "line": 14,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\not-found.tsx",
+    "line": 14,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\notifications\\notifications-client.tsx",
+    "line": 285,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\notifications\\notifications-client.tsx:285:5\n  283 |   // Reset visible count when filters change\n  284 |   useEffect(() => {\n> 285 |     setVisibleCount(PAGE_SIZE);\n      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  286 |   }, [typeFilter, searchQuery]);\n  287 |\n  288 |   const grouped = useMemo(() => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\profile\\profile-view.tsx",
+    "line": 186,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\profile\\profile-view.tsx",
+    "line": 186,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\[id]\\page.tsx",
+    "line": 22,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`loadWorkflow` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\[id]\\page.tsx:22:5\n  20 |\n  21 |   useEffect(() => {\n> 22 |     loadWorkflow();\n     |     ^^^^^^^^^^^^ `loadWorkflow` accessed before it is declared\n  23 |   }, [id]);\n  24 |\n  25 |   const loadWorkflow = async () => {\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\[id]\\page.tsx:25:3\n  23 |   }, [id]);\n  24 |\n> 25 |   const loadWorkflow = async () => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 26 |     try {\n     | ^^^^^^^^^\n> 27 |       const data = await getWorkflowAction(id as string);\n     ΓÇª\n     | ^^^^^^^^^\n> 39 |     }\n     | ^^^^^^^^^\n> 40 |   };\n     | ^^^^^ `loadWorkflow` is declared here\n  41 |\n  42 |   const handleSave = async () => {\n  43 |     setSaving(true);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\page.tsx",
+    "line": 19,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`loadWorkflows` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\page.tsx:19:5\n  17 |\n  18 |   useEffect(() => {\n> 19 |     loadWorkflows();\n     |     ^^^^^^^^^^^^^ `loadWorkflows` accessed before it is declared\n  20 |   }, []);\n  21 |\n  22 |   const loadWorkflows = async () => {\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\automations\\page.tsx:22:3\n  20 |   }, []);\n  21 |\n> 22 |   const loadWorkflows = async () => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 23 |     setLoading(true);\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 24 |     try {\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 31 |     }\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 32 |   };\n     | ^^^^^ `loadWorkflows` is declared here\n  33 |\n  34 |   const handleCreate = async () => {\n  35 |     setCreating(true);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\notifications\\page.tsx",
+    "line": 56,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\notifications\\page.tsx:56:5\n  54 |\n  55 |   useEffect(() => {\n> 56 |     loadData();\n     |     ^^^^^^^^ `loadData` accessed before it is declared\n  57 |   }, []);\n  58 |\n  59 |   const loadData = async () => {\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\notifications\\page.tsx:59:3\n  57 |   }, []);\n  58 |\n> 59 |   const loadData = async () => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 60 |     setLoading(true);\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 61 |     try {\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 83 |     }\n     | ^^^^^^^^^^^^^^^^^^^^^\n> 84 |   };\n     | ^^^^^ `loadData` is declared here\n  85 |\n  86 |   const handleToggle = (\n  87 |     categoryId: string, "
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\page.tsx",
+    "line": 26,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\app\\(dashboard)\\settings\\page.tsx:26:7\n  24 |   useEffect(() => {\n  25 |     if (session?.user?.name) {\n> 26 |       setName(session.user.name);\n     |       ^^^^^^^ Avoid calling setState() directly within an effect\n  27 |     }\n  28 |     if (session?.user?.image) {\n  29 |       setImagePreview(session.user.image);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\analytics-dashboard.tsx",
+    "line": 92,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\analytics-dashboard.tsx",
+    "line": 92,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\campaign-chart.tsx",
+    "line": 72,
+    "rule": "react-hooks/static-components",
+    "message": "Error: Cannot create components during render\n\nComponents created during render will reset their state each time they are created. Declare components outside of render.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\campaign-chart.tsx:72:34\n  70 |                 ))}\n  71 |               </Pie>\n> 72 |               <Tooltip content={<CustomTooltip />} />\n     |                                  ^^^^^^^^^^^^^ This component is created during render\n  73 |               {!emptyData && (\n  74 |                 <Legend \n  75 |                   verticalAlign=\"bottom\" \n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\campaign-chart.tsx:25:25\n  23 |     : data;\n  24 |\n> 25 |   const CustomTooltip = ({ active, payload }: any) => {\n     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 26 |     if (active && payload && payload.length && !emptyData) {\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 27 |       return (\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 36 |     return null;\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 37 |   };\n     | ^^^^ The component is created during render here\n  38 |\n  39 |   return (\n  40 |     <motion.div"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\revenue-chart.tsx",
+    "line": 75,
+    "rule": "react-hooks/static-components",
+    "message": "Error: Cannot create components during render\n\nComponents created during render will reset their state each time they are created. Declare components outside of render.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\revenue-chart.tsx:75:34\n  73 |                 dx={-10}\n  74 |               />\n> 75 |               <Tooltip content={<CustomTooltip />} />\n     |                                  ^^^^^^^^^^^^^ This component is created during render\n  76 |               <Area\n  77 |                 type=\"monotone\"\n  78 |                 dataKey=\"revenue\"\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\analytics\\revenue-chart.tsx:21:25\n  19 |   const fillColor = theme === \"light\" ? \"var(--color-brand-500)\" : \"var(--color-brand-400)\";\n  20 |\n> 21 |   const CustomTooltip = ({ active, payload, label }: any) => {\n     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 22 |     if (active && payload && payload.length) {\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 23 |       return (\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 32 |     return null;\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 33 |   };\n     | ^^^^ The component is created during render here\n  34 |\n  35 |   return (\n  36 |     <motion.div"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-sidebar-right.tsx",
+    "line": 77,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx",
+    "line": 33,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx:33:5\n  31 |   \n  32 |   useEffect(() => {\n> 33 |     setEvents(dashboardData.events);\n     |     ^^^^^^^^^ Avoid calling setState() directly within an effect\n  34 |   }, [dashboardData.events]);\n  35 |\n  36 |   // Modals/Drawers state"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx",
+    "line": 156,
+    "rule": "react-hooks/refs",
+    "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx:156:24\n  154 |   };\n  155 |\n> 156 |   const currentTitle = calendarRef.current?.getApi().view?.title || format(new Date(), \"MMMM yyyy\");\n      |                        ^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render\n  157 |\n  158 |   // Premium Event Render\n  159 |   const renderEventContent = (eventInfo: any) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx",
+    "line": 156,
+    "rule": "react-hooks/refs",
+    "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx:156:24\n  154 |   };\n  155 |\n> 156 |   const currentTitle = calendarRef.current?.getApi().view?.title || format(new Date(), \"MMMM yyyy\");\n      |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render\n  157 |\n  158 |   // Premium Event Render\n  159 |   const renderEventContent = (eventInfo: any) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx",
+    "line": 156,
+    "rule": "react-hooks/refs",
+    "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx:156:24\n  154 |   };\n  155 |\n> 156 |   const currentTitle = calendarRef.current?.getApi().view?.title || format(new Date(), \"MMMM yyyy\");\n      |                        ^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render\n  157 |\n  158 |   // Premium Event Render\n  159 |   const renderEventContent = (eventInfo: any) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx",
+    "line": 156,
+    "rule": "react-hooks/refs",
+    "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\calendar-view.tsx:156:24\n  154 |   };\n  155 |\n> 156 |   const currentTitle = calendarRef.current?.getApi().view?.title || format(new Date(), \"MMMM yyyy\");\n      |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render\n  157 |\n  158 |   // Premium Event Render\n  159 |   const renderEventContent = (eventInfo: any) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\calendar\\event-dialog.tsx",
+    "line": 96,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-add-influencers-modal.tsx",
+    "line": 42,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`load` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-add-influencers-modal.tsx:42:17\n  40 |\n  41 |   useEffect(() => {\n> 42 |     if (isOpen) load(\"\");\n     |                 ^^^^ `load` accessed before it is declared\n  43 |   }, [isOpen]);\n  44 |\n  45 |   useEffect(() => {\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-add-influencers-modal.tsx:51:3\n  49 |   }, [search, isOpen]);\n  50 |\n> 51 |   const load = async (query: string) => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 52 |     setIsLoading(true);\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 53 |     try {\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 60 |     }\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 61 |   };\n     | ^^^^^ `load` is declared here\n  62 |\n  63 |   const handleCheckMatch = async (influencerId: string) => {\n  64 |     if (matches[influencerId]) {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-brief-modal.tsx",
+    "line": 55,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`handleGenerate` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-brief-modal.tsx:55:7\n  53 |   useEffect(() => {\n  54 |     if (isOpen && isExistingMode) {\n> 55 |       handleGenerate();\n     |       ^^^^^^^^^^^^^^ `handleGenerate` accessed before it is declared\n  56 |     }\n  57 |     if (!isOpen) {\n  58 |       setBrief(null);\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-brief-modal.tsx:69:3\n  67 |   }, [isOpen]);\n  68 |\n> 69 |   const handleGenerate = async () => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 70 |     setIsGenerating(true);\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 71 |     try {\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 92 |     }\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 93 |   };\n     | ^^^^^ `handleGenerate` is declared here\n  94 |\n  95 |   const handleCopy = () => {\n  96 |     if (!brief) return;"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-brief-modal.tsx",
+    "line": 58,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\campaigns\\campaign-brief-modal.tsx:58:7\n  56 |     }\n  57 |     if (!isOpen) {\n> 58 |       setBrief(null);\n     |       ^^^^^^^^ Avoid calling setState() directly within an effect\n  59 |       if (!isExistingMode) {\n  60 |         setName(\"\");\n  61 |         setClientId(\"\");"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\clients\\client-profile.tsx",
+    "line": 146,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\clients\\client-profile.tsx",
+    "line": 146,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\copilot\\twin-ai-panel.tsx",
+    "line": 400,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\files\\file-list.tsx",
+    "line": 29,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\files\\file-list.tsx:29:5\n  27 |\n  28 |   useEffect(() => {\n> 29 |     fetchFiles()\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  30 |   }, [entityType, entityId])\n  31 |\n  32 |   return ("
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\campaigns\\add-to-campaign-modal.tsx",
+    "line": 41,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`loadCampaigns` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\campaigns\\add-to-campaign-modal.tsx:41:7\n  39 |   useEffect(() => {\n  40 |     if (isOpen) {\n> 41 |       loadCampaigns(\"\");\n     |       ^^^^^^^^^^^^^ `loadCampaigns` accessed before it is declared\n  42 |     }\n  43 |   }, [isOpen]);\n  44 |\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\campaigns\\add-to-campaign-modal.tsx:54:3\n  52 |   }, [search, isOpen]);\n  53 |\n> 54 |   const loadCampaigns = async (query: string) => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 55 |     setIsLoading(true);\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 56 |     try {\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 63 |     }\n     | ^^^^^^^^^^^^^^^^^^^^^^^\n> 64 |   };\n     | ^^^^^ `loadCampaigns` is declared here\n  65 |\n  66 |   const handleCheckMatch = async (campaignId: string) => {\n  67 |     if (matches[campaignId]) {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\campaigns\\campaign-history-section.tsx",
+    "line": 29,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\campaigns\\campaign-history-section.tsx",
+    "line": 64,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\edit\\EditInfluencerModal.tsx",
+    "line": 104,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\edit\\EditInfluencerModal.tsx:104:5\n  102 |     if (!isOpen || !influencerId) return;\n  103 |\n> 104 |     setIsLoading(true);\n      |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  105 |     setActiveTab(\"basic\");\n  106 |\n  107 |     getInfluencerByIdAction(influencerId)"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\edit\\InfluencerBasicForm.tsx",
+    "line": 37,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\edit\\InfluencerBasicForm.tsx:37:7\n  35 |   useEffect(() => {\n  36 |     if (currentCategory && !CATEGORY_PRESETS.includes(currentCategory)) {\n> 37 |       setShowCustomCategory(true);\n     |       ^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  38 |     }\n  39 |   }, [currentCategory]);\n  40 |"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\generate-outreach-modal.tsx",
+    "line": 101,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\generate-outreach-modal.tsx:101:7\n   99 |     if (!isOpen) return;\n  100 |     if (!clientId) {\n> 101 |       setCampaigns([]);\n      |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  102 |       setCampaignId(\"\");\n  103 |       return;\n  104 |     }"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\influencer-analytics-tab.tsx",
+    "line": 18,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\influencer-analytics-tab.tsx",
+    "line": 18,
+    "rule": "react/no-unescaped-entities",
+    "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\bulk-add-to-campaign-modal.tsx",
+    "line": 30,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\bulk-add-to-campaign-modal.tsx:30:5\n  28 |   useEffect(() => {\n  29 |     if (!open) return;\n> 30 |     setLoading(true);\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  31 |     getCampaignsAction({ query: search, archived: false }).then((res: any) => {\n  32 |       setCampaigns(res.campaigns || []);\n  33 |       setLoading(false);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\generate-outreach-picker-modal.tsx",
+    "line": 18,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\generate-outreach-picker-modal.tsx:18:7\n  16 |   useEffect(() => {\n  17 |     if (!open) {\n> 18 |       setSearch(\"\");\n     |       ^^^^^^^^^ Avoid calling setState() directly within an effect\n  19 |       setResults([]);\n  20 |       return;\n  21 |     }"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\pipeline-priority-queue.tsx",
+    "line": 63,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\pipeline-search-bar.tsx",
+    "line": 15,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\influencers\\pipeline\\pipeline-search-bar.tsx:15:19\n  13 |   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);\n  14 |\n> 15 |   useEffect(() => setValue(searchParams.get(\"q\") || \"\"), [searchParams]);\n     |                   ^^^^^^^^ Avoid calling setState() directly within an effect\n  16 |\n  17 |   const handleChange = useCallback(\n  18 |     (v: string) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\inline-edit.tsx",
+    "line": 39,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\inline-edit.tsx:39:5\n  37 |\n  38 |   useEffect(() => {\n> 39 |     setCurrentValue(value);\n     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  40 |   }, [value]);\n  41 |\n  42 |   useEffect(() => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx",
+    "line": 113,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx:113:9\n  111 |     if (open) {\n  112 |       if (isEditMode) {\n> 113 |         loadTask();\n      |         ^^^^^^^^ Avoid calling setState() directly within an effect\n  114 |       } else {\n  115 |         form.reset();\n  116 |         setTask(null);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx",
+    "line": 136,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`handleAutosave` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx:136:9\n  134 |     saveTimeoutRef.current = setTimeout(() => {\n  135 |       if (form.formState.isDirty && form.formState.isValid) {\n> 136 |         handleAutosave(form.getValues());\n      |         ^^^^^^^^^^^^^^ `handleAutosave` accessed before it is declared\n  137 |       }\n  138 |     }, 2000);\n  139 |\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx:145:3\n  143 |   }, [watchedValues, isEditMode, isLoading, form]);\n  144 |\n> 145 |   const handleAutosave = async (data: TaskInput) => {\n      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 146 |     setIsSaving(true);\n      | ^^^^^^^^^^^^^^^^^^^^^^\n> 147 |     try {\n      ΓÇª\n      | ^^^^^^^^^^^^^^^^^^^^^^\n> 156 |     }\n      | ^^^^^^^^^^^^^^^^^^^^^^\n> 157 |   };\n      | ^^^^^ `handleAutosave` is declared here\n  158 |\n  159 |   const onSubmit = async (data: TaskInput) => {\n  160 |     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx",
+    "line": 232,
+    "rule": "react-hooks/refs",
+    "message": "Error: Cannot access refs during render\n\nReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-dialog.tsx:232:47\n  230 |         <div className=\"flex flex-1 overflow-hidden\">\n  231 |           <Form {...form}>\n> 232 |             <form onSubmit={form.handleSubmit(onSubmit)} className=\"flex-1 overflow-hidden flex flex-col min-w-0\">\n      |                                               ^^^^^^^^ Passing a ref to a function may read its value during render\n  233 |             <Tabs defaultValue=\"general\" className=\"flex-1 flex flex-col overflow-hidden\">\n  234 |               <div className=\"px-6 border-b border-[rgba(0,0,0,0.08)] bg-[rgba(0,0,0,0.02)] overflow-x-auto hide-scrollbar\">\n  235 |                 <TabsList className=\"h-12 bg-transparent w-full justify-start p-0\">"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-filter-bar.tsx",
+    "line": 69,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-filter-bar.tsx:69:18\n  67 |     try {\n  68 |       const saved = localStorage.getItem(\"taskFilters\");\n> 69 |       if (saved) setSavedFilters(JSON.parse(saved));\n     |                  ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  70 |     } catch (e) { }\n  71 |   }, []);\n  72 |"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-filter-bar.tsx",
+    "line": 83,
+    "rule": "react-hooks/immutability",
+    "message": "Error: This value cannot be modified\n\nModifying a variable defined outside a component or hook is not allowed. Consider using an effect.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-filter-bar.tsx:83:5\n  81 |\n  82 |   const handleLoadFilter = (query: string) => {\n> 83 |     window.location.search = query;\n     |     ^^^^^^^^^^^^^^^ value cannot be modified\n  84 |   };\n  85 |\n  86 |   const handleDeleteSavedFilter = (name: string, e: React.MouseEvent) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-kanban.tsx",
+    "line": 77,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\tasks\\task-kanban.tsx:77:5\n  75 |\n  76 |   useEffect(() => {\n> 77 |     setTasks(initialData);\n     |     ^^^^^^^^ Avoid calling setState() directly within an effect\n  78 |   }, [initialData]);\n  79 |\n  80 |   // Apply quick filter"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\time-tracking\\task-time-tracking.tsx",
+    "line": 45,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\components\\time-tracking\\task-time-tracking.tsx:45:5\n  43 |\n  44 |   useEffect(() => {\n> 45 |     fetchEntries();\n     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  46 |   }, [taskId]);\n  47 |\n  48 |   const handleManualSubmit = async (e: React.FormEvent) => {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\emails\\templates\\AIDailySummaryEmail.tsx",
+    "line": 23,
+    "rule": "react/no-unescaped-entities",
+    "message": "`'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`."
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\providers\\time-tracking-provider.tsx",
+    "line": 43,
+    "rule": "react-hooks/immutability",
+    "message": "Error: Cannot access variable before it is declared\n\n`updateElapsedSeconds` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\providers\\time-tracking-provider.tsx:43:7\n  41 |       const timer = await getActiveTimerAction();\n  42 |       setActiveTimer(timer as any);\n> 43 |       updateElapsedSeconds(timer as any);\n     |       ^^^^^^^^^^^^^^^^^^^^ `updateElapsedSeconds` accessed before it is declared\n  44 |     } catch (e) {\n  45 |       console.error(\"Failed to fetch timer\", e);\n  46 |     }\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\providers\\time-tracking-provider.tsx:56:3\n  54 |   }, []);\n  55 |\n> 56 |   const updateElapsedSeconds = (timer: ActiveTimerData | null) => {\n     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n> 57 |     if (!timer) {\n     | ^^^^^^^^^^^^^^^^^\n> 58 |       setElapsedSeconds(0);\n     ΓÇª\n     | ^^^^^^^^^^^^^^^^^\n> 70 |     setElapsedSeconds(Math.floor(totalMs / 1000));\n     | ^^^^^^^^^^^^^^^^^\n> 71 |   };\n     | ^^^^^ `updateElapsedSeconds` is declared here\n  72 |\n  73 |   useEffect(() => {\n  74 |     if (activeTimer && !activeTimer.isPaused) {"
+  },
+  {
+    "file": "C:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\providers\\time-tracking-provider.tsx",
+    "line": 50,
+    "rule": "react-hooks/set-state-in-effect",
+    "message": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\nC:\\Users\\ad\\Desktop\\TwinPix Studio\\src\\providers\\time-tracking-provider.tsx:50:5\n  48 |\n  49 |   useEffect(() => {\n> 50 |     fetchTimer();\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  51 |     // Poll every minute just to be safe across tabs\n  52 |     const syncInterval = setInterval(fetchTimer, 60000);\n  53 |     return () => clearInterval(syncInterval);"
+  }
+]

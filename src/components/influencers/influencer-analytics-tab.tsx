@@ -15,7 +15,7 @@ export function InfluencerAnalyticsTab({ analytics, influencer }: AnalyticsProps
         <Target className="h-10 w-10 text-[var(--color-text-muted)] mb-4" />
         <h3 className="text-xl font-bold text-[var(--color-text-primary)]">No Analytics Available</h3>
         <p className="mt-2 text-[var(--color-text-muted)] max-w-sm">
-          Click the "Refresh Instagram Data" button to generate AI insights and fetch content performance metrics.
+          Click the &quot;Refresh Instagram Data&quot; button to generate AI insights and fetch content performance metrics.
         </p>
       </div>
     );

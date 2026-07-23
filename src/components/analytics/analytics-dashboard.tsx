@@ -89,7 +89,7 @@ export function AnalyticsDashboard({
               <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 shadow-sm transition-transform hover:scale-[1.02]">
                 <h4 className="font-bold text-sm text-indigo-700 mb-1">Strong Revenue Trend</h4>
                 <p className="text-sm text-indigo-600/80 leading-relaxed">
-                  Your revenue has grown by <strong className="text-indigo-800">12.5%</strong> this month. The "Summer Campaign" was a major contributor to this spike. Consider engaging the same influencers for upcoming holidays.
+                  Your revenue has grown by <strong className="text-indigo-800">12.5%</strong> this month. The &quot;Summer Campaign&quot; was a major contributor to this spike. Consider engaging the same influencers for upcoming holidays.
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 shadow-sm transition-transform hover:scale-[1.02]">

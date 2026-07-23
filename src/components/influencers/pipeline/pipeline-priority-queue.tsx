@@ -60,7 +60,7 @@ export function PipelinePriorityQueue({ items }: { items: any[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Today's Priorities</h2>
+        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Today&apos;s Priorities</h2>
         <p className="text-xs font-medium text-[var(--color-text-muted)]">Ranked automatically by urgency, engagement, and reach.</p>
       </div>
 
