@@ -1,14 +1,16 @@
-import { 
-  Search, 
-  X, 
-  Filter, 
-  Check, 
+import {
+  Search,
+  X,
+  Filter,
+  Check,
   CheckCircle2,
   ChevronDown,
   Calendar,
   Flag,
-  User,
+  Users2,
   Megaphone,
+  ArrowUpDown,
+  Briefcase,
   Bookmark,
   Save
 } from "lucide-react";
@@ -25,7 +27,18 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { AdvancedTaskFilters } from "@/hooks/use-task-filters";
+import { AdvancedTaskFilters, SortOption } from "@/hooks/use-task-filters";
+
+const SORT_OPTIONS: { label: string; value: SortOption }[] = [
+  { label: "Newest First", value: "createdAt_desc" },
+  { label: "Oldest First", value: "createdAt_asc" },
+  { label: "Due Date (Earliest)", value: "dueDate_asc" },
+  { label: "Due Date (Latest)", value: "dueDate_desc" },
+  { label: "Priority (High → Low)", value: "priority_desc" },
+  { label: "Priority (Low → High)", value: "priority_asc" },
+  { label: "Title (A → Z)", value: "title_asc" },
+  { label: "Title (Z → A)", value: "title_desc" },
+];
 
 interface TaskFilterBarProps {
   filters: AdvancedTaskFilters;
@@ -36,10 +49,10 @@ interface TaskFilterBarProps {
 }
 
 export function TaskFilterBar({ filters, setFilters, clearFilters, users, campaigns }: TaskFilterBarProps) {
-  const activeFilterCount = 
-    filters.priorities.length + 
-    filters.statuses.length + 
-    filters.assigneeIds.length + 
+  const activeFilterCount =
+    filters.priorities.length +
+    filters.statuses.length +
+    filters.assigneeIds.length +
     filters.campaignIds.length +
     (filters.isOverdue ? 1 : 0) +
     (filters.isCompleted !== null ? 1 : 0);
@@ -49,12 +62,12 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
   };
 
   const [savedFilters, setSavedFilters] = useState<Record<string, string>>({});
-  
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem("taskFilters");
       if (saved) setSavedFilters(JSON.parse(saved));
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const handleSaveFilter = () => {
@@ -270,7 +283,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        
+
         {/* Quick Toggles */}
         <Button
           variant={filters.isOverdue ? "default" : "outline"}
