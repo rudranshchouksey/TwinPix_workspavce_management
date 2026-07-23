@@ -139,11 +139,59 @@ export class WorkflowEngine {
         }
         break;
 
+      case "NOTIFY_MANAGER":
+        if (payload.campaignId) {
+          const campaign = await db.campaign.findUnique({
+            where: { id: payload.campaignId },
+            include: { teamMembers: { where: { role: "MANAGER" }, include: { user: true } } }
+          });
+          if (campaign && campaign.teamMembers.length > 0) {
+            const managerIds = campaign.teamMembers.map((tm: any) => tm.userId);
+            await NotificationService.notifyUsers(managerIds, {
+              type: "SYSTEM_ALERT",
+              title: config.title || "Task Completed",
+              message: config.message || `Task was completed in campaign: ${campaign.name}`,
+              priority: "HIGH"
+            });
+          }
+        }
+        break;
+
+      case "CLOSE_REMAINING_TASKS":
+        if (payload.campaignId) {
+          await db.task.updateMany({
+            where: { 
+              campaignId: payload.campaignId,
+              status: { not: "DONE" }
+            },
+            data: { status: "DONE" }
+          });
+          console.log(`[WorkflowEngine] Closed remaining tasks for campaign ${payload.campaignId}`);
+        }
+        break;
+
+      case "DASHBOARD_ALERT":
+        // For tasks (like Overdue / Due Tomorrow)
+        if (payload.assigneeId) {
+          await NotificationService.createNotification({
+            userId: payload.assigneeId,
+            type: "TASK_ASSIGNED", // High priority dashboard alert
+            title: config.title || "Dashboard Alert",
+            message: config.message || `Alert for task: ${payload.title}`,
+            entityId: payload.taskId,
+            entityType: "TASK",
+            priority: "URGENT",
+            link: `/tasks`
+          });
+        }
+        break;
+
       case "SEND_EMAIL":
       case "SEND_WHATSAPP":
-        if (payload.userId) {
+        if (payload.assigneeId || payload.userId) {
+            const userId = payload.assigneeId || payload.userId;
             await NotificationService.createNotification({
-                userId: payload.userId,
+                userId: userId,
                 type: "SYSTEM_ALERT", // Uses NotificationService to determine channels
                 title: config.title || "System Message",
                 message: config.message || "Automated email/whatsapp message"

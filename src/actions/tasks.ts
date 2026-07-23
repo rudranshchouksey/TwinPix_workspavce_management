@@ -13,6 +13,7 @@ import {
 } from "@/lib/validations/task";
 import { logActivity } from "@/actions/activity";
 import { createNotification } from "@/actions/notifications";
+import { WorkflowEngine } from "@/services/workflow.engine";
 
 async function logTaskActivity(taskId: string, type: string, details: string) {
   const user = await requireAuth();
@@ -304,6 +305,9 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
 
   if (existingTask.status !== task.status) {
     await logTaskActivity(task.id, "STATUS_CHANGED", `Moved to ${task.status}`);
+    if (task.status === "DONE") {
+      await WorkflowEngine.trigger("TASK_COMPLETED", { taskId: task.id, campaignId: task.campaignId, assigneeId: task.assigneeId });
+    }
   } else if (existingTask.assigneeId !== task.assigneeId) {
     await logTaskActivity(task.id, "ASSIGNEE_CHANGED", `Assignee updated`);
     if (task.assigneeId && task.assigneeId !== user.id) {

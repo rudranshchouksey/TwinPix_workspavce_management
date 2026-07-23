@@ -166,6 +166,8 @@ export async function createCampaignAction(input: CampaignInput) {
 
   logAudit("CAMPAIGN_CREATED", campaign.id, `Created campaign: ${campaign.name}`);
   await logActivity(campaign.id, "CAMPAIGN_CREATED", `Campaign created by ${user.name}`);
+  
+  await WorkflowEngine.trigger("CAMPAIGN_CREATED", { campaignId: campaign.id });
 
   revalidatePath("/campaigns");
   return campaign;
@@ -193,6 +195,9 @@ export async function updateCampaignAction(id: string, input: UpdateCampaignInpu
       campaignId: campaign.id,
       status: campaign.status
     });
+    if (campaign.status === "COMPLETED") {
+      await WorkflowEngine.trigger("CAMPAIGN_COMPLETED", { campaignId: campaign.id });
+    }
   } else {
     await logActivity(campaign.id, "CAMPAIGN_UPDATED", `Campaign details updated by ${user.name}`);
   }

@@ -1,23 +1,63 @@
 import { NextResponse } from "next/server";
-import { AutomationService } from "@/services/automation.service";
+import { db } from "@/lib/db";
+import { WorkflowEngine } from "@/services/workflow.engine";
 
+// Example Usage: GET /api/cron/automations (Should be hit daily by Vercel Cron or GitHub Actions)
 export async function GET(request: Request) {
+  // In production, you would want to secure this endpoint (e.g. check Authorization header with a secret)
+  
   try {
-    const authHeader = request.headers.get("authorization");
-    
-    // Check if CRON_SECRET is configured. If so, validate it.
-    if (process.env.CRON_SECRET) {
-      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+    // 1. Fetch Tasks Due Tomorrow
+    const dueTomorrowTasks = await db.task.findMany({
+      where: {
+        dueDate: {
+          gte: tomorrow,
+          lt: dayAfterTomorrow
+        },
+        status: {
+          not: "DONE"
+        }
       }
+    });
+
+    for (const task of dueTomorrowTasks) {
+      await WorkflowEngine.trigger("TASK_DUE_TOMORROW", { taskId: task.id, assigneeId: task.assigneeId, campaignId: task.campaignId, title: task.title });
     }
 
-    // Run the automation engine
-    await AutomationService.runAll();
+    // 2. Fetch Tasks Overdue (Due date is before today)
+    const overdueTasks = await db.task.findMany({
+      where: {
+        dueDate: {
+          lt: today
+        },
+        status: {
+          not: "DONE"
+        }
+      }
+    });
 
-    return NextResponse.json({ success: true, message: "Automations executed successfully" });
+    for (const task of overdueTasks) {
+      await WorkflowEngine.trigger("TASK_OVERDUE", { taskId: task.id, assigneeId: task.assigneeId, campaignId: task.campaignId, title: task.title });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      processed: {
+        dueTomorrow: dueTomorrowTasks.length,
+        overdue: overdueTasks.length
+      }
+    });
   } catch (error: any) {
-    console.error("[Cron Route] Error:", error);
+    console.error("[CRON] Automations failed:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
