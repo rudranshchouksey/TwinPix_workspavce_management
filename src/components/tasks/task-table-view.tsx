@@ -11,9 +11,19 @@ import {
   createColumnHelper,
   SortingState,
 } from "@tanstack/react-table";
-import { useState } from "react";
-import { ArrowUpDown, Calendar, MessageSquare, Paperclip, Flag, User } from "lucide-react";
+import { useState, useCallback } from "react";
+import { ArrowUpDown, Calendar, MessageSquare, Paperclip, Flag, User, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { deleteTaskAction } from "@/actions/tasks";
+import { TaskDialog } from "./task-dialog";
 import type { TaskWithDetails } from "./task-kanban";
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -39,8 +49,33 @@ const STATUS_LABELS: Record<string, string> = {
 
 const columnHelper = createColumnHelper<TaskWithDetails>();
 
-export function TaskTableView({ tasks }: { tasks: TaskWithDetails[] }) {
+export function TaskTableView({ 
+  tasks,
+  users = [],
+  campaigns = []
+}: { 
+  tasks: TaskWithDetails[];
+  users?: any[];
+  campaigns?: any[];
+}) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [editingTask, setEditingTask] = useState<TaskWithDetails | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const handleEdit = useCallback((task: TaskWithDetails) => {
+    setEditingTask(task);
+    setIsEditOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(async (taskId: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    try {
+      await deleteTaskAction(taskId);
+      toast.success("Task deleted");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete task");
+    }
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -163,6 +198,33 @@ export function TaskTableView({ tasks }: { tasks: TaskWithDetails[] }) {
           );
         },
       }),
+      columnHelper.display({
+        id: "actions",
+        cell: (info) => {
+          const task = info.row.original;
+          return (
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[var(--color-text-muted)]">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleEdit(task)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit Task
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDelete(task.id)} className="text-red-600 focus:text-red-600">
+                    <Trash className="w-4 h-4 mr-2" />
+                    Delete Task
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
     ],
     []
   );
@@ -220,6 +282,16 @@ export function TaskTableView({ tasks }: { tasks: TaskWithDetails[] }) {
           <p className="text-xs text-[var(--color-text-disabled)] mt-1">Try adjusting your filters or create a new task</p>
         </div>
       )}
+      <TaskDialog
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open);
+          if (!open) setTimeout(() => setEditingTask(null), 300);
+        }}
+        task={editingTask}
+        users={users}
+        campaigns={campaigns}
+      />
     </div>
   );
 }

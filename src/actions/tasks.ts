@@ -92,6 +92,8 @@ export async function getTaskByIdAction(id: string) {
 
 export async function createTaskAction(input: TaskInput) {
   const user = await requireAuth();
+  if (user.role === "CLIENT") throw new Error("Unauthorized to create tasks");
+
   const validatedData = taskSchema.parse(input);
 
   const task = await db.task.create({
@@ -104,6 +106,8 @@ export async function createTaskAction(input: TaskInput) {
       assigneeId: validatedData.assigneeId,
       campaignId: validatedData.campaignId,
       attachments: validatedData.attachments,
+      labels: validatedData.labels,
+      checklist: validatedData.checklist ? (validatedData.checklist as any) : undefined,
       authorId: user.id,
     },
   });
@@ -142,6 +146,8 @@ export async function createTaskAction(input: TaskInput) {
 
 export async function updateTaskAction(id: string, input: UpdateTaskInput) {
   const user = await requireAuth();
+  if (user.role === "CLIENT") throw new Error("Unauthorized to edit tasks");
+
   const validatedData = updateTaskSchema.parse(input);
 
   const existingTask = await db.task.findUnique({ where: { id } });
@@ -150,6 +156,10 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
   const updateData: any = { ...validatedData };
   if (validatedData.dueDate !== undefined) {
     updateData.dueDate = validatedData.dueDate ? new Date(validatedData.dueDate) : null;
+  }
+
+  if (validatedData.checklist !== undefined) {
+    updateData.checklist = validatedData.checklist ? (validatedData.checklist as any) : undefined;
   }
 
   const task = await db.task.update({
@@ -187,7 +197,9 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
 }
 
 export async function deleteTaskAction(id: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  
+  if (user.role === "CLIENT") throw new Error("Unauthorized to delete tasks");
   
   const task = await db.task.findUnique({ where: { id } });
   if (!task) throw new Error("Task not found");
@@ -202,6 +214,8 @@ export async function deleteTaskAction(id: string) {
 
 export async function addTaskCommentAction(taskId: string, input: TaskCommentInput) {
   const user = await requireAuth();
+  if (user.role === "CLIENT") throw new Error("Unauthorized to comment");
+
   const validatedData = taskCommentSchema.parse(input);
 
   const comment = await db.taskComment.create({

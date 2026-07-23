@@ -9,6 +9,12 @@ export const taskSchema = z.object({
   assigneeId: z.string().optional().nullable(),
   campaignId: z.string().optional().nullable(),
   attachments: z.array(z.string()).default([]),
+  labels: z.array(z.string()).default([]),
+  checklist: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    completed: z.boolean()
+  })).default([]),
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;

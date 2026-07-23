@@ -134,7 +134,11 @@ export function MyTasksPageClient({
           )}
 
           {viewMode === "list" && (
-            <TaskTableView tasks={filteredTasks} />
+            <TaskTableView 
+              tasks={filteredTasks} 
+              users={users}
+              campaigns={campaigns}
+            />
           )}
         </div>
 

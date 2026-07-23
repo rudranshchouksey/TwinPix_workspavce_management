@@ -564,6 +564,9 @@ model Task {
   status      TaskStatus   @default(TODO)
   dueDate     DateTime?
   attachments String[]     @default([])
+  labels      String[]     @default([])
+  checklist   Json?        // Array of { id, text, completed }
+
 
   assigneeId String?
   campaignId String?

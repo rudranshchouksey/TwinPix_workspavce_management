@@ -7,6 +7,9 @@ import { ArrowLeft, Calendar, Flag, CheckCircle2, User, Clock } from "lucide-rea
 import { Badge } from "@/components/ui/badge";
 import { TaskComments } from "@/components/tasks/task-comments";
 import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
+import { TaskDetailActions } from "@/components/tasks/task-detail-actions";
+import { getAllUsersBasicAction } from "@/actions/users";
+import { getCampaignsAction } from "@/actions/campaigns";
 
 export async function generateMetadata({
   params,
@@ -31,9 +34,20 @@ export default async function TaskDetailPage({
   const user = await requireAuth();
 
   let task;
+  let users = [];
+  let campaigns = [];
+  
   try {
-    task = await getTaskByIdAction(resolvedParams.id);
-    if (!task) notFound();
+    const [taskData, usersData, campaignsData] = await Promise.all([
+      getTaskByIdAction(resolvedParams.id),
+      getAllUsersBasicAction(),
+      getCampaignsAction({ limit: 100 })
+    ]);
+    
+    if (!taskData) notFound();
+    task = taskData;
+    users = usersData;
+    campaigns = campaignsData.campaigns;
   } catch (error) {
     notFound();
   }
@@ -80,6 +94,14 @@ export default async function TaskDetailPage({
             {task.status === "DONE" ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
             {task.status.replace("_", " ")}
           </Badge>
+          
+          <div className="w-px h-6 bg-[rgba(0,0,0,0.08)] mx-2"></div>
+          
+          <TaskDetailActions 
+            task={task as any} 
+            users={users} 
+            campaigns={campaigns} 
+          />
         </div>
       </div>
 

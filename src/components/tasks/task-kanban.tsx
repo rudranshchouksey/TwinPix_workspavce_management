@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,8 +30,21 @@ import {
   Paperclip,
   Flag,
   Inbox,
+  Trash,
+  Pencil,
 } from "lucide-react";
-import { updateTaskAction } from "@/actions/tasks";
+import { updateTaskAction, deleteTaskAction } from "@/actions/tasks";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { TaskDialog } from "./task-dialog";
+import { Task } from "@prisma/client";
+import type { TaskQuickFilter } from "./task-quick-filters";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TaskDialog } from "./task-dialog";
@@ -70,7 +83,15 @@ function isDueToday(task: TaskWithDetails): boolean {
   return due.toDateString() === today.toDateString();
 }
 
-function SortableTaskCard({ task }: { task: TaskWithDetails }) {
+function SortableTaskCard({ 
+  task,
+  onEdit,
+  onDelete
+}: { 
+  task: TaskWithDetails;
+  onEdit: (task: TaskWithDetails) => void;
+  onDelete: (taskId: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -118,21 +139,41 @@ function SortableTaskCard({ task }: { task: TaskWithDetails }) {
       <div className="pl-2.5">
         {/* Top row: Priority + Campaign */}
         <div className="flex items-center justify-between gap-2 mb-2">
-          <Badge
-            variant="outline"
-            className={`${priority.bg} ${priority.text} ${priority.border} text-[10px] py-0 px-2 rounded-full uppercase tracking-wider font-semibold`}
-          >
-            <Flag className="w-2.5 h-2.5 mr-0.5" />
-            {task.priority}
-          </Badge>
-          {task.campaign && (
-            <span
-              className="text-[10px] text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-2 py-0.5 rounded-full truncate max-w-[120px] font-medium"
-              title={task.campaign.name}
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`${priority.bg} ${priority.text} ${priority.border} text-[10px] py-0 px-2 rounded-full uppercase tracking-wider font-semibold`}
             >
-              {task.campaign.name}
-            </span>
-          )}
+              <Flag className="w-2.5 h-2.5 mr-0.5" />
+              {task.priority}
+            </Badge>
+            {task.campaign && (
+              <span
+                className="text-[10px] text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-2 py-0.5 rounded-full truncate max-w-[120px] font-medium"
+                title={task.campaign.name}
+              >
+                {task.campaign.name}
+              </span>
+            )}
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" onPointerDown={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onPointerDown={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(task); }}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-red-600 focus:text-red-600">
+                <Trash className="w-4 h-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Title */}
@@ -254,6 +295,11 @@ export function TaskKanban({
   const [activeTask, setActiveTask] = useState<TaskWithDetails | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createColumnId, setCreateColumnId] = useState("TODO");
+  const [editingTask, setEditingTask] = useState<TaskWithDetails | null>(null);
+
+  useEffect(() => {
+    setTasks(initialData);
+  }, [initialData]);
 
   // Apply quick filter
   const filteredTasks = useMemo(() => {
@@ -354,8 +400,26 @@ export function TaskKanban({
 
   const handleCreateClick = useCallback((statusId: string) => {
     setCreateColumnId(statusId);
+    setEditingTask(null);
     setIsCreateOpen(true);
   }, []);
+
+  const handleEditTask = useCallback((task: TaskWithDetails) => {
+    setEditingTask(task);
+    setIsCreateOpen(true);
+  }, []);
+
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    try {
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      await deleteTaskAction(taskId);
+      toast.success("Task deleted");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete task");
+      setTasks(initialData);
+    }
+  }, [initialData]);
 
   return (
     <>
@@ -408,7 +472,12 @@ export function TaskKanban({
                     <div className="min-h-[100px]">
                       <AnimatePresence initial={false}>
                         {columnTasks.map((task) => (
-                          <SortableTaskCard key={task.id} task={task} />
+                          <SortableTaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onEdit={handleEditTask}
+                            onDelete={handleDeleteTask}
+                          />
                         ))}
                       </AnimatePresence>
                       {columnTasks.length === 0 && (
@@ -438,7 +507,11 @@ export function TaskKanban({
 
       <TaskDialog
         open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) setTimeout(() => setEditingTask(null), 300);
+        }}
+        task={editingTask}
         users={users}
         campaigns={campaigns}
         defaultStatus={createColumnId}
