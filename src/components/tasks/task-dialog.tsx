@@ -11,6 +11,8 @@ import { taskSchema, TaskInput } from "@/lib/validations/task";
 import { createTaskAction, updateTaskAction, getTaskByIdAction } from "@/actions/tasks";
 import { FileList } from "@/components/files/file-list";
 import { TaskActivityTimeline } from "@/components/tasks/task-activity-timeline";
+import { TaskAIPanel } from "./task-ai-panel";
+import { Sparkles } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -41,6 +43,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
   
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   const form = useForm<TaskInput>({
     resolver: zodResolver(taskSchema) as any,
@@ -193,9 +196,9 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[850px] bg-[var(--color-surface-800)] border-[rgba(0,0,0,0.08)] shadow-2xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+      <DialogContent className={`transition-all duration-300 ${isAIOpen ? "sm:max-w-[1200px]" : "sm:max-w-[850px]"} bg-[var(--color-surface-800)] border-[rgba(0,0,0,0.08)] shadow-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] h-[90vh]`}>
         <DialogHeader className="px-6 py-4 border-b border-[rgba(0,0,0,0.08)] bg-gradient-to-b from-[rgba(0,0,0,0.02)] to-transparent shrink-0 flex flex-row items-center justify-between">
-          <div>
+          <div className="flex-1">
             <DialogTitle className="text-xl font-bold text-[var(--color-text-primary)]">
               {isEditMode ? "Edit Task" : "Create New Task"}
             </DialogTitle>
@@ -211,10 +214,21 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
               </p>
             )}
           </div>
+          {!isAIOpen && (
+            <Button 
+              type="button" 
+              onClick={() => setIsAIOpen(true)} 
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 text-white border-0 shadow-md transition-all gap-2 px-4 h-9 rounded-full mr-6"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm font-semibold">AI Assistant</span>
+            </Button>
+          )}
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex flex-1 overflow-hidden">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col min-w-0">
             <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
               <div className="px-6 border-b border-[rgba(0,0,0,0.08)] bg-[rgba(0,0,0,0.02)] overflow-x-auto hide-scrollbar">
                 <TabsList className="h-12 bg-transparent w-full justify-start p-0">
@@ -551,6 +565,13 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
             </DialogFooter>
           </form>
         </Form>
+
+        {isAIOpen && (
+          <div className="w-[380px] shrink-0 border-l border-[rgba(0,0,0,0.08)] bg-[#FAFAFA] flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-300">
+            <TaskAIPanel form={form} users={users} onClose={() => setIsAIOpen(false)} />
+          </div>
+        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
