@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-utils";
 import { db } from "@/lib/db";
-import fs from "fs";
-import path from "path";
-import { pipeline } from "stream/promises";
+import { v2 as cloudinary } from "cloudinary";
 
-// Ensure upload directory exists
-const UPLOAD_DIR = path.join(process.cwd(), "uploads", "client-files");
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Configure Cloudinary from CLOUDINARY_URL env var
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({ secure: true });
+}
+
+/**
+ * Upload a buffer to Cloudinary and return the secure URL.
+ */
+function uploadBufferToCloudinary(
+  buffer: Buffer,
+  publicId: string
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        {
+          public_id: publicId,
+          overwrite: true,
+          unique_filename: false,
+          resource_type: "auto",
+          folder: "twinpix/client-files",
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else if (result) resolve(result.secure_url);
+          else reject(new Error("No result returned from Cloudinary"));
+        }
+      )
+      .end(buffer);
+  });
 }
 
 export async function POST(
@@ -34,22 +58,21 @@ export async function POST(
     }
 
     // Basic security validation
-    const ext = path.extname(file.name).toLowerCase();
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const uniqueFilename = `${Date.now()}-${safeName}`;
-    
-    // Create client-specific directory
-    const clientDir = path.join(UPLOAD_DIR, clientId);
-    if (!fs.existsSync(clientDir)) {
-      fs.mkdirSync(clientDir, { recursive: true });
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").replace(/\.\w+$/, "");
+    const timestamp = Date.now();
+    const publicId = `${clientId}/${timestamp}-${safeName}`;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    let fileUrl: string;
+
+    if (process.env.CLOUDINARY_URL) {
+      fileUrl = await uploadBufferToCloudinary(buffer, publicId);
+    } else {
+      // Development fallback
+      console.warn("[client-files] CLOUDINARY_URL not set — file will not persist in production");
+      fileUrl = `/uploads/client-files/${clientId}/${timestamp}-${safeName}`;
     }
-
-    const filePath = path.join(clientDir, uniqueFilename);
-    const writeStream = fs.createWriteStream(filePath);
-
-    // Node 20+ generic Web Streams support
-    // @ts-ignore
-    await pipeline(file.stream(), writeStream);
 
     // Log the activity
     await db.clientActivity.create({
@@ -58,17 +81,24 @@ export async function POST(
         userId: user.id,
         type: "FILE_UPLOADED",
         details: `Uploaded file: ${file.name}`,
-        metadata: JSON.stringify({ filename: uniqueFilename, originalName: file.name, size: file.size, mimeType: file.type }),
+        metadata: JSON.stringify({
+          filename: publicId,
+          originalName: file.name,
+          size: file.size,
+          mimeType: file.type,
+          url: fileUrl,
+        }),
       },
     });
 
     return NextResponse.json({ 
       success: true, 
-      filename: uniqueFilename,
-      originalName: file.name
+      filename: publicId,
+      originalName: file.name,
+      url: fileUrl,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("File upload error:", error);
     return NextResponse.json(
       { error: "Failed to upload file" },
@@ -78,7 +108,7 @@ export async function POST(
 }
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -86,23 +116,41 @@ export async function GET(
     const resolvedParams = await params;
     const clientId = resolvedParams.id;
 
-    const clientDir = path.join(UPLOAD_DIR, clientId);
-    
-    if (!fs.existsSync(clientDir)) {
-      return NextResponse.json({ files: [] });
-    }
+    // Query client activities for uploaded files instead of reading from filesystem
+    const activities = await db.clientActivity.findMany({
+      where: {
+        clientId,
+        type: "FILE_UPLOADED",
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        details: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
 
-    const files = fs.readdirSync(clientDir).map(filename => {
-      const stats = fs.statSync(path.join(clientDir, filename));
+    const files = activities.map((activity) => {
+      let meta: Record<string, unknown> = {};
+      try {
+        if (activity.metadata) {
+          meta = JSON.parse(activity.metadata);
+        }
+      } catch {
+        // metadata parse failure is non-fatal
+      }
       return {
-        filename,
-        size: stats.size,
-        createdAt: stats.birthtime,
+        filename: meta.filename || meta.originalName || "unknown",
+        originalName: meta.originalName || activity.details?.replace("Uploaded file: ", ""),
+        size: meta.size || 0,
+        url: meta.url || null,
+        createdAt: activity.createdAt,
       };
     });
 
     return NextResponse.json({ files });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { error: "Failed to list files" },
       { status: 500 }

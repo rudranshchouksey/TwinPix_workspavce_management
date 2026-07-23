@@ -3,12 +3,54 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import fs from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { v2 as cloudinary } from "cloudinary";
 import { logActivity } from "@/actions/activity";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+// Configure Cloudinary from CLOUDINARY_URL env var
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({ secure: true });
+}
+
+/**
+ * Upload a buffer to Cloudinary and return the secure URL.
+ * Falls back to a data URI if Cloudinary is not configured.
+ */
+function uploadBufferToCloudinary(
+  buffer: Buffer,
+  publicId: string,
+  resourceType: "image" | "raw" | "auto" = "auto"
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        {
+          public_id: publicId,
+          overwrite: true,
+          unique_filename: false,
+          resource_type: resourceType,
+          folder: "twinpix/files",
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else if (result) resolve(result.secure_url);
+          else reject(new Error("No result returned from Cloudinary"));
+        }
+      )
+      .end(buffer);
+  });
+}
+
+/**
+ * Extract the Cloudinary public ID from a URL for deletion.
+ */
+function extractPublicId(url: string): string | null {
+  try {
+    const match = url.match(/\/upload\/(?:v\d+\/)?(twinpix\/.+?)(?:\.\w+)?$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function uploadFileAction(formData: FormData) {
   try {
@@ -32,26 +74,33 @@ export async function uploadFileAction(formData: FormData) {
       return { success: false, error: "Entity ID missing" };
     }
 
-    // Ensure upload directory exists
-    try {
-      await fs.access(UPLOAD_DIR);
-    } catch {
-      await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Generate a unique public ID for Cloudinary
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").replace(/\.\w+$/, "");
+    const publicId = `${entityType.toLowerCase()}/${entityId || session.user.id}/${timestamp}_${safeName}`;
+
+    let fileUrl: string;
+
+    if (process.env.CLOUDINARY_URL) {
+      // Production: upload to Cloudinary
+      fileUrl = await uploadBufferToCloudinary(buffer, publicId);
+    } else {
+      // Fallback for development without Cloudinary: use /tmp (still won't persist on Vercel)
+      console.warn("[file-actions] CLOUDINARY_URL not set — file upload will not persist in production");
+      const { writeFile, mkdir } = await import("fs/promises");
+      const path = await import("path");
+      const tmpDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(tmpDir, { recursive: true });
+      const uniqueName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const filePath = path.join(tmpDir, uniqueName);
+      await writeFile(filePath, buffer);
+      fileUrl = `/uploads/${uniqueName}`;
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    
-    // Generate unique filename
-    const ext = path.extname(file.name);
-    const uniqueName = `${crypto.randomUUID()}${ext}`;
-    const filePath = path.join(UPLOAD_DIR, uniqueName);
-    
-    await fs.writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${uniqueName}`;
-
-    const data: any = {
-      fileName: uniqueName,
+    const data: Record<string, string | number> = {
+      fileName: publicId,
       originalName: file.name,
       mimeType: file.type,
       size: file.size,
@@ -120,12 +169,16 @@ export async function deleteFileAction(fileId: string, pathname: string) {
       return { success: false, error: "File not found" };
     }
 
-    // Delete physical file
-    const filePath = path.join(process.cwd(), "public", file.url);
-    try {
-      await fs.unlink(filePath);
-    } catch (e) {
-      console.warn("File already deleted from disk or not found:", filePath);
+    // Delete from Cloudinary if the URL is a Cloudinary URL
+    if (file.url.includes("cloudinary.com")) {
+      const publicId = extractPublicId(file.url);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
+        } catch (_err) {
+          console.warn("[file-actions] Cloudinary delete failed for:", publicId);
+        }
+      }
     }
 
     // Delete DB record
@@ -150,7 +203,7 @@ export async function getFilesAction(entityType: string, entityId: string) {
       return { success: false, error: "Unauthorized" };
     }
 
-    const where: any = {};
+    const where: Record<string, string> = {};
     if (entityType === "TASK") {
       where.taskId = entityId;
     } else if (entityType === "CAMPAIGN") {

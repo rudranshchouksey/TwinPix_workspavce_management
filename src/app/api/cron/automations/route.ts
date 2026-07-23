@@ -4,8 +4,11 @@ import { WorkflowEngine } from "@/services/workflow.engine";
 
 // Example Usage: GET /api/cron/automations (Should be hit daily by Vercel Cron or GitHub Actions)
 export async function GET(request: Request) {
-  // In production, you would want to secure this endpoint (e.g. check Authorization header with a secret)
-  
+  const authHeader = request.headers.get("authorization");
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
