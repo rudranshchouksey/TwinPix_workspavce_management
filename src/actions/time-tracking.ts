@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-utils";
 import { revalidatePath } from "next/cache";
 
 export async function getActiveTimerAction() {

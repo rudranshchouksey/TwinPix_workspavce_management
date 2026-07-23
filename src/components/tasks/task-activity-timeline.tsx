@@ -226,6 +226,7 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
           return renderComment(event);
         }
       })}
+      </div>
 
       {/* New top-level comment */}
       <div className="flex gap-4 pt-4 border-t border-[rgba(0,0,0,0.08)]">
