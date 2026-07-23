@@ -11,6 +11,7 @@ import { taskSchema, TaskInput } from "@/lib/validations/task";
 import { createTaskAction, updateTaskAction, getTaskByIdAction } from "@/actions/tasks";
 import { FileList } from "@/components/files/file-list";
 import { TaskActivityTimeline } from "@/components/tasks/task-activity-timeline";
+import { TaskTimeTracking } from "@/components/time-tracking/task-time-tracking";
 import { TaskAIPanel } from "./task-ai-panel";
 import { Sparkles } from "lucide-react";
 
@@ -237,6 +238,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                   <TabsTrigger value="schedule" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[var(--color-brand-500)] rounded-none h-12 px-4">Schedule</TabsTrigger>
                   {isEditMode && <TabsTrigger value="checklist" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[var(--color-brand-500)] rounded-none h-12 px-4">Checklist</TabsTrigger>}
                   {isEditMode && <TabsTrigger value="files" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[var(--color-brand-500)] rounded-none h-12 px-4">Files</TabsTrigger>}
+                  {isEditMode && <TabsTrigger value="time-tracking" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[var(--color-brand-500)] rounded-none h-12 px-4">Time Tracking</TabsTrigger>}
                   {isEditMode && <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[var(--color-brand-500)] rounded-none h-12 px-4">History</TabsTrigger>}
                 </TabsList>
               </div>
@@ -520,6 +522,16 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                     />
                   </div>
                 </TabsContent>
+
+                {isEditMode && (
+                  <TabsContent value="time-tracking" className="mt-0">
+                    <TaskTimeTracking 
+                      taskId={task.id} 
+                      estimatedHours={task.estimatedHours} 
+                      actualHours={task.actualHours} 
+                    />
+                  </TabsContent>
+                )}
 
                 {isEditMode && (
                   <>

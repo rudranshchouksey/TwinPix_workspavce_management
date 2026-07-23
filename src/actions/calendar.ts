@@ -114,7 +114,7 @@ export async function getCalendarDashboardDataAction() {
   const next7Days = new Date(endOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   // Fetch from ALL unified sources with graceful fallbacks
-  let dbEvents: any[] = [], tasks: any[] = [], campaigns: any[] = [], projects: any[] = [], contentSchedules: any[] = [], invoices: any[] = [];
+  let dbEvents: any[] = [], tasks: any[] = [], campaigns: any[] = [], projects: any[] = [], contentSchedules: any[] = [], invoices: any[] = [], timeEntries: any[] = [];
   
   // KPI Calculations & Intelligence Generation
   let todaysEventsCount = 0;
@@ -171,9 +171,15 @@ export async function getCalendarDashboardDataAction() {
           campaign: { select: { id: true, name: true } },
           client: { select: { id: true, companyName: true } }
         }
+      }),
+      db.timeEntry.findMany({
+        include: {
+          user: { select: { id: true, name: true } },
+          task: { select: { id: true, title: true } }
+        }
       })
     ]);
-    [dbEvents, tasks, campaigns, projects, contentSchedules, invoices] = results;
+    [dbEvents, tasks, campaigns, projects, contentSchedules, invoices, timeEntries] = results;
 
     // Normalize all entities into FullCalendar Event format
     
@@ -192,6 +198,23 @@ export async function getCalendarDashboardDataAction() {
         user: e.user,
         influencer: e.influencer,
         isRealEvent: true
+      });
+    });
+
+    // 1.5 Time Entries
+    timeEntries.forEach(te => {
+      normalizedEvents.push({
+        id: `time-${te.id}`,
+        title: `Logged: ${(te.durationMinutes / 60).toFixed(1)}h - ${te.task?.title || "Task"}`,
+        description: te.description || "Tracked Time",
+        start: te.startTime,
+        end: te.endTime || te.startTime,
+        allDay: false,
+        type: 'TIME_LOG',
+        color: "#14b8a6", // Teal
+        user: te.user,
+        originalId: te.id,
+        taskId: te.taskId
       });
     });
 

@@ -4,6 +4,8 @@ import { Topbar } from "@/components/layout/topbar";
 import { BreadcrumbProvider } from "@/contexts/breadcrumb-context";
 import { TwinAIPanel } from "@/components/copilot/twin-ai-panel";
 import { NotificationStreamProvider } from "@/components/providers/notification-stream-provider";
+import { TimeTrackingProvider } from "@/providers/time-tracking-provider";
+import { FloatingTimer } from "@/components/time-tracking/floating-timer";
 import { db } from "@/lib/db";
 
 /**
@@ -30,9 +32,10 @@ export default async function DashboardLayout({
   const user = freshUser || sessionUser;
 
   return (
-    <BreadcrumbProvider>
-      <NotificationStreamProvider>
-        <div className="flex h-dvh w-full overflow-hidden bg-[var(--color-surface-950)]">
+    <TimeTrackingProvider>
+      <BreadcrumbProvider>
+        <NotificationStreamProvider>
+          <div className="flex h-dvh w-full overflow-hidden bg-[var(--color-surface-950)]">
           {/* Sidebar (desktop: inline, mobile: overlay via portal) */}
           <Sidebar userRole={user.role} userOverride={user} />
 
@@ -49,8 +52,10 @@ export default async function DashboardLayout({
           </div>
         </div>
 
-        <TwinAIPanel />
-      </NotificationStreamProvider>
-    </BreadcrumbProvider>
+          <TwinAIPanel />
+          <FloatingTimer />
+        </NotificationStreamProvider>
+      </BreadcrumbProvider>
+    </TimeTrackingProvider>
   );
 }
