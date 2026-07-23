@@ -154,7 +154,7 @@ export function TimesheetsClient({ chartData, leaderboard, recentEntries, curren
                     {entry.task?.campaign && (
                       <div className="hidden sm:flex items-center gap-1.5 shrink-0 text-xs text-[var(--color-text-secondary)] bg-[rgba(0,0,0,0.02)] px-2 py-1 rounded h-fit">
                         <Briefcase className="w-3 h-3" />
-                        <span className="truncate max-w-[150px]">{entry.task.campaign.title}</span>
+                        <span className="truncate max-w-[150px]">{entry.task.campaign.name}</span>
                       </div>
                     )}
                   </div>

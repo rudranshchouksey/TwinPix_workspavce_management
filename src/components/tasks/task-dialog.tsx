@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Check, X, FileText, Activity, LayoutDashboard, Target, Briefcase, Hash, Users, Clock, Paperclip, Bell, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
   const [isAIOpen, setIsAIOpen] = useState(false);
 
   const form = useForm<TaskInput>({
-    resolver: zodResolver(taskSchema) as any,
+    resolver: zodResolver(taskSchema) as unknown as Resolver<TaskInput>,
     defaultValues: {
       title: "",
       description: "",

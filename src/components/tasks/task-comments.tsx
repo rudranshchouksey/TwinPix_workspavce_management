@@ -5,9 +5,10 @@ import { formatDistanceToNow } from "date-fns";
 import { Send, Trash2, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { toast } from "sonner";
 
-import { taskCommentSchema, TaskCommentInput } from "@/lib/validations/task";
+import { taskCommentSchema } from "@/lib/validations/task";
 import { addTaskCommentAction, deleteTaskCommentAction } from "@/actions/tasks";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,8 +22,8 @@ interface TaskCommentsProps {
 export function TaskComments({ taskId, comments, currentUser }: TaskCommentsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<TaskCommentInput>({
-    resolver: zodResolver(taskCommentSchema),
+  const form = useForm<z.infer<typeof taskCommentSchema>>({
+    resolver: zodResolver(taskCommentSchema) as any,
     defaultValues: {
       content: "",
       attachments: [],
@@ -30,7 +31,7 @@ export function TaskComments({ taskId, comments, currentUser }: TaskCommentsProp
     },
   });
 
-  const onSubmit = async (data: TaskCommentInput) => {
+  const onSubmit = async (data: z.infer<typeof taskCommentSchema>) => {
     setIsSubmitting(true);
     try {
       await addTaskCommentAction(taskId, data);

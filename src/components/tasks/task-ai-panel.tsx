@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Wand2, Clock, Flag, UserPlus, ListTodo, ShieldAlert, CalendarClock, Check, Loader2, RefreshCw } from "lucide-react";
+import { Sparkles, Wand2, Clock, Flag, UserPlus, ListTodo, ShieldAlert, CalendarClock, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";

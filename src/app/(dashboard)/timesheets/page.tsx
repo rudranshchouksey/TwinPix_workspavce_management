@@ -21,7 +21,7 @@ export default async function TimesheetsPage() {
     take: 100,
     include: {
       user: { select: { id: true, name: true, image: true, email: true } },
-      task: { select: { id: true, title: true, campaign: { select: { id: true, title: true } } } }
+      task: { select: { id: true, title: true, campaign: { select: { id: true, name: true } } } }
     }
   });
 

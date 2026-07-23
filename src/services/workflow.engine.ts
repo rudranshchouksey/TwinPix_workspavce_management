@@ -180,7 +180,7 @@ export class WorkflowEngine {
             message: config.message || `Alert for task: ${payload.title}`,
             entityId: payload.taskId,
             entityType: "TASK",
-            priority: "URGENT",
+            priority: "CRITICAL",
             link: `/tasks`
           });
         }

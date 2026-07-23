@@ -24,12 +24,12 @@ export function TaskViewOptions({ filters, setFilters }: TaskViewOptionsProps) {
   return (
     <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger render={
           <Button variant="ghost" size="sm" className="h-8 gap-2 rounded-xl text-xs text-[var(--color-text-secondary)]">
             <LayoutGrid className="w-4 h-4" />
             Group by: <span className="font-semibold text-[var(--color-text-primary)] capitalize">{filters.groupBy.replace('Id', '')}</span>
           </Button>
-        </DropdownMenuTrigger>
+        } />
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel className="text-xs">Group Board By</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -45,12 +45,12 @@ export function TaskViewOptions({ filters, setFilters }: TaskViewOptionsProps) {
       <div className="w-px h-4 bg-[rgba(0,0,0,0.1)]" />
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger render={
           <Button variant="ghost" size="sm" className="h-8 gap-2 rounded-xl text-xs text-[var(--color-text-secondary)]">
             <ArrowDownUp className="w-4 h-4" />
             Sort
           </Button>
-        </DropdownMenuTrigger>
+        } />
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuLabel className="text-xs">Sort Tasks By</DropdownMenuLabel>
           <DropdownMenuSeparator />

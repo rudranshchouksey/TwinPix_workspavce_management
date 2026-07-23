@@ -144,7 +144,7 @@ export function TaskCard({ task, onEdit, onDelete, onDuplicate, onStatusChange, 
           </div>
           
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger render={
               <Button
                 variant="ghost"
                 size="icon"
@@ -153,7 +153,7 @@ export function TaskCard({ task, onEdit, onDelete, onDuplicate, onStatusChange, 
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
+            } />
             <DropdownMenuContent align="end" className="w-48" onPointerDown={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Pencil className="w-4 h-4 mr-2" /> Open Details

@@ -102,7 +102,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
 
       <div className="flex items-center gap-2 flex-wrap">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" size="sm" className="h-9 border-dashed gap-2 rounded-xl text-xs">
               <Flag className="w-3.5 h-3.5 text-gray-400" />
               Priority
@@ -112,7 +112,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
                 </Badge>
               )}
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="start" className="w-48">
             <DropdownMenuLabel className="text-xs">Filter by Priority</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -130,9 +130,9 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" size="sm" className="h-9 border-dashed gap-2 rounded-xl text-xs">
-              <Filter className="w-3.5 h-3.5 text-gray-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
               Status
               {filters.statuses.length > 0 && (
                 <Badge variant="secondary" className="ml-1 px-1 h-5 text-[10px] bg-gray-100 rounded-md">
@@ -140,7 +140,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
                 </Badge>
               )}
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="start" className="w-48">
             <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -158,9 +158,9 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" size="sm" className="h-9 border-dashed gap-2 rounded-xl text-xs">
-              <User className="w-3.5 h-3.5 text-gray-400" />
+              <Users2 className="w-3.5 h-3.5 text-gray-400" />
               Assignee
               {filters.assigneeIds.length > 0 && (
                 <Badge variant="secondary" className="ml-1 px-1 h-5 text-[10px] bg-gray-100 rounded-md">
@@ -168,7 +168,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
                 </Badge>
               )}
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="start" className="w-56 max-h-[300px] overflow-y-auto">
             <DropdownMenuLabel className="text-xs">Filter by Assignee</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -193,9 +193,9 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" size="sm" className="h-9 border-dashed gap-2 rounded-xl text-xs">
-              <Megaphone className="w-3.5 h-3.5 text-gray-400" />
+              <Briefcase className="w-3.5 h-3.5 text-gray-400" />
               Campaign
               {filters.campaignIds.length > 0 && (
                 <Badge variant="secondary" className="ml-1 px-1 h-5 text-[10px] bg-gray-100 rounded-md">
@@ -203,7 +203,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
                 </Badge>
               )}
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="start" className="w-56 max-h-[300px] overflow-y-auto">
             <DropdownMenuLabel className="text-xs">Filter by Campaign</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -221,12 +221,12 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" size="sm" className="h-9 border-dashed gap-2 rounded-xl text-xs">
               <Bookmark className="w-3.5 h-3.5 text-gray-400" />
               Saved Filters
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel className="text-xs">Your Saved Filters</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -245,6 +245,28 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
               <Save className="w-3.5 h-3.5 mr-2" />
               Save current view
             </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger render={
+            <Button variant="outline" size="sm" className="h-9 gap-2 rounded-xl text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+              Sort: {SORT_OPTIONS.find((opt) => opt.value === filters.sortBy)?.label || "Due Date"}
+            </Button>
+          } />
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuLabel className="text-xs">Sort By</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {SORT_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.value}
+                onClick={() => setFilters({ sortBy: opt.value })}
+                className="text-xs font-medium cursor-pointer"
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
         

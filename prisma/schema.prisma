@@ -91,6 +91,7 @@ model User {
   authoredTasks    Task[]               @relation("TaskAuthor")
   reportedTasks    Task[]               @relation("TaskReporter")
   taskComments     TaskComment[]
+  taskActivities   TaskActivity[]
   uploadedFiles    File[]               @relation("UploadedFiles")
   notifications    Notification[]
   activityLogs     ActivityLog[]
@@ -645,8 +646,10 @@ model TaskActivity {
   createdAt DateTime @default(now())
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([taskId])
+  @@index([userId])
   @@map("task_activities")
 }
 
