@@ -82,6 +82,7 @@ export function TaskFilterBar({ filters, setFilters, clearFilters, users, campai
       <div className="relative flex-1 min-w-[200px] max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
         <Input
+          id="task-search-input"
           placeholder="Search tasks..."
           value={filters.search}
           onChange={(e) => setFilters({ search: e.target.value })}

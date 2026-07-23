@@ -11,11 +11,24 @@ export const metadata: Metadata = {
   description: "Manage internal tasks and track progress.",
 };
 
-export default async function TasksPage() {
+export default async function TasksPage({ searchParams }: { searchParams: any }) {
   const session = await requireAuth();
 
-  const [tasks, users, campaignsRes, kpis, insights] = await Promise.all([
-    getTasksAction({}),
+  const parseArray = (val: string | undefined | null) => (val ? val.split(",") : undefined);
+  
+  const serverFilters = {
+    search: searchParams.search || undefined,
+    statuses: parseArray(searchParams.statuses),
+    priorities: parseArray(searchParams.priorities),
+    assigneeIds: parseArray(searchParams.assigneeIds),
+    campaignIds: parseArray(searchParams.campaignIds),
+    isOverdue: searchParams.isOverdue === "true" ? true : undefined,
+    sortBy: searchParams.sortBy || undefined,
+    limit: 50,
+  };
+
+  const [tasksRes, users, campaignsRes, kpis, insights] = await Promise.all([
+    getTasksAction(serverFilters),
     getAllUsersBasicAction(),
     getCampaignsAction({ limit: 100 }),
     getTaskKpisAction(),
@@ -24,7 +37,7 @@ export default async function TasksPage() {
 
   return (
     <TaskPageClient
-      tasks={tasks}
+      initialTasksData={tasksRes}
       users={users}
       campaigns={campaignsRes.campaigns}
       kpis={kpis}

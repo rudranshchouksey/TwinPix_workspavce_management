@@ -28,30 +28,95 @@ async function logTaskActivity(taskId: string, type: string, details: string) {
 }
 
 export async function getTasksAction(params: {
-  status?: string;
-  priority?: string;
-  assigneeId?: string;
-  campaignId?: string;
+  search?: string;
+  statuses?: string[];
+  priorities?: string[];
+  assigneeIds?: string[];
+  campaignIds?: string[];
+  isOverdue?: boolean;
+  sortBy?: string;
+  cursor?: string;
+  limit?: number;
 }) {
   await requireAuth();
 
+  const limit = params.limit || 50;
   const where: any = {};
-  if (params.status) where.status = params.status;
-  if (params.priority) where.priority = params.priority;
-  if (params.assigneeId) where.assigneeId = params.assigneeId;
-  if (params.campaignId) where.campaignId = params.campaignId;
+
+  if (params.search) {
+    where.OR = [
+      { title: { contains: params.search, mode: 'insensitive' } },
+      { description: { contains: params.search, mode: 'insensitive' } }
+    ];
+  }
+  
+  if (params.statuses && params.statuses.length > 0) {
+    where.status = { in: params.statuses };
+  }
+  
+  if (params.priorities && params.priorities.length > 0) {
+    where.priority = { in: params.priorities };
+  }
+  
+  if (params.assigneeIds && params.assigneeIds.length > 0) {
+    if (params.assigneeIds.includes("UNASSIGNED")) {
+      where.OR = [
+        ...(where.OR || []),
+        { assigneeId: null },
+        { assigneeId: { in: params.assigneeIds.filter(id => id !== "UNASSIGNED") } }
+      ];
+    } else {
+      where.assigneeId = { in: params.assigneeIds };
+    }
+  }
+  
+  if (params.campaignIds && params.campaignIds.length > 0) {
+    where.campaignId = { in: params.campaignIds };
+  }
+  
+  if (params.isOverdue) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    where.dueDate = { lt: today };
+    where.status = { not: "DONE" };
+  }
+
+  let orderBy: any = { createdAt: "desc" };
+  if (params.sortBy) {
+    switch(params.sortBy) {
+      case "createdAt_desc": orderBy = { createdAt: "desc" }; break;
+      case "createdAt_asc": orderBy = { createdAt: "asc" }; break;
+      case "dueDate_asc": orderBy = { dueDate: "asc" }; break;
+      case "dueDate_desc": orderBy = { dueDate: "desc" }; break;
+      case "title_asc": orderBy = { title: "asc" }; break;
+      case "title_desc": orderBy = { title: "desc" }; break;
+      // Note: priority sort requires a custom Prisma query or doing it in memory, 
+      // but for basic orderBy we can stick to standard fields or keep default.
+    }
+  }
 
   const tasks = await db.task.findMany({
     where,
+    take: limit + 1, // Take one extra to check if there is a next page
+    ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
     include: {
       assignee: { select: { id: true, name: true, image: true } },
       campaign: { select: { id: true, name: true } },
       comments: { select: { id: true } }, // just for count
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
-  return tasks;
+  let nextCursor: typeof params.cursor | undefined = undefined;
+  if (tasks.length > limit) {
+    const nextItem = tasks.pop();
+    nextCursor = nextItem!.id;
+  }
+
+  return {
+    tasks,
+    nextCursor,
+  };
 }
 
 // Lightweight name-only lookup for page titles/breadcrumbs (avoids the heavy includes below)

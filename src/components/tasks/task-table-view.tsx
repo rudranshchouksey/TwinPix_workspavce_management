@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { deleteTaskAction } from "@/actions/tasks";
 import { TaskDialog } from "./task-dialog";
+import { TaskEmptyState } from "./task-empty-state";
 import type { TaskWithDetails } from "./task-kanban";
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -240,48 +241,44 @@ export function TaskTableView({
   });
 
   return (
-    <div className="rounded-2xl glass-card bg-white overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b border-[rgba(0,0,0,0.06)]">
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="text-left text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider px-4 py-3 bg-[rgba(0,0,0,0.015)]"
+    <>
+      <div className="rounded-[24px] border border-[rgba(0,0,0,0.08)] bg-white overflow-hidden shadow-sm">
+        {tasks.length === 0 ? (
+          <TaskEmptyState />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[rgba(0,0,0,0.02)] text-[var(--color-text-secondary)]">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="border-b border-[rgba(0,0,0,0.04)]">
+                    {headerGroup.headers.map((header) => (
+                      <th key={header.id} className="px-5 py-4 font-medium whitespace-nowrap">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="divide-y divide-[rgba(0,0,0,0.04)] text-[var(--color-text-primary)]">
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="group hover:bg-[rgba(0,0,0,0.01)] transition-colors data-[state=selected]:bg-[rgba(0,0,0,0.02)]"
                   >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-5 py-4 align-middle">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-[rgba(0,0,0,0.04)] hover:bg-[rgba(0,0,0,0.015)] transition-colors"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 text-sm">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {tasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-[rgba(0,0,0,0.03)] flex items-center justify-center mb-3">
-            <Flag className="w-6 h-6 text-[var(--color-text-disabled)]" />
+              </tbody>
+            </table>
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)]">No tasks found</p>
-          <p className="text-xs text-[var(--color-text-disabled)] mt-1">Try adjusting your filters or create a new task</p>
-        </div>
-      )}
+        )}
+      </div>
       <TaskDialog
         open={isEditOpen}
         onOpenChange={(open) => {
@@ -292,6 +289,6 @@ export function TaskTableView({
         users={users}
         campaigns={campaigns}
       />
-    </div>
+    </>
   );
 }

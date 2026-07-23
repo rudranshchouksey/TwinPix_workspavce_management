@@ -1,22 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { KanbanSquare, LayoutList, CalendarDays, GanttChart } from "lucide-react";
 import { TaskHero } from "./task-hero";
 import { TaskKpiDashboard } from "./task-kpi-dashboard";
 import { TaskInsightsSection } from "./task-insights-section";
 import { TaskKanban, type TaskWithDetails } from "./task-kanban";
 import { TaskTableView } from "./task-table-view";
+import { TaskDialog } from "./task-dialog";
 import { TaskSidebar } from "./task-sidebar";
 import { TaskFilterBar } from "./task-filter-bar";
 import { TaskViewOptions } from "./task-view-options";
 import { useTaskFilters } from "@/hooks/use-task-filters";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/utils";
 import type { TaskKpis } from "@/actions/tasks";
 import type { TaskInsight } from "@/actions/task-insights";
 
 interface TaskPageClientProps {
-  tasks: TaskWithDetails[];
+  initialTasksData: { tasks: TaskWithDetails[], nextCursor?: string };
   users: any[];
   campaigns: any[];
   kpis: TaskKpis;
@@ -35,7 +37,7 @@ const VIEW_MODES = [
 ];
 
 export function TaskPageClient({
-  tasks,
+  initialTasksData,
   users,
   campaigns,
   kpis,
@@ -46,59 +48,58 @@ export function TaskPageClient({
   const { filters, setFilters, clearFilters } = useTaskFilters();
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
 
-  // Apply filters
-  const filteredTasks = tasks.filter((t) => {
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      if (!t.title.toLowerCase().includes(q) && !t.description?.toLowerCase().includes(q)) return false;
-    }
-    if (filters.priorities.length > 0 && !filters.priorities.includes(t.priority)) return false;
-    if (filters.statuses.length > 0 && !filters.statuses.includes(t.status)) return false;
-    
-    if (filters.assigneeIds.length > 0) {
-      const isUnassignedSelected = filters.assigneeIds.includes("UNASSIGNED");
-      if (isUnassignedSelected && !t.assigneeId) {
-        // match
-      } else if (!t.assigneeId || !filters.assigneeIds.includes(t.assigneeId)) {
-        return false;
-      }
-    }
-    
-    if (filters.campaignIds.length > 0 && (!t.campaignId || !filters.campaignIds.includes(t.campaignId))) return false;
-    
-    if (filters.isOverdue) {
-      if (!t.dueDate || t.status === "DONE" || new Date(t.dueDate) >= new Date(new Date().setHours(0,0,0,0))) return false;
-    }
+  const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasksData.tasks);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(initialTasksData.nextCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-    return true;
-  });
-
-  // Apply sorting
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (filters.sortBy) {
-      case "createdAt_desc": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case "createdAt_asc": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case "dueDate_asc": 
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      case "dueDate_desc":
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
-      case "priority_desc": {
-        const pOrder: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-        return (pOrder[b.priority] || 0) - (pOrder[a.priority] || 0);
-      }
-      case "priority_asc": {
-        const pOrder: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-        return (pOrder[a.priority] || 0) - (pOrder[b.priority] || 0);
-      }
-      case "title_asc": return a.title.localeCompare(b.title);
-      case "title_desc": return b.title.localeCompare(a.title);
-      default: return 0;
+  // Keyboard Shortcuts
+  useKeyboardShortcuts({
+    "c": () => setIsCreateOpen(true),
+    "v": () => setViewMode(prev => prev === "kanban" ? "list" : "kanban"),
+    "/": () => {
+      const searchInput = document.getElementById("task-search-input");
+      if (searchInput) searchInput.focus();
     }
-  });
+  }, [setViewMode, setIsCreateOpen]);
+
+  // Sync state when server data changes (e.g. filters applied)
+  const prevTasksRef = useRef(initialTasksData.tasks);
+  useEffect(() => {
+    if (prevTasksRef.current !== initialTasksData.tasks) {
+      setTasks(initialTasksData.tasks);
+      setNextCursor(initialTasksData.nextCursor);
+      prevTasksRef.current = initialTasksData.tasks;
+    }
+  }, [initialTasksData]);
+
+  const loadMore = async () => {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const { getTasksAction } = await import("@/actions/tasks");
+      const res = await getTasksAction({
+        search: filters.search || undefined,
+        statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
+        priorities: filters.priorities.length > 0 ? filters.priorities : undefined,
+        assigneeIds: filters.assigneeIds.length > 0 ? (isMyTasks ? [currentUserId] : filters.assigneeIds) : (isMyTasks ? [currentUserId] : undefined),
+        campaignIds: filters.campaignIds.length > 0 ? filters.campaignIds : undefined,
+        isOverdue: filters.isOverdue || undefined,
+        sortBy: filters.sortBy || undefined,
+        cursor: nextCursor,
+      });
+      setTasks(prev => [...prev, ...res.tasks as any]);
+      setNextCursor(res.nextCursor);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Note: Client-side filtering and sorting are removed. 
+  // We now rely entirely on the backend `initialTasksData` and URL params.
+  const sortedTasks = tasks;
 
   return (
     <div className="space-y-6">
@@ -157,7 +158,7 @@ export function TaskPageClient({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col">
           {viewMode === "kanban" && (
             <TaskKanban
               initialData={sortedTasks}
@@ -175,10 +176,32 @@ export function TaskPageClient({
               campaigns={campaigns}
             />
           )}
+
+          {nextCursor && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                className="px-6 py-2 bg-white border border-[rgba(0,0,0,0.1)] rounded-full text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[rgba(0,0,0,0.02)] transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLoadingMore && <span className="w-4 h-4 border-2 border-slate-300 border-t-[var(--color-brand-500)] rounded-full animate-spin" />}
+                {isLoadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
         </div>
 
         <TaskSidebar tasks={tasks} insights={insights} />
       </div>
+
+      {isCreateOpen && (
+        <TaskDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          users={users}
+          campaigns={campaigns}
+        />
+      )}
     </div>
   );
 }

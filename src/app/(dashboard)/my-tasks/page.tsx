@@ -11,11 +11,24 @@ export const metadata: Metadata = {
   description: "View your assigned tasks and track personal productivity.",
 };
 
-export default async function MyTasksPage() {
+export default async function MyTasksPage({ searchParams }: { searchParams: any }) {
   const session = await requireAuth();
 
-  const [tasks, users, campaignsRes, kpis, insights] = await Promise.all([
-    getTasksAction({ assigneeId: session.id }),
+  const parseArray = (val: string | undefined | null) => (val ? val.split(",") : undefined);
+  
+  const serverFilters = {
+    search: searchParams.search || undefined,
+    statuses: parseArray(searchParams.statuses),
+    priorities: parseArray(searchParams.priorities),
+    assigneeIds: [session.id], // Force to current user
+    campaignIds: parseArray(searchParams.campaignIds),
+    isOverdue: searchParams.isOverdue === "true" ? true : undefined,
+    sortBy: searchParams.sortBy || undefined,
+    limit: 50,
+  };
+
+  const [tasksRes, users, campaignsRes, kpis, insights] = await Promise.all([
+    getTasksAction(serverFilters),
     getAllUsersBasicAction(),
     getCampaignsAction({ limit: 100 }),
     getTaskKpisAction(),
@@ -24,7 +37,7 @@ export default async function MyTasksPage() {
 
   return (
     <MyTasksPageClient
-      tasks={tasks}
+      initialTasksData={tasksRes}
       users={users}
       campaigns={campaignsRes.campaigns}
       kpis={kpis}
