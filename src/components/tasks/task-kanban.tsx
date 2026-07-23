@@ -32,13 +32,6 @@ export type TaskWithDetails = Task & {
   comments?: any[];
 };
 
-const KANBAN_COLUMNS = [
-  { id: "TODO", title: "To Do", dot: "#a8a29e", accent: "rgba(168,162,158,0.15)" },
-  { id: "IN_PROGRESS", title: "In Progress", dot: "#3b82f6", accent: "rgba(59,130,246,0.10)" },
-  { id: "REVIEW", title: "Review", dot: "#f59e0b", accent: "rgba(245,158,11,0.10)" },
-  { id: "DONE", title: "Done", dot: "#10b981", accent: "rgba(16,185,129,0.10)" },
-];
-
 function ColumnEmptyState({ title }: { title: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 h-36 rounded-2xl border-2 border-dashed border-[rgba(0,0,0,0.08)] text-center px-4">
@@ -62,6 +55,7 @@ interface TaskKanbanProps {
   quickFilter?: TaskQuickFilter;
   currentUserId?: string;
   searchQuery?: string;
+  groupBy?: string;
 }
 
 export function TaskKanban({
@@ -71,6 +65,7 @@ export function TaskKanban({
   quickFilter = "all",
   currentUserId,
   searchQuery,
+  groupBy = "status",
 }: TaskKanbanProps) {
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialData);
   const [activeTask, setActiveTask] = useState<TaskWithDetails | null>(null);
@@ -128,6 +123,46 @@ export function TaskKanban({
     }
   }, [tasks, quickFilter, currentUserId, searchQuery]);
 
+  const columns = useMemo(() => {
+    switch (groupBy) {
+      case "priority":
+        return [
+          { id: "URGENT", title: "Urgent", dot: "#ef4444", accent: "rgba(239,68,68,0.15)" },
+          { id: "HIGH", title: "High", dot: "#f59e0b", accent: "rgba(245,158,11,0.15)" },
+          { id: "MEDIUM", title: "Medium", dot: "#3b82f6", accent: "rgba(59,130,246,0.15)" },
+          { id: "LOW", title: "Low", dot: "#a8a29e", accent: "rgba(168,162,158,0.15)" },
+        ];
+      case "assigneeId":
+        return [
+          { id: "UNASSIGNED", title: "Unassigned", dot: "#d4d4d8", accent: "rgba(0,0,0,0.05)" },
+          ...users.map((u) => ({
+            id: u.id,
+            title: u.name || u.email || "Unknown",
+            dot: "#3b82f6",
+            accent: "rgba(59,130,246,0.15)"
+          }))
+        ];
+      case "campaignId":
+        return [
+          { id: "NO_CAMPAIGN", title: "No Campaign", dot: "#d4d4d8", accent: "rgba(0,0,0,0.05)" },
+          ...campaigns.map((c) => ({
+            id: c.id,
+            title: c.name,
+            dot: "#8b5cf6",
+            accent: "rgba(139,92,246,0.15)"
+          }))
+        ];
+      case "status":
+      default:
+        return [
+          { id: "TODO", title: "To Do", dot: "#a8a29e", accent: "rgba(168,162,158,0.15)" },
+          { id: "IN_PROGRESS", title: "In Progress", dot: "#3b82f6", accent: "rgba(59,130,246,0.10)" },
+          { id: "REVIEW", title: "Review", dot: "#f59e0b", accent: "rgba(245,158,11,0.10)" },
+          { id: "DONE", title: "Done", dot: "#10b981", accent: "rgba(16,185,129,0.10)" },
+        ];
+    }
+  }, [groupBy, users, campaigns]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -150,43 +185,67 @@ export function TaskKanban({
       const activeId = active.id as string;
       const overId = over.id as string;
 
-      let newStatus = "";
-      if (KANBAN_COLUMNS.some((col) => col.id === overId)) {
-        newStatus = overId;
+      let newVal = "";
+      if (columns.some((col) => col.id === overId)) {
+        newVal = overId;
       } else {
         const overTask = tasks.find((t) => t.id === overId);
-        if (overTask) newStatus = overTask.status;
+        if (overTask) {
+          if (groupBy === "priority") newVal = overTask.priority;
+          else if (groupBy === "assigneeId") newVal = overTask.assigneeId || "UNASSIGNED";
+          else if (groupBy === "campaignId") newVal = overTask.campaignId || "NO_CAMPAIGN";
+          else newVal = overTask.status;
+        }
       }
-      if (!newStatus) return;
+      if (!newVal) return;
 
       const taskToMove = tasks.find((t) => t.id === activeId);
-      if (!taskToMove || taskToMove.status === newStatus) return;
+      if (!taskToMove) return;
+
+      let currentVal = "";
+      if (groupBy === "priority") currentVal = taskToMove.priority;
+      else if (groupBy === "assigneeId") currentVal = taskToMove.assigneeId || "UNASSIGNED";
+      else if (groupBy === "campaignId") currentVal = taskToMove.campaignId || "NO_CAMPAIGN";
+      else currentVal = taskToMove.status;
+
+      if (currentVal === newVal) return;
 
       // Optimistic UI update
       setTasks((prev) =>
-        prev.map((t) =>
-          t.id === activeId ? { ...t, status: newStatus as any } : t
-        )
+        prev.map((t) => {
+          if (t.id === activeId) {
+            if (groupBy === "priority") return { ...t, priority: newVal as any };
+            if (groupBy === "assigneeId") return { ...t, assigneeId: newVal === "UNASSIGNED" ? null : newVal, assignee: newVal === "UNASSIGNED" ? null : users.find(u => u.id === newVal) };
+            if (groupBy === "campaignId") return { ...t, campaignId: newVal === "NO_CAMPAIGN" ? null : newVal, campaign: newVal === "NO_CAMPAIGN" ? null : campaigns.find(c => c.id === newVal) };
+            return { ...t, status: newVal as any };
+          }
+          return t;
+        })
       );
 
       try {
-        await updateTaskAction(activeId, {
-          status: newStatus as "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE",
-        });
-        toast.success("Task status updated");
+        const updateData: any = {};
+        if (groupBy === "priority") updateData.priority = newVal;
+        else if (groupBy === "assigneeId") updateData.assigneeId = newVal === "UNASSIGNED" ? null : newVal;
+        else if (groupBy === "campaignId") updateData.campaignId = newVal === "NO_CAMPAIGN" ? null : newVal;
+        else updateData.status = newVal;
+
+        await updateTaskAction(activeId, updateData);
+        toast.success(`Task ${groupBy} updated`);
       } catch (error: Error | any) {
-        toast.error(error?.message || "Failed to update status");
+        toast.error(error?.message || `Failed to update task`);
         setTasks(initialData);
       }
     },
-    [tasks, initialData]
+    [tasks, initialData, columns, groupBy, users, campaigns]
   );
 
   const handleCreateClick = useCallback((statusId: string) => {
-    setCreateColumnId(statusId);
+    // Only set defaultStatus if grouping by status
+    setCreateColumnId(groupBy === "status" ? statusId : "TODO");
     setEditingTask(null);
     setIsCreateOpen(true);
-  }, []);
+  }, [groupBy]);
 
   const handleEditTask = useCallback((task: TaskWithDetails) => {
     setEditingTask(task);
@@ -248,8 +307,19 @@ export function TaskKanban({
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5 overflow-x-auto pb-4">
-          {KANBAN_COLUMNS.map((column) => {
-            const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+          {columns.map((column) => {
+            const columnTasks = filteredTasks.filter((t) => {
+              if (groupBy === "priority") return t.priority === column.id;
+              if (groupBy === "assigneeId") {
+                if (column.id === "UNASSIGNED") return !t.assigneeId;
+                return t.assigneeId === column.id;
+              }
+              if (groupBy === "campaignId") {
+                if (column.id === "NO_CAMPAIGN") return !t.campaignId;
+                return t.campaignId === column.id;
+              }
+              return t.status === column.id;
+            });
 
             return (
               <div
