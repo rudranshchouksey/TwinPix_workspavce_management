@@ -16,14 +16,16 @@ export default async function MyTasksPage({ searchParams }: { searchParams: any 
 
   const parseArray = (val: string | undefined | null) => (val ? val.split(",") : undefined);
   
+  const resolvedSearchParams = await searchParams;
+
   const serverFilters = {
-    search: searchParams.search || undefined,
-    statuses: parseArray(searchParams.statuses),
-    priorities: parseArray(searchParams.priorities),
-    assigneeIds: [session.id], // Force to current user
-    campaignIds: parseArray(searchParams.campaignIds),
-    isOverdue: searchParams.isOverdue === "true" ? true : undefined,
-    sortBy: searchParams.sortBy || undefined,
+    search: resolvedSearchParams.search || undefined,
+    statuses: parseArray(resolvedSearchParams.statuses),
+    priorities: parseArray(resolvedSearchParams.priorities),
+    assigneeIds: [session.id], // Force filter for current user
+    campaignIds: parseArray(resolvedSearchParams.campaignIds),
+    isOverdue: resolvedSearchParams.isOverdue === "true" ? true : undefined,
+    sortBy: resolvedSearchParams.sortBy || undefined,
     limit: 50,
   };
 
