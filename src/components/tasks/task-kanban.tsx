@@ -45,11 +45,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { TaskDialog } from "./task-dialog";
-import { Task } from "@prisma/client";
-import type { TaskQuickFilter } from "./task-quick-filters";
 
 export type TaskWithDetails = Task & {
   campaign?: { id: string; name: string } | null;
@@ -158,11 +153,15 @@ function SortableTaskCard({
           </div>
           
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" onPointerDown={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
+                  <DropdownMenuTrigger>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 top-2"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onPointerDown={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(task); }}>
                 <Pencil className="w-4 h-4 mr-2" />

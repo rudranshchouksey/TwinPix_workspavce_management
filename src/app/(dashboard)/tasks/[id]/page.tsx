@@ -3,7 +3,7 @@ import { getTaskByIdAction, getTaskNameAction } from "@/actions/tasks";
 import { requireAuth } from "@/lib/auth-utils";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Flag, CheckCircle2, User, Clock, FileText, Activity, LayoutDashboard, Target, Briefcase, Hash, AlertCircle } from "lucide-react";
+import { ArrowLeft, Flag, CheckCircle2, User, Clock, FileText, Activity, LayoutDashboard, Target, Briefcase, Hash, AlertCircle, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { TaskDetailActions } from "@/components/tasks/task-detail-actions";
@@ -49,7 +49,7 @@ export default async function TaskDetailPage({
     ]);
     
     if (!taskData) notFound();
-    task = taskData;
+    task = taskData as any;
     users = usersData;
     campaigns = campaignsData.campaigns;
     projects = projectsData;

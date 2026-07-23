@@ -43,7 +43,7 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
 
     setIsSubmitting(true);
     try {
-      await addTaskCommentAction(taskId, { content: text, parentId });
+      await addTaskCommentAction(taskId, { content: text, parentId, attachments: [] });
       toast.success("Comment added");
       setNewComment("");
       setReplyTo(null);
@@ -99,7 +99,7 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
               
               {canEdit && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <DropdownMenuTrigger>
                     <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
                       <MoreHorizontal className="w-3 h-3" />
                     </Button>
@@ -132,7 +132,7 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
           {/* Render Replies */}
           {repliesByParent[comment.id] && (
             <div className="ml-4 border-l-2 border-[rgba(0,0,0,0.06)] pl-4 mt-4 space-y-4">
-              {repliesByParent[comment.id].map(reply => renderComment(reply, true))}
+              {repliesByParent[comment.id].map((reply: any) => renderComment(reply, true))}
             </div>
           )}
 

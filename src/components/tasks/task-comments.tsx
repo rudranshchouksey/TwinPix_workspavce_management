@@ -25,6 +25,8 @@ export function TaskComments({ taskId, comments, currentUser }: TaskCommentsProp
     resolver: zodResolver(taskCommentSchema),
     defaultValues: {
       content: "",
+      attachments: [],
+      parentId: null,
     },
   });
 
