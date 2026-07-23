@@ -163,6 +163,67 @@ export async function createTaskAction(input: TaskInput) {
   return task;
 }
 
+export async function duplicateTaskAction(taskId: string) {
+  const user = await requireAuth();
+  if (user.role === "CLIENT") throw new Error("Unauthorized to duplicate tasks");
+
+  const originalTask = await db.task.findUnique({
+    where: { id: taskId },
+    include: {
+      watchers: true,
+      followers: true,
+    }
+  });
+
+  if (!originalTask) throw new Error("Task not found");
+
+  const duplicatedTask = await db.task.create({
+    data: {
+      title: `${originalTask.title} (Copy)`,
+      description: originalTask.description,
+      priority: originalTask.priority,
+      status: "TODO", // reset status
+      dueDate: originalTask.dueDate,
+      assigneeId: originalTask.assigneeId,
+      campaignId: originalTask.campaignId,
+      attachments: originalTask.attachments,
+      labels: originalTask.labels,
+      checklist: originalTask.checklist || undefined,
+      projectId: originalTask.projectId,
+      reporterId: originalTask.reporterId,
+      estimatedHours: originalTask.estimatedHours,
+      actualHours: originalTask.actualHours,
+      storyPoints: originalTask.storyPoints,
+      reminder: originalTask.reminder,
+      recurringRule: originalTask.recurringRule,
+      watchers: originalTask.watchers?.length ? { connect: originalTask.watchers.map(u => ({ id: u.id })) } : undefined,
+      followers: originalTask.followers?.length ? { connect: originalTask.followers.map(u => ({ id: u.id })) } : undefined,
+      authorId: user.id,
+    }
+  });
+
+  await db.taskActivity.create({
+    data: {
+      taskId: duplicatedTask.id,
+      userId: user.id,
+      type: "CREATED",
+      details: `duplicated from task ${originalTask.title}`,
+    }
+  });
+
+  await logActivity({
+    userId: user.id,
+    userName: user.name ?? undefined,
+    action: "duplicated task",
+    entityType: "TASK",
+    entityId: duplicatedTask.id,
+    targetName: duplicatedTask.title
+  });
+
+  revalidatePath("/tasks");
+  return duplicatedTask;
+}
+
 export async function updateTaskAction(id: string, input: UpdateTaskInput) {
   const user = await requireAuth();
   if (user.role === "CLIENT") throw new Error("Unauthorized to edit tasks");
