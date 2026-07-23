@@ -102,6 +102,9 @@ model User {
   watchedTasks     Task[]               @relation("TaskWatchers")
   followedTasks    Task[]               @relation("TaskFollowers")
 
+  timeEntries      TimeEntry[]
+  activeTimers     ActiveTimer[]
+
   managedInfluencers   Influencer[]          @relation("InfluencerManager")
   outreachMessages     OutreachMessage[]
   copilotConversations CopilotConversation[]
@@ -600,6 +603,8 @@ model Task {
   activities TaskActivity[]
   files      File[]
   events     Event[]
+  timeEntries TimeEntry[]
+  activeTimers ActiveTimer[]
 
   @@index([assigneeId])
   @@index([campaignId])
@@ -1068,4 +1073,48 @@ model WorkflowExecution {
   
   @@index([workflowId])
   @@map("workflow_executions")
+}
+
+// ─────────────────────────────────────────────
+// Enterprise Time Tracking
+// ─────────────────────────────────────────────
+
+model TimeEntry {
+  id              String   @id @default(cuid())
+  taskId          String
+  userId          String
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int
+  description     String?
+  isManual        Boolean  @default(false)
+  isBillable      Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([startTime])
+  @@map("time_entries")
+}
+
+model ActiveTimer {
+  id                 String   @id @default(cuid())
+  taskId             String
+  userId             String
+  startTime          DateTime @default(now())
+  lastPingAt         DateTime @default(now())
+  pausedTotalMinutes Int      @default(0)
+  isPaused           Boolean  @default(false)
+  
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ensure a user can only have one active timer across the whole app
+  @@unique([userId])
+  @@index([taskId])
+  @@map("active_timers")
 }
