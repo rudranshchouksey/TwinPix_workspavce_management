@@ -40,6 +40,7 @@ interface TaskDialogProps {
 export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], campaigns = [], projects = [], defaultStatus = "TODO" }: TaskDialogProps) {
   const isEditMode = !!initialTask;
   const [task, setTask] = useState<any>(initialTask);
+  const activeTask = task || initialTask;
   const [isLoading, setIsLoading] = useState(isEditMode);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -161,7 +162,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
     setIsSaving(true);
     try {
       if (isEditMode) {
-        await updateTaskAction(task.id, data);
+        await updateTaskAction(activeTask?.id, data);
         toast.success("Task updated successfully");
       } else {
         await createTaskAction(data);
@@ -526,9 +527,9 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                 {isEditMode && (
                   <TabsContent value="time-tracking" className="mt-0">
                     <TaskTimeTracking 
-                      taskId={task.id} 
-                      estimatedHours={task.estimatedHours} 
-                      actualHours={task.actualHours} 
+                      taskId={activeTask?.id || ""} 
+                      estimatedHours={activeTask?.estimatedHours} 
+                      actualHours={activeTask?.actualHours} 
                     />
                   </TabsContent>
                 )}
@@ -544,18 +545,18 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
 
                     <TabsContent value="files" className="mt-0 space-y-4">
                       <FileList 
-                        entityId={task.id} 
+                        entityId={activeTask?.id || ""} 
                         entityType="TASK" 
                       />
                     </TabsContent>
 
                     <TabsContent value="history" className="mt-0">
-                      {task.activities ? (
+                      {activeTask?.activities ? (
                         <TaskActivityTimeline 
-                          taskId={task.id} 
-                          activities={task.activities} 
-                          comments={task.comments || []} 
-                          currentUser={{ id: task?.authorId || "system", role: "ADMIN" }} // Mock currentUser for timeline props
+                          taskId={activeTask?.id || ""} 
+                          activities={activeTask?.activities} 
+                          comments={activeTask?.comments || []} 
+                          currentUser={{ id: activeTask?.authorId || "system", role: "ADMIN" }} // Mock currentUser for timeline props
                         />
                       ) : (
                         <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" /></div>
