@@ -3,7 +3,7 @@ import { getTaskByIdAction, getTaskNameAction } from "@/actions/tasks";
 import { requireAuth } from "@/lib/auth-utils";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Flag, CheckCircle2, User, Clock, FileText, Activity, LayoutDashboard, Target, Briefcase, Hash, AlertCircle, Calendar } from "lucide-react";
+import { ArrowLeft, Flag, CheckCircle2, User, Clock, FileText, Activity, LayoutDashboard, Target, Briefcase, AlertCircle, Calendar, CheckSquare, Paperclip, Building2, Eye, HeartHandshake } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { TaskDetailActions } from "@/components/tasks/task-detail-actions";
@@ -12,6 +12,8 @@ import { getCampaignsAction } from "@/actions/campaigns";
 import { getProjectsAction } from "@/actions/projects";
 import { InlineEdit } from "@/components/tasks/inline-edit";
 import { TaskActivityTimeline } from "@/components/tasks/task-activity-timeline";
+import { TaskChecklist } from "@/components/tasks/task-checklist";
+import { FileList } from "@/components/files/file-list";
 
 export async function generateMetadata({
   params,
@@ -100,36 +102,46 @@ export default async function TaskDetailPage({
   const progressPercent = est > 0 ? Math.min((act / est) * 100, 100) : 0;
   const isOverTime = est > 0 && act > est;
 
+  const breadcrumbText = task.campaign?.name ? `Campaigns / ${task.campaign.name} / ${task.title}` : `Tasks / ${task.title}`;
+
   return (
     <div className="space-y-6 pb-12 max-w-[1400px] mx-auto">
-      <BreadcrumbLabel label={task.title} />
+      <BreadcrumbLabel label={breadcrumbText} />
 
-      {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.08)] pb-6">
-        <div className="flex items-center gap-4">
+      {/* Premium Header */}
+      <div className="flex items-start justify-between border-b border-[rgba(0,0,0,0.08)] pb-6 bg-white p-6 rounded-2xl shadow-sm">
+        <div className="flex items-start gap-4 flex-1">
           <Link 
             href="/tasks"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-[rgba(0,0,0,0.03)] hover:bg-[rgba(0,0,0,0.06)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            className="flex items-center justify-center w-10 h-10 mt-1 rounded-full bg-[rgba(0,0,0,0.03)] hover:bg-[rgba(0,0,0,0.06)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="flex flex-col">
-            <span className="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wider mb-1">Task</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--color-text-muted)] font-mono text-sm bg-[rgba(0,0,0,0.04)] px-1.5 py-0.5 rounded">
+          <div className="flex flex-col flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[var(--color-text-muted)] font-mono text-xs bg-[rgba(0,0,0,0.04)] px-2 py-1 rounded-md font-medium tracking-wide">
                 TSK-{task.id.substring(0,4).toUpperCase()}
               </span>
-              <InlineEdit 
-                taskId={task.id}
-                field="title"
-                value={task.title}
-                className="text-xl font-bold text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.04)] p-1 -m-1 rounded transition-colors"
-              />
+              <Badge variant="outline" className={`${getStatusColor(task.status)} uppercase text-[10px] tracking-wider px-2 py-0.5 border-transparent`}>
+                {task.status === "DONE" ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                {task.status.replace("_", " ")}
+              </Badge>
+              <Badge variant="outline" className={`${getPriorityColor(task.priority)} uppercase text-[10px] tracking-wider px-2 py-0.5 border-transparent`}>
+                <Flag className="w-3 h-3 mr-1" />
+                {task.priority}
+              </Badge>
             </div>
+            
+            <InlineEdit 
+              taskId={task.id}
+              field="title"
+              value={task.title}
+              className="text-3xl font-bold text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.02)] p-1.5 -m-1.5 rounded-lg transition-colors w-full"
+            />
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-1 ml-4 shrink-0">
           <TaskDetailActions 
             task={task as any} 
             users={users} 
@@ -139,10 +151,12 @@ export default async function TaskDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* LEFT COLUMN: Task Information (3 cols) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+        {/* LEFT COLUMN: Main Content (70% -> 8 cols) */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* Description Block */}
+          <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
               <FileText className="w-4 h-4 text-[var(--color-brand-500)]" />
               Description
             </h3>
@@ -152,61 +166,35 @@ export default async function TaskDetailPage({
               value={task.description}
               type="textarea"
               placeholder="Add a detailed description..."
-              className="text-sm text-[var(--color-text-secondary)] min-h-[100px] items-start"
+              className="text-base text-[var(--color-text-secondary)] min-h-[150px] items-start"
               displayValue={
-                <div className="whitespace-pre-wrap leading-relaxed text-sm">
-                  {task.description || <span className="text-[var(--color-text-muted)] italic">Add a description...</span>}
+                <div className="whitespace-pre-wrap leading-relaxed text-base">
+                  {task.description || <span className="text-[var(--color-text-muted)] italic">Click to add a description...</span>}
                 </div>
               }
             />
           </div>
 
-          <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-              <Target className="w-4 h-4 text-[var(--color-brand-500)]" />
-              Metrics
+          {/* Checklist Block */}
+          <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-[var(--color-brand-500)]" />
+              Checklist
             </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[var(--color-text-muted)]">Story Points</span>
-                <InlineEdit 
-                  taskId={task.id}
-                  field="storyPoints"
-                  value={task.storyPoints}
-                  type="number"
-                  placeholder="0"
-                  className="font-medium bg-[rgba(0,0,0,0.03)] px-2 py-0.5 rounded text-center w-12"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[var(--color-text-muted)]">Est. Hours</span>
-                <InlineEdit 
-                  taskId={task.id}
-                  field="estimatedHours"
-                  value={task.estimatedHours}
-                  type="number"
-                  placeholder="0.0"
-                  className="font-medium"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[var(--color-text-muted)]">Actual Hours</span>
-                <InlineEdit 
-                  taskId={task.id}
-                  field="actualHours"
-                  value={task.actualHours}
-                  type="number"
-                  placeholder="0.0"
-                  className="font-medium"
-                />
-              </div>
-            </div>
+            <TaskChecklist taskId={task.id} initialChecklist={task.checklist} />
           </div>
-        </div>
 
-        {/* CENTER COLUMN: Activity Timeline & Comments (6 cols) */}
-        <div className="lg:col-span-6 space-y-6">
-          <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.6)] backdrop-blur-sm p-6 shadow-sm min-h-[500px]">
+          {/* Attachments Block */}
+          <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
+              <Paperclip className="w-4 h-4 text-[var(--color-brand-500)]" />
+              Attachments
+            </h3>
+            <FileList entityType="TASK" entityId={task.id} title="" />
+          </div>
+
+          {/* Activity Timeline & Comments */}
+          <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white p-8 shadow-sm">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
               <Activity className="w-4 h-4 text-[var(--color-brand-500)]" />
               Activity & Comments
@@ -218,17 +206,19 @@ export default async function TaskDetailPage({
               currentUser={user} 
             />
           </div>
+
         </div>
 
-        {/* RIGHT COLUMN: Properties Sidebar (3 cols) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm overflow-hidden divide-y divide-[rgba(0,0,0,0.06)]">
+        {/* RIGHT COLUMN: Properties Sidebar (30% -> 4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          
+          <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm overflow-hidden divide-y divide-[rgba(0,0,0,0.04)] sticky top-6">
             
             {/* Status & Priority */}
-            <div className="p-5 bg-[rgba(0,0,0,0.02)]">
-              <div className="flex gap-2">
+            <div className="p-6 bg-[rgba(0,0,0,0.02)]">
+              <div className="flex gap-4">
                 <div className="flex-1">
-                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-1">Status</span>
+                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Status</span>
                   <InlineEdit
                     taskId={task.id}
                     field="status"
@@ -236,15 +226,15 @@ export default async function TaskDetailPage({
                     type="select"
                     options={statusOptions}
                     displayValue={
-                      <Badge variant="outline" className={`${getStatusColor(task.status)} uppercase text-[10px] tracking-wider w-full justify-center`}>
-                        {task.status === "DONE" ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors hover:bg-opacity-80 cursor-pointer ${getStatusColor(task.status)}`}>
+                        {task.status === "DONE" ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                         {task.status.replace("_", " ")}
-                      </Badge>
+                      </div>
                     }
                   />
                 </div>
                 <div className="flex-1">
-                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-1">Priority</span>
+                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Priority</span>
                   <InlineEdit
                     taskId={task.id}
                     field="priority"
@@ -252,20 +242,20 @@ export default async function TaskDetailPage({
                     type="select"
                     options={priorityOptions}
                     displayValue={
-                      <Badge variant="outline" className={`${getPriorityColor(task.priority)} uppercase text-[10px] tracking-wider w-full justify-center`}>
-                        <Flag className="w-3 h-3 mr-1" />
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors hover:bg-opacity-80 cursor-pointer ${getPriorityColor(task.priority)}`}>
+                        <Flag className="w-4 h-4" />
                         {task.priority}
-                      </Badge>
+                      </div>
                     }
                   />
                 </div>
               </div>
             </div>
 
-            {/* Assignee & Reporter */}
-            <div className="p-5 space-y-4">
+            {/* People Section */}
+            <div className="p-6 space-y-5">
               <div>
-                <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Assignee</span>
+                <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-3">Assignee</span>
                 <InlineEdit
                   taskId={task.id}
                   field="assigneeId"
@@ -273,16 +263,21 @@ export default async function TaskDetailPage({
                   type="select"
                   options={userOptions}
                   displayValue={
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden border border-[rgba(0,0,0,0.08)]">
+                    <div className="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-[rgba(0,0,0,0.02)] transition-colors cursor-pointer">
+                      <div className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden border border-[rgba(0,0,0,0.08)]">
                         {task.assignee?.image ? (
                           <img src={task.assignee.image} alt={task.assignee.name || ""} className="w-full h-full object-cover" />
                         ) : (
-                          <User className="w-3.5 h-3.5 text-gray-400" />
+                          <User className="w-4 h-4 text-gray-400" />
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--color-text-primary)]">{task.assignee?.name || "Unassigned"}</p>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                          {task.assignee?.name || "Unassigned"}
+                        </span>
+                        {task.assignee?.jobTitle && (
+                          <span className="text-xs text-[var(--color-text-muted)]">{task.assignee.jobTitle}</span>
+                        )}
                       </div>
                     </div>
                   }
@@ -290,7 +285,7 @@ export default async function TaskDetailPage({
               </div>
               
               <div>
-                <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Reporter</span>
+                <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-3">Reporter</span>
                 <InlineEdit
                   taskId={task.id}
                   field="reporterId"
@@ -298,16 +293,21 @@ export default async function TaskDetailPage({
                   type="select"
                   options={userOptions}
                   displayValue={
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden border border-[rgba(0,0,0,0.08)]">
-                        {task.author?.image ? (
-                          <img src={task.author.image} alt={task.author.name || ""} className="w-full h-full object-cover" />
+                    <div className="flex items-center gap-3 p-2 -m-2 rounded-lg hover:bg-[rgba(0,0,0,0.02)] transition-colors cursor-pointer">
+                      <div className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden border border-[rgba(0,0,0,0.08)]">
+                        {(task.reporter || task.author)?.image ? (
+                          <img src={(task.reporter || task.author).image} alt={(task.reporter || task.author).name || ""} className="w-full h-full object-cover" />
                         ) : (
-                          <User className="w-3.5 h-3.5 text-gray-400" />
+                          <User className="w-4 h-4 text-gray-400" />
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--color-text-primary)]">{task.author?.name || "Unknown"}</p>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                          {(task.reporter || task.author)?.name || "Unknown"}
+                        </span>
+                        {(task.reporter || task.author)?.jobTitle && (
+                          <span className="text-xs text-[var(--color-text-muted)]">{(task.reporter || task.author).jobTitle}</span>
+                        )}
                       </div>
                     </div>
                   }
@@ -315,11 +315,22 @@ export default async function TaskDetailPage({
               </div>
             </div>
 
-            {/* Campaign & Project */}
-            <div className="p-5 space-y-4">
+            {/* Campaign & Client Section */}
+            <div className="p-6 space-y-5">
+              {task.campaign?.client && (
+                <div>
+                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> Client
+                  </span>
+                  <div className="text-sm text-[var(--color-text-primary)] font-medium p-2 -m-2">
+                    {task.campaign.client.companyName}
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2 flex items-center gap-1.5">
-                  <LayoutDashboard className="w-3 h-3" /> Campaign
+                  <LayoutDashboard className="w-3.5 h-3.5" /> Campaign
                 </span>
                 <InlineEdit
                   taskId={task.id}
@@ -328,8 +339,8 @@ export default async function TaskDetailPage({
                   type="select"
                   options={campaignOptions}
                   displayValue={
-                    <div className="text-sm text-[var(--color-text-primary)] font-medium">
-                      {task.campaign?.name || <span className="text-[var(--color-text-muted)] italic font-normal">None</span>}
+                    <div className="text-sm text-[var(--color-brand-600)] font-medium hover:underline p-2 -m-2 cursor-pointer">
+                      {task.campaign?.name || <span className="text-[var(--color-text-muted)] italic font-normal hover:no-underline">No Campaign</span>}
                     </div>
                   }
                 />
@@ -337,7 +348,7 @@ export default async function TaskDetailPage({
               
               <div>
                 <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2 flex items-center gap-1.5">
-                  <Briefcase className="w-3 h-3" /> Project
+                  <Briefcase className="w-3.5 h-3.5" /> Project
                 </span>
                 <InlineEdit
                   taskId={task.id}
@@ -346,39 +357,56 @@ export default async function TaskDetailPage({
                   type="select"
                   options={projectOptions}
                   displayValue={
-                    <div className="text-sm text-[var(--color-text-primary)] font-medium">
-                      {task.project?.name || <span className="text-[var(--color-text-muted)] italic font-normal">None</span>}
+                    <div className="text-sm text-[var(--color-brand-600)] font-medium hover:underline p-2 -m-2 cursor-pointer">
+                      {task.project?.name || <span className="text-[var(--color-text-muted)] italic font-normal hover:no-underline">No Project</span>}
                     </div>
                   }
                 />
               </div>
             </div>
 
-            {/* Dates */}
-            <div className="p-5">
-              <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Due Date</span>
-              <InlineEdit
-                taskId={task.id}
-                field="dueDate"
-                value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""}
-                type="date"
-                displayValue={
-                  <div className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
-                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "Set Date"}
+            {/* Dates & Watchers */}
+            <div className="p-6 space-y-5">
+              <div>
+                <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2">Due Date</span>
+                <InlineEdit
+                  taskId={task.id}
+                  field="dueDate"
+                  value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""}
+                  type="date"
+                  displayValue={
+                    <div className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2 p-2 -m-2 rounded-lg hover:bg-[rgba(0,0,0,0.02)] transition-colors cursor-pointer w-fit">
+                      <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
+                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : "Set Date"}
+                    </div>
+                  }
+                />
+              </div>
+
+              {task.watchers && task.watchers.length > 0 && (
+                <div>
+                  <span className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider block mb-2 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5" /> Watchers ({task.watchers.length})
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {task.watchers.map((w: any) => (
+                      <div key={w.id} className="w-7 h-7 rounded-full bg-[rgba(0,0,0,0.05)] border-2 border-white flex items-center justify-center shrink-0 overflow-hidden shadow-sm" title={w.name}>
+                        {w.image ? <img src={w.image} alt={w.name} className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold text-gray-500">{w.name?.charAt(0) || "U"}</span>}
+                      </div>
+                    ))}
                   </div>
-                }
-              />
+                </div>
+              )}
             </div>
             
-            <div className="p-5 bg-[rgba(0,0,0,0.02)]">
-               <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)] mb-2">
+            <div className="p-6 bg-[rgba(0,0,0,0.01)] flex flex-col gap-2">
+               <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)] font-medium">
                  <span>Created</span>
-                 <span>{new Date(task.createdAt).toLocaleDateString()}</span>
+                 <span>{new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                </div>
-               <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+               <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)] font-medium">
                  <span>Updated</span>
-                 <span>{new Date(task.updatedAt).toLocaleDateString()}</span>
+                 <span>{new Date(task.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                </div>
             </div>
 
@@ -386,15 +414,15 @@ export default async function TaskDetailPage({
 
           {/* Time Tracking Progress */}
           {est > 0 && (
-            <div className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm p-6 relative overflow-hidden">
+            <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm p-6 relative overflow-hidden">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[var(--color-brand-500)]" />
                 Time Tracking
               </h3>
               
               <div className="flex justify-between text-sm mb-2 font-medium">
-                <span className="text-[var(--color-text-secondary)]">{act}h logged</span>
-                <span className="text-[var(--color-text-muted)]">{est}h est</span>
+                <span className="text-[var(--color-text-primary)]">{act}h logged</span>
+                <span className="text-[var(--color-text-muted)]">{est}h estimated</span>
               </div>
               
               <div className="h-2 w-full bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
@@ -406,7 +434,7 @@ export default async function TaskDetailPage({
               
               {isOverTime && (
                 <div className="mt-3 text-xs text-red-500 font-medium flex items-center gap-1.5">
-                  <AlertCircle className="w-3 h-3" />
+                  <AlertCircle className="w-3.5 h-3.5" />
                   Over estimate by {Math.abs(est - act)}h
                 </div>
               )}

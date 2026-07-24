@@ -134,21 +134,28 @@ export async function getTaskByIdAction(id: string) {
   const task = await db.task.findUnique({
     where: { id },
     include: {
-      assignee: { select: { id: true, name: true, image: true, email: true } },
-      author: { select: { id: true, name: true, image: true } },
-      campaign: { select: { id: true, name: true } },
+      assignee: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
+      author: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
+      reporter: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
+      campaign: { 
+        select: { 
+          id: true, 
+          name: true,
+          client: { select: { id: true, companyName: true, brandName: true } }
+        } 
+      },
       project: { select: { id: true, name: true } },
-      watchers: { select: { id: true, name: true, image: true, email: true } },
-      followers: { select: { id: true, name: true, image: true, email: true } },
+      watchers: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
+      followers: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
       comments: {
         include: {
-          user: { select: { id: true, name: true, image: true, email: true } }
+          user: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } }
         },
         orderBy: { createdAt: "asc" }
       },
       activities: {
         include: {
-          user: { select: { id: true, name: true, image: true, email: true } }
+          user: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } }
         },
         orderBy: { createdAt: "desc" },
         take: 50

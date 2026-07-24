@@ -23,6 +23,7 @@ import { updateTaskAction, deleteTaskAction, duplicateTaskAction } from "@/actio
 import { Button } from "@/components/ui/button";
 import { TaskDialog } from "./task-dialog";
 import { Task, TaskStatus } from "@prisma/client";
+import { useRouter } from "next/navigation";
 import type { TaskQuickFilter } from "./task-quick-filters";
 import { SortableTaskCard, TaskCard } from "./task-card";
 
@@ -240,6 +241,8 @@ export function TaskKanban({
     [tasks, initialData, columns, groupBy, users, campaigns]
   );
 
+  const router = useRouter();
+
   const handleCreateClick = useCallback((statusId: string) => {
     // Only set defaultStatus if grouping by status
     setCreateColumnId(groupBy === "status" ? statusId : "TODO");
@@ -248,9 +251,8 @@ export function TaskKanban({
   }, [groupBy]);
 
   const handleEditTask = useCallback((task: TaskWithDetails) => {
-    setEditingTask(task);
-    setIsCreateOpen(true);
-  }, []);
+    router.push(`/tasks/${task.id}`);
+  }, [router]);
 
   const handleDeleteTask = useCallback(async (taskId: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;

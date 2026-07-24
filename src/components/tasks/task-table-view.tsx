@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -59,14 +60,14 @@ export function TaskTableView({
   users?: any[];
   campaigns?: any[];
 }) {
+  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [editingTask, setEditingTask] = useState<TaskWithDetails | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleEdit = useCallback((task: TaskWithDetails) => {
-    setEditingTask(task);
-    setIsEditOpen(true);
-  }, []);
+    router.push(`/tasks/${task.id}`);
+  }, [router]);
 
   const handleDelete = useCallback(async (taskId: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;
