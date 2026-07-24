@@ -14,18 +14,22 @@ export const metadata: Metadata = {
 export default async function MyTasksPage({ searchParams }: { searchParams: any }) {
   const session = await requireAuth();
 
-  const parseArray = (val: string | undefined | null) => (val ? val.split(",") : undefined);
+  const parseArray = (val: string | string[] | undefined | null) => {
+    if (!val) return undefined;
+    if (Array.isArray(val)) return val;
+    return val.split(",");
+  };
   
   const resolvedSearchParams = await searchParams;
 
   const serverFilters = {
-    search: resolvedSearchParams.search || undefined,
+    search: typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : undefined,
     statuses: parseArray(resolvedSearchParams.statuses),
     priorities: parseArray(resolvedSearchParams.priorities),
-    assigneeIds: [session.id], // Force filter for current user
+    assigneeIds: [session.id], // Force to current user
     campaignIds: parseArray(resolvedSearchParams.campaignIds),
     isOverdue: resolvedSearchParams.isOverdue === "true" ? true : undefined,
-    sortBy: resolvedSearchParams.sortBy || undefined,
+    sortBy: typeof resolvedSearchParams.sortBy === 'string' ? resolvedSearchParams.sortBy : undefined,
     limit: 50,
   };
 
