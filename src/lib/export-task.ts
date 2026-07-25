@@ -4,7 +4,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 
 export async function exportTaskAsPDF(task: any) {
   const pdfMake = (await import('pdfmake/build/pdfmake')).default;
-  const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+  const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
   (pdfMake as any).vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
   const dateStr = format(new Date(), 'yyyy_MM_dd');
