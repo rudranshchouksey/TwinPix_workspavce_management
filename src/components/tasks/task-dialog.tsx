@@ -43,6 +43,9 @@ interface TaskDialogProps {
   campaigns?: any[];
   projects?: any[];
   defaultStatus?: string;
+  fixedProjectId?: string;
+  fixedClientId?: string;
+  fixedCampaignId?: string;
 }
 
 const getPriorityColor = (p: string) => {
@@ -203,7 +206,10 @@ const renderProject = (p: any) => (
   </div>
 );
 
-export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], campaigns = [], projects = [], defaultStatus = "TODO" }: TaskDialogProps) {
+export function TaskDialog({ 
+  open, onOpenChange, task: initialTask, users = [], campaigns = [], projects = [], 
+  defaultStatus = "TODO", fixedProjectId, fixedClientId, fixedCampaignId 
+}: TaskDialogProps) {
   const isEditMode = !!initialTask;
   const [task, setTask] = useState<any>(initialTask);
   const activeTask = task || initialTask;
@@ -244,10 +250,11 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
       status: defaultStatus as "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE",
       dueDate: "",
       assigneeId: "",
-      campaignId: "",
+      campaignId: fixedCampaignId || "",
       attachments: [],
-      projectId: "",
+      projectId: fixedProjectId || "",
       reporterId: "",
+
       estimatedHours: null,
       actualHours: null,
       storyPoints: null,
@@ -598,13 +605,25 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           <FormItem><UserSelect value={field.value || ""} onChange={field.onChange} users={users} label="Reporter" /></FormItem>
                         )} />
 
-                        <FormField control={form.control} name="campaignId" render={({ field }) => (
-                          <FormItem><EntitySelect value={field.value || ""} onChange={field.onChange} items={campaigns} label="Campaign" icon={LayoutDashboard} /></FormItem>
-                        )} />
+                        {!fixedCampaignId && (
+                          <FormField control={form.control} name="campaignId" render={({ field }) => (
+                            <FormItem>
+                              <EntitySelect 
+                                value={field.value || ""} 
+                                onChange={field.onChange} 
+                                items={fixedProjectId ? campaigns.filter(c => c.projectId === fixedProjectId) : campaigns} 
+                                label="Campaign" 
+                                icon={LayoutDashboard} 
+                              />
+                            </FormItem>
+                          )} />
+                        )}
 
-                        <FormField control={form.control} name="projectId" render={({ field }) => (
-                          <FormItem><EntitySelect value={field.value || ""} onChange={field.onChange} items={projects || []} label="Project" icon={Briefcase} /></FormItem>
-                        )} />
+                        {!fixedProjectId && (
+                          <FormField control={form.control} name="projectId" render={({ field }) => (
+                            <FormItem><EntitySelect value={field.value || ""} onChange={field.onChange} items={projects || []} label="Project" icon={Briefcase} /></FormItem>
+                          )} />
+                        )}
 
                         <FormField control={form.control} name="dueDate" render={({ field }) => (
                           <FormItem><DatePickerPopover value={field.value || ""} onChange={field.onChange} /></FormItem>

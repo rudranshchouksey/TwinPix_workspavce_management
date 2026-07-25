@@ -18,9 +18,10 @@ interface ProjectDetailsClientProps {
   project: any;
   clients?: any[];
   projects?: any[];
+  users?: any[];
 }
 
-export function ProjectDetailsClient({ project, clients = [], projects = [] }: ProjectDetailsClientProps) {
+export function ProjectDetailsClient({ project, clients = [], projects = [], users = [] }: ProjectDetailsClientProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -63,14 +64,14 @@ export function ProjectDetailsClient({ project, clients = [], projects = [] }: P
         <TabsContent value="overview">
           <ProjectOverviewTab project={project} />
         </TabsContent>
-        <TabsContent value="campaigns" className="mt-6">
+        <TabsContent value="campaigns">
           <ProjectCampaignsTab project={project} clients={clients} projects={projects} />
         </TabsContent>
         <TabsContent value="influencers">
           <ProjectInfluencersTab project={project} />
         </TabsContent>
         <TabsContent value="tasks">
-          <ProjectTasksTab project={project} />
+          <ProjectTasksTab project={project} users={users} />
         </TabsContent>
         <TabsContent value="calendar">
           <ProjectCalendarTab project={project} />

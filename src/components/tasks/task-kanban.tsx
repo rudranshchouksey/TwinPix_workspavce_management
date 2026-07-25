@@ -57,6 +57,9 @@ interface TaskKanbanProps {
   currentUserId?: string;
   searchQuery?: string;
   groupBy?: string;
+  fixedProjectId?: string;
+  fixedClientId?: string;
+  fixedCampaignId?: string;
 }
 
 export function TaskKanban({
@@ -67,6 +70,9 @@ export function TaskKanban({
   currentUserId,
   searchQuery,
   groupBy = "status",
+  fixedProjectId,
+  fixedClientId,
+  fixedCampaignId,
 }: TaskKanbanProps) {
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialData);
   const [activeTask, setActiveTask] = useState<TaskWithDetails | null>(null);
@@ -413,6 +419,9 @@ export function TaskKanban({
         users={users}
         campaigns={campaigns}
         defaultStatus={createColumnId}
+        fixedProjectId={fixedProjectId}
+        fixedClientId={fixedClientId}
+        fixedCampaignId={fixedCampaignId}
       />
     </>
   );

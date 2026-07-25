@@ -54,11 +54,17 @@ const columnHelper = createColumnHelper<TaskWithDetails>();
 export function TaskTableView({ 
   tasks,
   users = [],
-  campaigns = []
+  campaigns = [],
+  fixedProjectId,
+  fixedClientId,
+  fixedCampaignId
 }: { 
   tasks: TaskWithDetails[];
   users?: any[];
   campaigns?: any[];
+  fixedProjectId?: string;
+  fixedClientId?: string;
+  fixedCampaignId?: string;
 }) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
