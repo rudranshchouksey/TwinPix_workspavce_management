@@ -131,8 +131,8 @@ export async function updateFileAction(fileId: string, data: { tags?: string[]; 
     const updated = await db.file.update({
       where: { id: fileId },
       data: {
-        ...(data.tags !== undefined && { tags: data.tags }),
-        ...(data.folder !== undefined && { folder: data.folder }),
+        ...(data.tags !== undefined ? { tags: data.tags } : {}),
+        ...(data.folder !== undefined ? { folder: data.folder } : {}),
       }
     });
 

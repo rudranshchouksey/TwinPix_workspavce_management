@@ -117,3 +117,249 @@ export async function getTopInfluencersAction() {
 
   return influencers;
 }
+
+// ============================================================================
+// Enterprise Analytics 
+// ============================================================================
+
+export async function getEnterpriseAnalyticsWidgetsAction() {
+  try {
+    await requireAuth();
+
+    const now = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(now.getDate() + 7);
+
+    // Fetch required data
+    const [
+      lateTasksCount,
+      pendingDeliverablesCount,
+      upcomingTasksCount,
+      upcomingCampaignsCount,
+      invoices,
+      campaigns
+    ] = await Promise.all([
+      db.task.count({
+        where: {
+          dueDate: { lt: now },
+          status: { not: "DONE" }
+        }
+      }),
+      db.campaignInfluencer.count({
+        where: {
+          status: { in: ["PENDING", "IN_PROGRESS"] }
+        }
+      }),
+      db.task.count({
+        where: {
+          dueDate: { gte: now, lte: nextWeek },
+          status: { not: "DONE" }
+        }
+      }),
+      db.campaign.count({
+        where: {
+          endDate: { gte: now, lte: nextWeek },
+          status: { not: "COMPLETED" }
+        }
+      }),
+      db.invoice.findMany({
+        select: { amount: true, status: true }
+      }),
+      db.campaign.findMany({
+        select: { budget: true }
+      })
+    ]);
+
+    // Health Score
+    // Start at 100, -2 for each late task, -1 for each pending deliverable
+    let healthScore = 100 - (lateTasksCount * 2) - pendingDeliverablesCount;
+    if (healthScore < 0) healthScore = 0;
+    if (healthScore > 100) healthScore = 100;
+
+    // Risk Level
+    let risk = "Low";
+    if (healthScore < 50) risk = "High";
+    else if (healthScore <= 80) risk = "Medium";
+
+    // ROI
+    const totalRevenue = invoices.filter(i => i.status === "PAID").reduce((sum, i) => sum + i.amount, 0);
+    const totalBudget = campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+    
+    let roi = 0;
+    if (totalBudget > 0) {
+      roi = ((totalRevenue - totalBudget) / totalBudget) * 100;
+    }
+
+    return {
+      success: true,
+      data: {
+        healthScore,
+        risk,
+        lateTasks: lateTasksCount,
+        pendingDeliverables: pendingDeliverablesCount,
+        upcomingDeadlines: upcomingTasksCount + upcomingCampaignsCount,
+        roi: parseFloat(roi.toFixed(1))
+      }
+    };
+  } catch (error: any) {
+    console.error("Failed to fetch analytics widgets", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getEnterpriseAnalyticsChartsAction() {
+  try {
+    await requireAuth();
+
+    // We fetch everything concurrently to speed up the dashboard
+    const [
+      projects,
+      campaigns,
+      tasks,
+      invoices,
+      posts,
+      reels
+    ] = await Promise.all([
+      db.project.findMany({
+        include: { tasks: { select: { status: true } } }
+      }),
+      db.campaign.findMany({
+        include: { tasks: { select: { status: true } }, influencers: { select: { fee: true } } }
+      }),
+      db.task.findMany({
+        select: { createdAt: true, updatedAt: true, status: true }
+      }),
+      db.invoice.findMany({
+        select: { createdAt: true, amount: true, status: true }
+      }),
+      db.influencerPost.findMany({
+        select: { likes: true, comments: true, publishedDate: true }
+      }),
+      db.influencerReel.findMany({
+        select: { likes: true, comments: true, views: true, publishedDate: true }
+      })
+    ]);
+
+    // 1. Project Progress
+    const projectProgress = projects.map(p => {
+      const totalTasks = p.tasks.length;
+      const completedTasks = p.tasks.filter(t => t.status === "DONE").length;
+      return {
+        name: p.name.substring(0, 15) + (p.name.length > 15 ? "..." : ""),
+        completion: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      };
+    }).slice(0, 5); // top 5 projects
+
+    // 2. Campaign Progress
+    const campaignProgress = campaigns.map(c => {
+      const totalTasks = c.tasks.length;
+      const completedTasks = c.tasks.filter(t => t.status === "DONE").length;
+      return {
+        name: c.name.substring(0, 15) + (c.name.length > 15 ? "..." : ""),
+        completion: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      };
+    }).slice(0, 5);
+
+    // 3. Task Burn Down (Grouped by month for simplicity)
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const burnDown = Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const monthStr = monthNames[d.getMonth()];
+      
+      const createdInMonth = tasks.filter(t => new Date(t.createdAt).getMonth() === d.getMonth() && new Date(t.createdAt).getFullYear() === d.getFullYear()).length;
+      const completedInMonth = tasks.filter(t => t.status === "DONE" && new Date(t.updatedAt).getMonth() === d.getMonth() && new Date(t.updatedAt).getFullYear() === d.getFullYear()).length;
+      
+      return {
+        month: monthStr,
+        created: createdInMonth,
+        completed: completedInMonth
+      };
+    });
+
+    // 4. Budget Usage
+    const budgetUsage = campaigns.map(c => {
+      const totalFees = c.influencers.reduce((sum, inf) => sum + inf.fee, 0);
+      return {
+        name: c.name.substring(0, 15) + (c.name.length > 15 ? "..." : ""),
+        budget: c.budget,
+        usage: totalFees
+      };
+    }).slice(0, 5);
+
+    // 5. Revenue
+    const revenue = Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const monthStr = monthNames[d.getMonth()];
+      
+      const revInMonth = invoices
+        .filter(inv => inv.status === "PAID" && new Date(inv.createdAt).getMonth() === d.getMonth() && new Date(inv.createdAt).getFullYear() === d.getFullYear())
+        .reduce((sum, inv) => sum + inv.amount, 0);
+      
+      return {
+        month: monthStr,
+        amount: revInMonth
+      };
+    });
+
+    // 6. Influencer Performance (Engagement per post type over time - simple mock grouping)
+    const engagementTimeline = Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const monthStr = monthNames[d.getMonth()];
+      
+      const postsInMonth = posts.filter(p => new Date(p.publishedDate).getMonth() === d.getMonth() && new Date(p.publishedDate).getFullYear() === d.getFullYear());
+      const reelsInMonth = reels.filter(r => new Date(r.publishedDate).getMonth() === d.getMonth() && new Date(r.publishedDate).getFullYear() === d.getFullYear());
+      
+      const postEngagement = postsInMonth.reduce((sum, p) => sum + p.likes + p.comments, 0);
+      const reelEngagement = reelsInMonth.reduce((sum, r) => sum + r.likes + r.comments + r.views, 0);
+
+      return {
+        month: monthStr,
+        posts: postEngagement,
+        reels: reelEngagement
+      };
+    });
+
+    // 7. Overall Completion Breakdown
+    const totalTasks = tasks.length;
+    const todoTasks = tasks.filter(t => t.status === "TODO").length;
+    const inProgressTasks = tasks.filter(t => t.status === "IN_PROGRESS").length;
+    const reviewTasks = tasks.filter(t => t.status === "REVIEW").length;
+    const doneTasks = tasks.filter(t => t.status === "DONE").length;
+    
+    const completionBreakdown = [
+      { name: "To Do", value: todoTasks },
+      { name: "In Progress", value: inProgressTasks },
+      { name: "Review", value: reviewTasks },
+      { name: "Done", value: doneTasks }
+    ];
+
+    // Timeline for events/campaigns
+    const upcomingEvents = campaigns
+      .filter(c => c.startDate && c.startDate >= now)
+      .map(c => ({
+        name: c.name,
+        date: c.startDate,
+        type: "Campaign Start"
+      }))
+      .sort((a, b) => (a.date as Date).getTime() - (b.date as Date).getTime())
+      .slice(0, 5);
+
+    return {
+      success: true,
+      data: {
+        projectProgress,
+        campaignProgress,
+        burnDown,
+        budgetUsage,
+        revenue,
+        engagementTimeline,
+        completionBreakdown,
+        upcomingEvents
+      }
+    };
+  } catch (error: any) {
+    console.error("Failed to fetch analytics charts", error);
+    return { success: false, error: error.message };
+  }
+}

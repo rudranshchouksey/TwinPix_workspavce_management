@@ -1,35 +1,27 @@
 import { Metadata } from "next";
-import { requireAuth } from "@/lib/auth-utils";
-import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
-import { 
-  getDashboardKPIsAction, 
-  getRevenueChartDataAction, 
-  getCampaignPerformanceAction, 
-  getTopInfluencersAction 
-} from "@/actions/analytics";
+import { getEnterpriseAnalyticsWidgetsAction, getEnterpriseAnalyticsChartsAction } from "@/actions/analytics";
+import AnalyticsClient from "./analytics-client";
 
 export const metadata: Metadata = {
-  title: "Analytics",
-  description: "View powerful insights and performance metrics for your studio.",
+  title: "Enterprise Analytics",
+  description: "View powerful enterprise insights and performance metrics for your studio.",
 };
 
 export default async function AnalyticsPage() {
-  await requireAuth();
-
-  const [kpiData, revenueData, campaignData, influencersData] = await Promise.all([
-    getDashboardKPIsAction(),
-    getRevenueChartDataAction(),
-    getCampaignPerformanceAction(),
-    getTopInfluencersAction(),
+  const [widgetsResult, chartsResult] = await Promise.all([
+    getEnterpriseAnalyticsWidgetsAction(),
+    getEnterpriseAnalyticsChartsAction()
   ]);
+
+  if (!widgetsResult.success || !chartsResult.success) {
+    return <div className="p-8 text-red-500">Failed to load analytics data.</div>;
+  }
 
   return (
     <div className="mx-auto max-w-7xl">
-      <AnalyticsDashboard 
-        kpiData={kpiData}
-        revenueData={revenueData}
-        campaignData={campaignData}
-        influencersData={influencersData}
+      <AnalyticsClient 
+        widgets={widgetsResult.data} 
+        charts={chartsResult.data} 
       />
     </div>
   );
