@@ -107,6 +107,10 @@ export async function getInfluencerByIdAction(id: string) {
           campaign: {
             include: {
               client: { select: { id: true, companyName: true, brandName: true } },
+              project: { select: { id: true, name: true, status: true, clientId: true } },
+              tasks: {
+                include: { assignee: true, campaign: { select: { id: true, name: true } } }
+              },
             },
           },
         },

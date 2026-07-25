@@ -9,7 +9,7 @@ import { BreadcrumbLabel } from "@/components/layout/breadcrumb-label";
 import { CreatorHero } from "@/components/influencers/creator-hero";
 import { CreatorKpiOverview } from "@/components/influencers/creator-kpi-overview";
 import { CreatorAIIntelligence } from "@/components/influencers/creator-ai-intelligence";
-import { CampaignHistorySection } from "@/components/influencers/campaigns/campaign-history-section";
+import { CreatorProjectsSection } from "@/components/influencers/creator-projects-section";
 import { CreatorContentGallery } from "@/components/influencers/creator-content-gallery";
 import { CreatorAnalyticsSection } from "@/components/influencers/creator-analytics-section";
 import { CreatorCollaborationSection } from "@/components/influencers/creator-collaboration-section";
@@ -96,12 +96,8 @@ async function InfluencerContent({ id, isAdmin }: { id: string; isAdmin: boolean
           {/* Section 3: AI Creator Intelligence */}
           <CreatorAIIntelligence influencerId={influencer.id} insights={influencer.creatorIntelligence} />
 
-          {/* Section 4: Campaign History */}
-          <CampaignHistorySection
-            influencerId={influencer.id}
-            campaigns={campaignAssignments}
-            isAdmin={isAdmin}
-          />
+          {/* Section 4: Projects & Campaigns */}
+          <CreatorProjectsSection influencer={influencer} />
 
           {/* Section 5: Content Gallery */}
           <CreatorContentGallery
