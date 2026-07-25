@@ -373,11 +373,16 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
     });
   }
   if (validatedData.assigneeId !== undefined && existingTask.assigneeId !== validatedData.assigneeId) {
+    let assigneeName = "someone";
+    if (validatedData.assigneeId) {
+      const user = await db.user.findUnique({ where: { id: validatedData.assigneeId }, select: { name: true } });
+      assigneeName = user?.name || "someone";
+    }
     activities.push({
       taskId: id,
       userId: user.id,
       type: "ASSIGNEE_CHANGED",
-      details: validatedData.assigneeId ? "assigned the task" : "unassigned the task",
+      details: validatedData.assigneeId ? `assigned the task to ${assigneeName}` : "unassigned the task",
     });
   }
   if (validatedData.dueDate !== undefined) {
@@ -421,27 +426,42 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
     }
   }
   if (validatedData.campaignId !== undefined && existingTask.campaignId !== validatedData.campaignId) {
+    let campName = "another campaign";
+    if (validatedData.campaignId) {
+      const camp = await db.campaign.findUnique({ where: { id: validatedData.campaignId }, select: { name: true } });
+      campName = camp?.name || campName;
+    }
     activities.push({
       taskId: id,
       userId: user.id,
       type: "CAMPAIGN_CHANGED",
-      details: validatedData.campaignId ? "moved task to another campaign" : "removed task from campaign",
+      details: validatedData.campaignId ? `moved task to campaign "${campName}"` : "removed task from campaign",
     });
   }
   if (validatedData.projectId !== undefined && existingTask.projectId !== validatedData.projectId) {
+    let projName = "another project";
+    if (validatedData.projectId) {
+      const proj = await db.project.findUnique({ where: { id: validatedData.projectId }, select: { name: true } });
+      projName = proj?.name || projName;
+    }
     activities.push({
       taskId: id,
       userId: user.id,
       type: "PROJECT_CHANGED",
-      details: validatedData.projectId ? "moved task to another project" : "removed task from project",
+      details: validatedData.projectId ? `moved task to project "${projName}"` : "removed task from project",
     });
   }
   if (validatedData.reporterId !== undefined && existingTask.reporterId !== validatedData.reporterId) {
+    let repName = "someone";
+    if (validatedData.reporterId) {
+      const rep = await db.user.findUnique({ where: { id: validatedData.reporterId }, select: { name: true } });
+      repName = rep?.name || repName;
+    }
     activities.push({
       taskId: id,
       userId: user.id,
       type: "REPORTER_CHANGED",
-      details: "changed the task reporter",
+      details: `changed the task reporter to ${repName}`,
     });
   }
   if (validatedData.estimatedHours !== undefined && existingTask.estimatedHours !== validatedData.estimatedHours) {
