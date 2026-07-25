@@ -18,6 +18,7 @@ import { FileList } from "@/components/files/file-list";
 import { TaskActivityTimeline } from "@/components/tasks/task-activity-timeline";
 import { TaskChecklist } from "@/components/tasks/task-checklist";
 import { TaskAIPanel } from "./task-ai-panel";
+import { StatusSelect, PrioritySelect, UserSelect, EntitySelect, DatePickerPopover } from "./task-properties";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -580,167 +581,35 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                   {/* RIGHT SIDEBAR (30%) */}
                   <div className="lg:col-span-4 relative">
                     <div className="space-y-6 lg:sticky lg:top-0 z-10">
-                      <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm overflow-hidden divide-y divide-[rgba(0,0,0,0.04)]">
+                      <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-[rgba(250,250,250,0.5)] shadow-sm p-4 space-y-3">
+                        <FormField control={form.control} name="status" render={({ field }) => (
+                          <FormItem><StatusSelect value={field.value} onChange={field.onChange} /></FormItem>
+                        )} />
                         
-                        {/* Status & Priority */}
-                        <div className="p-6 bg-[rgba(0,0,0,0.01)] space-y-5">
-                        <FormField
-                          control={form.control}
-                          name="status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Status</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-10 bg-white border-[rgba(0,0,0,0.08)] rounded-xl font-medium shadow-sm">
-                                    <SelectValue placeholder="Select status" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="TODO" className="font-medium">To Do</SelectItem>
-                                  <SelectItem value="IN_PROGRESS" className="font-medium text-blue-600">In Progress</SelectItem>
-                                  <SelectItem value="REVIEW" className="font-medium text-amber-600">Review</SelectItem>
-                                  <SelectItem value="DONE" className="font-medium text-emerald-600">Done</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
+                        <FormField control={form.control} name="priority" render={({ field }) => (
+                          <FormItem><PrioritySelect value={field.value} onChange={field.onChange} /></FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name="assigneeId" render={({ field }) => (
+                          <FormItem><UserSelect value={field.value || ""} onChange={field.onChange} users={users} label="Assignee" /></FormItem>
+                        )} />
 
-                        <FormField
-                          control={form.control}
-                          name="priority"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Priority</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-10 bg-white border-[rgba(0,0,0,0.08)] rounded-xl font-medium shadow-sm">
-                                    <SelectValue placeholder="Select priority" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="LOW" className="font-medium text-gray-500">Low</SelectItem>
-                                  <SelectItem value="MEDIUM" className="font-medium text-blue-500">Medium</SelectItem>
-                                  <SelectItem value="HIGH" className="font-medium text-amber-500">High</SelectItem>
-                                  <SelectItem value="URGENT" className="font-medium text-rose-500">Urgent</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
+                        <FormField control={form.control} name="reporterId" render={({ field }) => (
+                          <FormItem><UserSelect value={field.value || ""} onChange={field.onChange} users={users} label="Reporter" /></FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="campaignId" render={({ field }) => (
+                          <FormItem><EntitySelect value={field.value || ""} onChange={field.onChange} items={campaigns} label="Campaign" icon={LayoutDashboard} /></FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="projectId" render={({ field }) => (
+                          <FormItem><EntitySelect value={field.value || ""} onChange={field.onChange} items={projects || []} label="Project" icon={Briefcase} /></FormItem>
+                        )} />
+
+                        <FormField control={form.control} name="dueDate" render={({ field }) => (
+                          <FormItem><DatePickerPopover value={field.value || ""} onChange={field.onChange} /></FormItem>
+                        )} />
                       </div>
-
-                      {/* People */}
-                      <div className="p-6 space-y-5">
-                        <FormField
-                          control={form.control}
-                          name="assigneeId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Assignee</FormLabel>
-                              <SearchableSelect 
-                                value={field.value || ""}
-                                onSelect={field.onChange}
-                                placeholder="Select Assignee"
-                                items={users.map(u => ({ ...u, searchValue: `${u.name || ''} ${u.email || ''} ${u.jobTitle || ''} ${u.role || ''}` }))}
-                                renderItem={renderUser}
-                                getDisplayValue={(val: string) => {
-                                  const u = users.find((u:any) => u.id === val) || (activeTask?.assignee?.id === val ? activeTask.assignee : null);
-                                  if (u) return renderUser(u);
-                                  return <span className="text-gray-500 font-medium">{val}</span>;
-                                }}
-                              />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="reporterId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Reporter</FormLabel>
-                              <SearchableSelect 
-                                value={field.value || ""}
-                                onSelect={field.onChange}
-                                placeholder="Select Reporter"
-                                items={users.map(u => ({ ...u, searchValue: `${u.name || ''} ${u.email || ''} ${u.jobTitle || ''} ${u.role || ''}` }))}
-                                renderItem={renderUser}
-                                getDisplayValue={(val: string) => {
-                                  const u = users.find((u:any) => u.id === val) || (activeTask?.reporter?.id === val ? activeTask.reporter : null);
-                                  if (u) return renderUser(u);
-                                  return <span className="text-gray-500 font-medium">{val}</span>;
-                                }}
-                              />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {/* Campaign & Project */}
-                      <div className="p-6 space-y-5">
-                        <FormField
-                          control={form.control}
-                          name="campaignId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider flex items-center gap-1.5"><LayoutDashboard className="w-3.5 h-3.5"/> Campaign</FormLabel>
-                              <SearchableSelect 
-                                value={field.value || ""}
-                                onSelect={field.onChange}
-                                placeholder="Select Campaign"
-                                items={campaigns.map(c => ({ ...c, searchValue: `${c.name || ''} ${c.client?.companyName || ''}` }))}
-                                renderItem={renderCampaign}
-                                getDisplayValue={(val: string) => {
-                                  const c = campaigns.find((c:any) => c.id === val) || (activeTask?.campaign?.id === val ? activeTask.campaign : null);
-                                  if (c) return renderCampaign(c);
-                                  return <span className="text-gray-500 font-medium">{val}</span>;
-                                }}
-                              />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="projectId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5"/> Project</FormLabel>
-                              <SearchableSelect 
-                                value={field.value || ""}
-                                onSelect={field.onChange}
-                                placeholder="Select Project"
-                                items={projects?.map(p => ({ ...p, searchValue: `${p.name || ''} ${p.client?.companyName || ''}` })) || []}
-                                renderItem={renderProject}
-                                getDisplayValue={(val: string) => {
-                                  const p = projects?.find((p:any) => p.id === val) || (activeTask?.project?.id === val ? activeTask.project : null);
-                                  if (p) return renderProject(p);
-                                  return <span className="text-gray-500 font-medium">{val}</span>;
-                                }}
-                              />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {/* Dates */}
-                      <div className="p-6">
-                        <FormField
-                          control={form.control}
-                          name="dueDate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> Due Date</FormLabel>
-                              <FormControl>
-                                <Input type="date" {...field} value={field.value || ""} className="h-10 bg-white border-[rgba(0,0,0,0.08)] rounded-xl shadow-sm text-sm font-medium" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
 
                     {/* Time Tracking Widget */}
                     <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm p-6 relative overflow-hidden">
