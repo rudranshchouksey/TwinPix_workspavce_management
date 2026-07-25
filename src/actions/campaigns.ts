@@ -154,6 +154,7 @@ export async function createCampaignAction(input: CampaignInput) {
   const campaign = await db.campaign.create({
     data: {
       name: validatedData.name,
+      projectId: validatedData.projectId,
       clientId: validatedData.clientId,
       budget: validatedData.budget,
       deliverables: validatedData.deliverables,
@@ -220,6 +221,9 @@ export async function deleteCampaignAction(id: string) {
   logAudit("CAMPAIGN_DELETED", id, `Deleted campaign: ${campaign.name} by ${user.name}`);
 
   revalidatePath("/campaigns");
+  if (campaign.projectId) {
+    revalidatePath(`/projects/${campaign.projectId}`);
+  }
 }
 
 export async function duplicateCampaignAction(id: string) {

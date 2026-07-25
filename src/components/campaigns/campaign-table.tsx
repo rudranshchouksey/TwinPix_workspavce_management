@@ -34,6 +34,7 @@ import {
 interface CampaignTableProps {
   data: any[];
   clients: any[];
+  projects?: any[];
 }
 
 function EmptyCampaigns({ onCreate }: { onCreate: () => void }) {
@@ -55,7 +56,7 @@ function EmptyCampaigns({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-export function CampaignTable({ data, clients }: CampaignTableProps) {
+export function CampaignTable({ data, clients, projects = [] }: CampaignTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -281,8 +282,8 @@ export function CampaignTable({ data, clients }: CampaignTableProps) {
         </Table>
       </div>
 
-      <CampaignDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} clients={clients} />
-      <CampaignDialog open={!!editCampaign} onOpenChange={(open) => !open && setEditCampaign(null)} campaign={editCampaign} clients={clients} />
+      <CampaignDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} clients={clients} projects={projects} />
+      <CampaignDialog open={!!editCampaign} onOpenChange={(open) => !open && setEditCampaign(null)} campaign={editCampaign} clients={clients} projects={projects} />
 
       {addInfluencersCampaign && (
         <CampaignAddInfluencersModal

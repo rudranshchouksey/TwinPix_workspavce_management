@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getCampaignsAction, getCampaignKpisAction, getRecentCampaignActivityAction } from "@/actions/campaigns";
 import { getCampaignInsightsAction } from "@/actions/campaign-insights";
 import { getClientsAction } from "@/actions/clients";
+import { getProjectsAction } from "@/actions/projects";
 import { requireAuth } from "@/lib/auth-utils";
 import { CampaignTable } from "@/components/campaigns/campaign-table";
 import { CampaignKanban } from "@/components/campaigns/campaign-kanban";
@@ -25,12 +26,13 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   await requireAuth();
   const { q, status } = await searchParams;
 
-  const [campaignsData, kpis, insights, clientsData, activity] = await Promise.all([
+  const [campaignsData, kpis, insights, clientsData, activity, projects] = await Promise.all([
     getCampaignsAction({ query: q, status, limit: 100 }),
     getCampaignKpisAction(),
     getCampaignInsightsAction(),
     getClientsAction({ limit: 500 }),
     getRecentCampaignActivityAction(8),
+    getProjectsAction(),
   ]);
 
   const { campaigns } = campaignsData;
@@ -38,7 +40,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
   return (
     <div className="space-y-6">
-      <CampaignHero clients={clients} />
+      <CampaignHero clients={clients} projects={projects} />
 
       <CampaignKpiDashboard kpis={kpis} />
 
@@ -61,11 +63,11 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
             </div>
 
             <TabsContent value="kanban" className="mt-0 outline-none">
-              <CampaignKanban initialData={campaigns} clients={clients} />
+              <CampaignKanban initialData={campaigns} clients={clients} projects={projects} />
             </TabsContent>
 
             <TabsContent value="list" className="mt-0 outline-none">
-              <CampaignTable data={campaigns} clients={clients} />
+              <CampaignTable data={campaigns} clients={clients} projects={projects} />
             </TabsContent>
           </Tabs>
         </div>

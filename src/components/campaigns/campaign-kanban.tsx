@@ -239,7 +239,13 @@ function ColumnEmptyState({ title }: { title: string }) {
   );
 }
 
-export function CampaignKanban({ initialData, clients }: { initialData: any[]; clients: any[] }) {
+interface CampaignKanbanProps {
+  initialData: any[];
+  clients: any[];
+  projects?: any[];
+}
+
+export function CampaignKanban({ initialData, clients, projects = [] }: CampaignKanbanProps) {
   const [campaigns, setCampaigns] = useState(initialData);
   const [activeCampaign, setActiveCampaign] = useState<any | null>(null);
 
@@ -346,6 +352,7 @@ export function CampaignKanban({ initialData, clients }: { initialData: any[]; c
         onOpenChange={(open) => !open && setEditCampaign(null)}
         campaign={editCampaign}
         clients={clients}
+        projects={projects}
       />
 
       {addInfluencersCampaign && (

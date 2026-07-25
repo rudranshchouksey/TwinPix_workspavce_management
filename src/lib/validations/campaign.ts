@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const campaignSchema = z.object({
   name: z.string().min(2, "Campaign name is required").max(100),
+  projectId: z.string().min(1, "Project is required"),
   clientId: z.string().min(1, "Client is required"),
   budget: z.coerce.number().min(0),
   deliverables: z.string().optional(),

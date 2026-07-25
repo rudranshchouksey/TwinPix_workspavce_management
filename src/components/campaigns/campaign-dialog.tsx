@@ -40,10 +40,11 @@ interface CampaignDialogProps {
   onOpenChange: (open: boolean) => void;
   campaign?: any; // If provided, edit mode
   clients: any[]; // For the client dropdown
+  projects?: any[]; // For the project dropdown
   prefill?: Partial<CampaignInput>; // Pre-fill values for create mode (e.g. from an AI brief)
 }
 
-export function CampaignDialog({ open, onOpenChange, campaign, clients, prefill }: CampaignDialogProps) {
+export function CampaignDialog({ open, onOpenChange, campaign, clients, projects = [], prefill }: CampaignDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!campaign;
   const source = campaign || prefill;
@@ -52,6 +53,7 @@ export function CampaignDialog({ open, onOpenChange, campaign, clients, prefill 
     resolver: zodResolver(campaignSchema) as any,
     defaultValues: {
       name: source?.name || "",
+      projectId: source?.projectId || "",
       clientId: source?.clientId || "",
       budget: source?.budget || 0,
       deliverables: source?.deliverables || "",
@@ -66,6 +68,7 @@ export function CampaignDialog({ open, onOpenChange, campaign, clients, prefill 
     if (open) {
       form.reset({
         name: source?.name || "",
+        projectId: source?.projectId || "",
         clientId: source?.clientId || "",
         budget: source?.budget || 0,
         deliverables: source?.deliverables || "",
@@ -127,6 +130,42 @@ export function CampaignDialog({ open, onOpenChange, campaign, clients, prefill 
                         className="bg-[rgba(0,0,0,0.02)] border-[rgba(0,0,0,0.08)] focus-visible:ring-[var(--color-brand-500)]"
                       />
                     </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[var(--color-text-primary)]">Project</FormLabel>
+                    <Select 
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        // Auto-select client if the project has one
+                        const selectedProject = projects.find(p => p.id === val);
+                        if (selectedProject?.clientId) {
+                          form.setValue("clientId", selectedProject.clientId, { shouldValidate: true });
+                        }
+                      }} 
+                      defaultValue={field.value}
+                      disabled={!!prefill?.projectId}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-[rgba(0,0,0,0.02)] border-[rgba(0,0,0,0.08)] focus:ring-[var(--color-brand-500)]">
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[var(--color-surface-800)] border-[rgba(0,0,0,0.08)]">
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.id} className="hover:bg-[rgba(0,0,0,0.05)] focus:bg-[rgba(0,0,0,0.05)] cursor-pointer">
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className="text-red-400" />
                   </FormItem>
                 )}

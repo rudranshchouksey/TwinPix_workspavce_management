@@ -26,7 +26,12 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
-export function CampaignHero({ clients }: { clients: any[] }) {
+interface CampaignHeroProps {
+  clients: any[];
+  projects?: any[];
+}
+
+export function CampaignHero({ clients, projects = [] }: CampaignHeroProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -132,7 +137,7 @@ export function CampaignHero({ clients }: { clients: any[] }) {
         </div>
       </div>
 
-      <CampaignDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} clients={clients} prefill={prefill} />
+      <CampaignDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} clients={clients} projects={projects} prefill={prefill} />
 
       <CampaignBriefModal
         isOpen={isBriefOpen}

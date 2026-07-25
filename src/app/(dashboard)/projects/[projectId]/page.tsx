@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { requireAuth } from "@/lib/auth-utils";
-import { getProjectByIdAction } from "@/actions/projects";
+import { getProjectByIdAction, getProjectsAction } from "@/actions/projects";
+import { getClientsAction } from "@/actions/clients";
 import { notFound } from "next/navigation";
 import { ProjectDetailsClient } from "@/components/projects/project-details-client"; // Force TS server refresh
 
@@ -16,11 +17,15 @@ export default async function ProjectPage({
   await requireAuth();
   const { projectId } = await params;
 
-  const project = await getProjectByIdAction(projectId);
+  const [project, clientsData, projects] = await Promise.all([
+    getProjectByIdAction(projectId),
+    getClientsAction({ limit: 500 }),
+    getProjectsAction(),
+  ]);
 
   if (!project) {
     notFound();
   }
 
-  return <ProjectDetailsClient project={project} />;
+  return <ProjectDetailsClient project={project} clients={clientsData.clients} projects={projects} />;
 }
