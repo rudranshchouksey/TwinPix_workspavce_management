@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 
 import { taskSchema, TaskInput } from "@/lib/validations/task";
 import { createTaskAction, updateTaskAction, getTaskByIdAction } from "@/actions/tasks";
@@ -25,7 +25,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface TaskDialogProps {
   open: boolean;
@@ -204,6 +210,27 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isAIOpen, setIsAIOpen] = useState(false);
+
+  const handleExport = async (format: 'pdf' | 'docx' | 'md' | 'json') => {
+    if (!activeTask) return;
+    
+    const promise = (async () => {
+      const { exportTaskAsPDF, exportTaskAsDOCX, exportTaskAsMarkdown, exportTaskAsJSON } = await import('@/lib/export-task');
+      
+      switch (format) {
+        case 'pdf': await exportTaskAsPDF(activeTask); break;
+        case 'docx': await exportTaskAsDOCX(activeTask); break;
+        case 'md': exportTaskAsMarkdown(activeTask); break;
+        case 'json': exportTaskAsJSON(activeTask); break;
+      }
+    })();
+
+    toast.promise(promise, {
+      loading: 'Generating export...',
+      success: `Task exported as ${format.toUpperCase()}`,
+      error: 'Failed to export task'
+    });
+  };
 
   const form = useForm<TaskInput>({
     resolver: zodResolver(taskSchema) as unknown as Resolver<TaskInput>,
@@ -425,13 +452,30 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                 <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-[rgba(0,0,0,0.08)] bg-white text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.03)] shadow-sm h-9 w-9">
                   <MoreHorizontal className="w-4 h-4" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border-[rgba(0,0,0,0.08)] shadow-xl p-1">
+                <DropdownMenuContent align="end" className="w-56 rounded-xl border-[rgba(0,0,0,0.08)] shadow-xl p-1">
                   <DropdownMenuItem className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
                     <Copy className="w-4 h-4 mr-2 text-[var(--color-text-muted)]" /> Duplicate Task
                   </DropdownMenuItem>
                   <DropdownMenuItem className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
                     <Share2 className="w-4 h-4 mr-2 text-[var(--color-text-muted)]" /> Share Link
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator className="bg-[rgba(0,0,0,0.08)] -mx-1 my-1" />
+                  <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Export As</div>
+                  <DropdownMenuItem onClick={() => handleExport('pdf')} className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
+                    <Download className="w-4 h-4 mr-2 text-red-500" /> PDF Document
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('docx')} className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
+                    <Download className="w-4 h-4 mr-2 text-blue-500" /> Word Document
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('md')} className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
+                    <Download className="w-4 h-4 mr-2 text-gray-700" /> Markdown
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('json')} className="rounded-lg text-sm cursor-pointer hover:bg-[rgba(0,0,0,0.04)]">
+                    <Download className="w-4 h-4 mr-2 text-yellow-600" /> JSON Data
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator className="bg-[rgba(0,0,0,0.08)] -mx-1 my-1" />
                   <DropdownMenuItem className="rounded-lg text-sm cursor-pointer text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700">
                     <Trash className="w-4 h-4 mr-2" /> Delete Task
                   </DropdownMenuItem>
