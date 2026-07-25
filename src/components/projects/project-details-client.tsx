@@ -13,6 +13,7 @@ import { ProjectTeamTab } from "./tabs/project-team-tab";
 import { ProjectAnalyticsTab } from "./tabs/project-analytics-tab";
 import { ProjectActivityTab } from "./tabs/project-activity-tab";
 import { ProjectSettingsTab } from "./tabs/project-settings-tab";
+import { ProjectAssistantTab } from "./tabs/project-assistant-tab";
 
 interface ProjectDetailsClientProps {
   project: any;
@@ -56,6 +57,7 @@ export function ProjectDetailsClient({ project, clients = [], projects = [], use
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -87,6 +89,9 @@ export function ProjectDetailsClient({ project, clients = [], projects = [], use
         </TabsContent>
         <TabsContent value="activity">
           <ProjectActivityTab project={project} />
+        </TabsContent>
+        <TabsContent value="ai-assistant">
+          <ProjectAssistantTab project={project} />
         </TabsContent>
         <TabsContent value="settings">
           <ProjectSettingsTab project={project} />
