@@ -436,6 +436,30 @@ export async function updateTaskAction(id: string, input: UpdateTaskInput) {
       details: validatedData.projectId ? "moved task to another project" : "removed task from project",
     });
   }
+  if (validatedData.reporterId !== undefined && existingTask.reporterId !== validatedData.reporterId) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "REPORTER_CHANGED",
+      details: "changed the task reporter",
+    });
+  }
+  if (validatedData.estimatedHours !== undefined && existingTask.estimatedHours !== validatedData.estimatedHours) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "ESTIMATED_HOURS_CHANGED",
+      details: `updated estimated hours to ${validatedData.estimatedHours || 0}h`,
+    });
+  }
+  if (validatedData.actualHours !== undefined && existingTask.actualHours !== validatedData.actualHours) {
+    activities.push({
+      taskId: id,
+      userId: user.id,
+      type: "LOGGED_HOURS_CHANGED",
+      details: `logged time, total is now ${validatedData.actualHours || 0}h`,
+    });
+  }
 
   const task = await db.task.update({
     where: { id },
@@ -494,6 +518,42 @@ export async function deleteTaskAction(id: string) {
   }
 }
 
+async function processMentions(content: string, taskId: string, authorId: string, authorName: string) {
+  // Regex to match @Username (supports spaces and basic characters, bounded by spaces/punctuation)
+  const mentionRegex = /@([a-zA-Z0-9_ -]+)(?=[.,\s]|$)/g;
+  const mentions = Array.from(content.matchAll(mentionRegex)).map(m => m[1].trim());
+  
+  if (mentions.length === 0) return;
+
+  // Find users matching the names
+  const mentionedUsers = await db.user.findMany({
+    where: {
+      name: {
+        in: mentions,
+        mode: 'insensitive'
+      },
+      id: {
+        not: authorId // don't notify yourself
+      }
+    },
+    select: { id: true, name: true }
+  });
+
+  // Create notifications
+  for (const mentionedUser of mentionedUsers) {
+    await createNotification({
+      userId: mentionedUser.id,
+      type: "MENTION",
+      title: "You were mentioned in a task",
+      message: `${authorName} mentioned you: "${content.substring(0, 50)}..."`,
+      link: `/tasks`,
+      entityId: taskId,
+      entityType: "TASK",
+      priority: "HIGH"
+    });
+  }
+}
+
 export async function addTaskCommentAction(taskId: string, input: TaskCommentInput) {
   const user = await requireAuth();
   if (user.role === "CLIENT") throw new Error("Unauthorized to comment");
@@ -539,6 +599,10 @@ export async function addTaskCommentAction(taskId: string, input: TaskCommentInp
   }
 
   revalidatePath(`/tasks/${taskId}`);
+  
+  // Process Mentions
+  await processMentions(validatedData.content, taskId, user.id, user.name || "User");
+  
   return comment;
 }
 
@@ -577,6 +641,9 @@ export async function updateTaskCommentAction(commentId: string, content: string
     where: { id: commentId },
     data: { content },
   });
+
+  // Process Mentions in case they added new ones
+  await processMentions(content, comment.taskId, user.id, user.name || "User");
 
   revalidatePath(`/tasks/${comment.taskId}`);
 }

@@ -20,6 +20,8 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
   const [filter, setFilter] = useState<"ALL" | "COMMENTS" | "CHANGES">("ALL");
 
   // Group comments by parent
@@ -72,6 +74,20 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
     }
   };
 
+  const handleEditComment = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await updateTaskCommentAction(commentId, editCommentText);
+      toast.success("Comment updated");
+      setEditingCommentId(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update comment");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "STATUS_CHANGED": return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
@@ -118,6 +134,12 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      setEditingCommentId(comment.id);
+                      setEditCommentText(comment.content);
+                    }}>
+                      <Pencil className="w-3 h-3 mr-2" /> Edit
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteComment(comment.id)}>
                       <Trash className="w-3 h-3 mr-2" /> Delete
                     </DropdownMenuItem>
@@ -125,9 +147,27 @@ export function TaskActivityTimeline({ taskId, activities, comments, currentUser
                 </DropdownMenu>
               )}
             </div>
-            <div className="p-4 text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">
-              {comment.content}
-            </div>
+            
+            {editingCommentId === comment.id ? (
+              <div className="p-4 bg-[rgba(0,0,0,0.01)]">
+                <Textarea
+                  value={editCommentText}
+                  onChange={(e) => setEditCommentText(e.target.value)}
+                  className="min-h-[80px] text-sm resize-none mb-2"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)}>Cancel</Button>
+                  <Button size="sm" onClick={() => handleEditComment(comment.id)} disabled={isSubmitting || !editCommentText.trim()}>Save</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">
+                {/* Parse basic mentions visually (optional, simple bolding) */}
+                {comment.content.split(/(@[a-zA-Z0-9_ -]+)/g).map((part: string, i: number) => 
+                  part.startsWith('@') ? <span key={i} className="text-[var(--color-brand-600)] font-medium bg-[var(--color-brand-50)] px-1 py-0.5 rounded-sm">{part}</span> : part
+                )}
+              </div>
+            )}
           </div>
           
           {!isReply && (

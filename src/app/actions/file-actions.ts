@@ -187,6 +187,17 @@ export async function deleteFileAction(fileId: string, pathname: string) {
       where: { id: fileId },
     });
 
+    if (file.taskId) {
+      await db.taskActivity.create({
+        data: {
+          taskId: file.taskId,
+          userId: session.user.id,
+          type: "ATTACHMENT_DELETED",
+          details: `removed attachment ${file.originalName}`
+        }
+      });
+    }
+
     if (pathname) {
       revalidatePath(pathname);
     }

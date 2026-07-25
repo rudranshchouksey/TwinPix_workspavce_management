@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Check, X, FileText, Activity, LayoutDashboard, Target, Briefcase, Hash, Users, Clock, Paperclip, Bell, RefreshCw, Flag, CheckCircle2, User, Calendar, MessageSquare, AlertCircle, Sparkles, Building2, Eye, MoreHorizontal, Pencil, Trash, Share2, Copy } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -205,6 +206,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
   const isEditMode = !!initialTask;
   const [task, setTask] = useState<any>(initialTask);
   const activeTask = task || initialTask;
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(isEditMode);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -568,7 +570,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                             taskId={activeTask.id} 
                             activities={activeTask.activities || []} 
                             comments={activeTask.comments || []} 
-                            currentUser={{ id: "system", role: "ADMIN" }} // Simplified for dialog
+                            currentUser={session?.user || { id: "system", role: "ADMIN" }}
                           />
                         </div>
                       </>
