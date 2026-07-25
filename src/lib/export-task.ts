@@ -177,25 +177,25 @@ export async function exportTaskAsDOCX(task: any) {
             rows: [
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ text: "Status:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Status:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.status })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Priority:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Priority:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.priority })] }),
                 ],
               }),
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ text: "Assignee:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Assignee:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.assignee?.name || 'Unassigned' })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Reporter:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Reporter:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.reporter?.name || 'None' })] }),
                 ],
               }),
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ text: "Campaign:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Campaign:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.campaign?.name || 'None' })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Project:", bold: true })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Project:", bold: true })] })] }),
                   new TableCell({ children: [new Paragraph({ text: task.project?.name || 'None' })] }),
                 ],
               }),
