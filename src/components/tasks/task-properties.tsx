@@ -20,15 +20,13 @@ export function StatusSelect({ value, onChange }: { value: string; onChange: (v:
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Status</div>
-            <Badge className={cn("rounded-md border shadow-none font-medium text-xs py-0.5", current.color)} variant="outline">
-              {current.label}
-            </Badge>
-          </div>
-        </button>
+      <PopoverTrigger className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Status</div>
+          <Badge className={cn("rounded-md border shadow-none font-medium text-xs py-0.5", current.color)} variant="outline">
+            {current.label}
+          </Badge>
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 rounded-xl" align="start">
         <Command>
@@ -62,16 +60,14 @@ export function PrioritySelect({ value, onChange }: { value: string; onChange: (
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Priority</div>
-            <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold", current.color)}>
-              <span className="text-[10px]">{current.icon}</span>
-              <span>{current.label}</span>
-            </div>
+      <PopoverTrigger className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Priority</div>
+          <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold", current.color)}>
+            <span className="text-[10px]">{current.icon}</span>
+            <span>{current.label}</span>
           </div>
-        </button>
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 rounded-xl" align="start">
         <Command>
@@ -101,31 +97,29 @@ export function UserSelect({ value, onChange, users, label }: { value: string; o
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">{label}</div>
-            {current ? (
-              <div className="flex items-center gap-2 truncate">
-                <Avatar className="w-6 h-6 border">
-                  <AvatarImage src={current.image} />
-                  <AvatarFallback className="text-[10px]"><UserIcon className="w-3 h-3 text-gray-400" /></AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium truncate">{current.name || current.email}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center border border-dashed"><UserIcon className="w-3 h-3 text-gray-400" /></div>
-                <span className="text-sm italic">Unassigned</span>
-              </div>
-            )}
-          </div>
-          {current && (
-            <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative">
-              <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+      <PopoverTrigger className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none relative group">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">{label}</div>
+          {current ? (
+            <div className="flex items-center gap-2 truncate">
+              <Avatar className="w-6 h-6 border">
+                <AvatarImage src={current.image} />
+                <AvatarFallback className="text-[10px]"><UserIcon className="w-3 h-3 text-gray-400" /></AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium truncate">{current.name || current.email}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+              <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center border border-dashed"><UserIcon className="w-3 h-3 text-gray-400" /></div>
+              <span className="text-sm italic">Unassigned</span>
             </div>
           )}
-        </button>
+        </div>
+        {current && (
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative hidden group-hover:block shrink-0">
+            <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+          </div>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 rounded-xl" align="start">
         <Command>
@@ -163,30 +157,28 @@ export function EntitySelect({ value, onChange, items, label, icon: Icon }: { va
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">{label}</div>
-            {current ? (
-              <div className="flex items-center gap-2 truncate">
-                <div className="w-6 h-6 rounded-md bg-[var(--color-brand-50)] flex items-center justify-center border border-[var(--color-brand-100)] shrink-0">
-                  <Icon className="w-3.5 h-3.5 text-[var(--color-brand-500)]" />
-                </div>
-                <span className="text-sm font-medium truncate">{current.name}</span>
+      <PopoverTrigger className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none relative group">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">{label}</div>
+          {current ? (
+            <div className="flex items-center gap-2 truncate">
+              <div className="w-6 h-6 rounded-md bg-[var(--color-brand-50)] flex items-center justify-center border border-[var(--color-brand-100)] shrink-0">
+                <Icon className="w-3.5 h-3.5 text-[var(--color-brand-500)]" />
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                <div className="w-6 h-6 rounded-md bg-gray-50 flex items-center justify-center border border-dashed shrink-0"><Icon className="w-3.5 h-3.5 text-gray-400" /></div>
-                <span className="text-sm italic">None</span>
-              </div>
-            )}
-          </div>
-          {current && (
-            <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative shrink-0">
-              <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+              <span className="text-sm font-medium truncate">{current.name}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+              <div className="w-6 h-6 rounded-md bg-gray-50 flex items-center justify-center border border-dashed shrink-0"><Icon className="w-3.5 h-3.5 text-gray-400" /></div>
+              <span className="text-sm italic">None</span>
             </div>
           )}
-        </button>
+        </div>
+        {current && (
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative hidden group-hover:block shrink-0">
+            <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+          </div>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 rounded-xl" align="start">
         <Command>
@@ -237,25 +229,23 @@ export function DatePickerPopover({ value, onChange }: { value: string; onChange
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Due Date</div>
-            {dateValue ? (
-              <div className="flex items-center gap-2 truncate">
-                <span className="text-sm font-medium">{format(dateValue, "MMM d, yyyy")}</span>
-                {relativeBadge}
-              </div>
-            ) : (
-              <span className="text-sm italic text-[var(--color-text-muted)]">No date</span>
-            )}
-          </div>
-          {dateValue && (
-            <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative shrink-0">
-              <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+      <PopoverTrigger className="w-full flex items-center justify-between p-3 rounded-xl border border-[rgba(0,0,0,0.08)] bg-white hover:bg-[rgba(0,0,0,0.02)] transition-all focus:outline-none relative group">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="text-xs text-[var(--color-text-muted)] uppercase font-semibold w-16 text-left shrink-0">Due Date</div>
+          {dateValue ? (
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-sm font-medium">{format(dateValue, "MMM d, yyyy")}</span>
+              {relativeBadge}
             </div>
+          ) : (
+            <span className="text-sm italic text-[var(--color-text-muted)]">No date</span>
           )}
-        </button>
+        </div>
+        {dateValue && (
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(null); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors z-10 relative hidden group-hover:block shrink-0">
+            <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+          </div>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-2 rounded-xl" align="start">
         <Calendar
@@ -264,7 +254,6 @@ export function DatePickerPopover({ value, onChange }: { value: string; onChange
           onSelect={(d) => {
             onChange(d ? format(d, "yyyy-MM-dd") : null);
           }}
-          initialFocus
           className="p-0 border-0"
         />
       </PopoverContent>
