@@ -532,11 +532,12 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                   </div>
 
                   {/* RIGHT SIDEBAR (30%) */}
-                  <div className="lg:col-span-4 space-y-6">
-                    <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm overflow-hidden divide-y divide-[rgba(0,0,0,0.04)] sticky top-0">
-                      
-                      {/* Status & Priority */}
-                      <div className="p-6 bg-[rgba(0,0,0,0.01)] space-y-5">
+                  <div className="lg:col-span-4 relative">
+                    <div className="space-y-6 lg:sticky lg:top-0 z-10">
+                      <div className="rounded-2xl border border-[rgba(0,0,0,0.08)] bg-white shadow-sm overflow-hidden divide-y divide-[rgba(0,0,0,0.04)]">
+                        
+                        {/* Status & Priority */}
+                        <div className="p-6 bg-[rgba(0,0,0,0.01)] space-y-5">
                         <FormField
                           control={form.control}
                           name="status"
@@ -741,6 +742,7 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           )}
                         </>
                       )}
+                    </div>
                     </div>
                   </div>
 
