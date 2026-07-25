@@ -129,10 +129,15 @@ export async function getProjectByIdAction(id: string) {
               orderBy: { createdAt: 'asc' }
             },
             files: true,
-            activities: true
+            activities: true,
+            campaign: { select: { id: true, name: true } }
           },
           orderBy: { createdAt: 'desc' }
         },
+        files: true,
+        events: true,
+        messages: true,
+        notifications: true,
       },
     });
 

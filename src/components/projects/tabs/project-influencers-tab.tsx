@@ -2,6 +2,7 @@ import React from "react";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users } from "lucide-react";
+import Link from "next/link";
 
 export function ProjectInfluencersTab({ project }: { project: any }) {
   // Aggregate unique influencers from campaigns
@@ -32,22 +33,24 @@ export function ProjectInfluencersTab({ project }: { project: any }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {influencers.map((influencer: any) => (
-        <PremiumCard key={influencer.id} className="p-5 flex items-center gap-4">
-          <Avatar className="h-12 w-12 border-2 border-[rgba(0,0,0,0.05)]">
-            <AvatarImage src={influencer.profileImage || ""} />
-            <AvatarFallback className="bg-[var(--color-brand-100)] text-[var(--color-brand-600)] font-semibold">
-              {(influencer.influencerName || influencer.instagramHandle || "U").substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h4 className="text-sm font-semibold text-[var(--color-text-primary)] truncate max-w-[150px]">
-              {influencer.influencerName || "Unknown"}
-            </h4>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate max-w-[150px]">
-              @{influencer.instagramHandle}
-            </p>
-          </div>
-        </PremiumCard>
+        <Link href={`/influencers/${influencer.id}`} key={influencer.id} className="block group">
+          <PremiumCard className="p-5 flex items-center gap-4 group-hover:border-[var(--color-brand-300)] transition-colors">
+            <Avatar className="h-12 w-12 border-2 border-[rgba(0,0,0,0.05)]">
+              <AvatarImage src={influencer.profileImage || ""} />
+              <AvatarFallback className="bg-[var(--color-brand-100)] text-[var(--color-brand-600)] font-semibold">
+                {(influencer.influencerName || influencer.instagramHandle || "U").substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h4 className="text-sm font-semibold text-[var(--color-text-primary)] truncate max-w-[150px] group-hover:text-[var(--color-brand-600)] transition-colors">
+                {influencer.influencerName || "Unknown"}
+              </h4>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate max-w-[150px]">
+                @{influencer.instagramHandle}
+              </p>
+            </div>
+          </PremiumCard>
+        </Link>
       ))}
     </div>
   );

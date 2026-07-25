@@ -483,6 +483,8 @@ model Campaign {
   brandMatches     BrandMatchAnalysis[]
   outreachMessages OutreachMessage[]
   events           Event[]
+  messages         Message[]
+  notifications    Notification[]
   contentSchedules ContentSchedule[]
   invoices         Invoice[]
 
@@ -604,6 +606,8 @@ model Task {
   activities TaskActivity[]
   files      File[]
   events     Event[]
+  messages   Message[]
+  notifications Notification[]
   timeEntries TimeEntry[]
   activeTimers ActiveTimer[]
 
@@ -679,10 +683,14 @@ model File {
   taskId String?
   task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([uploadedById])
   @@index([campaignId])
   @@index([influencerId])
   @@index([taskId])
+  @@index([projectId])
   @@map("files")
 }
 
@@ -704,13 +712,24 @@ model Notification {
   entityId  String?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId     String?
+  campaignId String?
+  projectId  String?
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       Task?       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  project    Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   emailDeliveries EmailDelivery[]
   whatsappDeliveries WhatsAppDelivery[]
 
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([isRead])
+  @@index([taskId])
+  @@index([campaignId])
+  @@index([projectId])
   @@map("notifications")
 }
 
@@ -806,6 +825,7 @@ model Event {
   campaignId   String?
   taskId       String?
   influencerId String?
+  projectId    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -814,10 +834,12 @@ model Event {
   campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   task       Task?       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   influencer Influencer? @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  project    Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([campaignId])
   @@index([type])
+  @@index([projectId])
   @@map("events")
 }
 
@@ -834,11 +856,21 @@ model Message {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  taskId       String?
+  campaignId   String?
+  projectId    String?
+
   sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  task     Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([senderId])
   @@index([receiverId])
+  @@index([taskId])
+  @@index([campaignId])
+  @@index([projectId])
   @@map("messages")
 }
 
@@ -870,6 +902,10 @@ model Project {
   client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   campaigns Campaign[]
   tasks     Task[]
+  files     File[]
+  events    Event[]
+  messages  Message[]
+  notifications Notification[]
 
   @@index([clientId])
   @@index([status])

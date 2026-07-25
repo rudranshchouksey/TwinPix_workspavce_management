@@ -5,16 +5,25 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export function ProjectFilesTab({ project }: { project: any }) {
-  const files: any[] = [];
+  const fileMap = new Map();
   
+  (project.files || []).forEach((f: any) => {
+    fileMap.set(f.id, { ...f, source: { type: 'Project', name: project.name, href: `/projects/${project.id}` } });
+  });
+
   (project.campaigns || []).forEach((c: any) => {
-    (c.files || []).forEach((f: any) => files.push({ ...f, source: `Campaign: ${c.name}` }));
+    (c.files || []).forEach((f: any) => {
+      fileMap.set(f.id, { ...f, source: { type: 'Campaign', name: c.name, href: `/campaigns/${c.id}` } });
+    });
   });
   
   (project.tasks || []).forEach((t: any) => {
-    (t.files || []).forEach((f: any) => files.push({ ...f, source: `Task: ${t.title}` }));
+    (t.files || []).forEach((f: any) => {
+      fileMap.set(f.id, { ...f, source: { type: 'Task', name: t.title, href: `/tasks/${t.id}` } });
+    });
   });
 
+  const files = Array.from(fileMap.values());
   const sortedFiles = files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (sortedFiles.length === 0) {
@@ -40,9 +49,15 @@ export function ProjectFilesTab({ project }: { project: any }) {
             <h4 className="text-sm font-semibold text-[var(--color-text-primary)] truncate" title={file.originalName}>
               {file.originalName}
             </h4>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
-              {file.source}
-            </p>
+            <div className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
+              {file.source ? (
+                <Link href={file.source.href} className="hover:text-[var(--color-brand-500)] hover:underline transition-colors">
+                  {file.source.type}: {file.source.name}
+                </Link>
+              ) : (
+                'Unknown Source'
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-2 text-xs text-[var(--color-text-secondary)]">
               <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
               <span>•</span>

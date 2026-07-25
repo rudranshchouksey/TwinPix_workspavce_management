@@ -1,7 +1,6 @@
-"use client";
-
 import React, { useMemo } from "react";
 import { motion, Variants } from "framer-motion";
+import Link from "next/link";
 import { 
   FolderKanban, CheckCircle, Users, DollarSign, Calendar, Target,
   FileText, Activity, AlertCircle, Clock, Video, TrendingUp, CheckCircle2,
@@ -58,13 +57,14 @@ export function ProjectOverviewTab({ project }: { project: any }) {
     if (project.tasks) {
       allTasks = project.tasks;
       totalFiles += project.tasks.reduce((sum: number, t: any) => sum + (t.files?.length || 0), 0);
-      activities.push(...project.tasks.flatMap((t: any) => t.activities || []).map((a: any) => ({ ...a, source: 'Task' })));
-      activities.push(...project.tasks.flatMap((t: any) => t.comments || []).map((c: any) => ({ 
+      activities.push(...project.tasks.flatMap((t: any) => (t.activities || []).map((a: any) => ({ ...a, source: 'Task', href: `/tasks/${t.id}` }))));
+      activities.push(...project.tasks.flatMap((t: any) => (t.comments || []).map((c: any) => ({ 
         ...c, 
         type: 'COMMENT', 
         details: `Commented: ${c.content.substring(0, 30)}...`,
-        source: 'Task' 
-      })));
+        source: 'Task',
+        href: `/tasks/${t.id}`
+      }))));
     }
 
     // Process Campaigns
@@ -86,7 +86,7 @@ export function ProjectOverviewTab({ project }: { project: any }) {
           if (new Date(e.start) > new Date()) upcomingEvents.push(e);
         });
 
-        activities.push(...(c.activities || []).map((a: any) => ({ ...a, source: 'Campaign' })));
+        activities.push(...(c.activities || []).map((a: any) => ({ ...a, source: 'Campaign', href: `/campaigns/${c.id}` })));
       });
     }
 
@@ -280,18 +280,18 @@ export function ProjectOverviewTab({ project }: { project: any }) {
               {upcomingDeadlines.length > 0 ? (
                 <div className="divide-y divide-gray-50">
                   {upcomingDeadlines.map((task: any) => (
-                    <div key={task.id} className="p-4 hover:bg-gray-50/50 transition-colors flex items-start gap-3">
-                      <div className="mt-0.5 bg-amber-50 p-2 rounded-lg text-amber-600 border border-amber-100">
+                    <Link href={`/tasks/${task.id}`} key={task.id} className="block p-4 hover:bg-gray-50/50 transition-colors flex items-start gap-3">
+                      <div className="mt-0.5 bg-amber-50 p-2 rounded-lg text-amber-600 border border-amber-100 flex-shrink-0">
                         <AlertCircle className="w-4 h-4" />
                       </div>
-                      <div>
-                        <h5 className="font-semibold text-gray-900 text-sm line-clamp-1">{task.title}</h5>
-                        <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1 font-medium">
-                          <Calendar className="w-3 h-3" />
+                      <div className="min-w-0">
+                        <h5 className="font-semibold text-gray-900 text-sm line-clamp-1 group-hover:text-[var(--color-brand-600)] transition-colors">{task.title}</h5>
+                        <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1 font-medium truncate">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
                           {new Date(task.dueDate).toLocaleDateString()}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -318,26 +318,36 @@ export function ProjectOverviewTab({ project }: { project: any }) {
             <CardContent className="p-0">
               {recentActivities.length > 0 ? (
                 <div className="divide-y divide-gray-50">
-                  {recentActivities.map((activity: any, idx: number) => (
-                    <div key={activity.id || idx} className="p-4 hover:bg-gray-50/50 transition-colors flex items-start gap-3">
-                      <Avatar className="w-8 h-8 border border-gray-100 shadow-sm">
-                        <AvatarImage src={activity.user?.image || ""} />
-                        <AvatarFallback className="bg-[var(--color-brand-50)] text-[var(--color-brand-600)] text-xs font-semibold">
-                          {activity.user?.name?.[0] || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 line-clamp-2">
-                          <span className="font-semibold text-gray-900">{activity.user?.name || "Someone"}</span> {activity.details}
-                        </p>
-                        <p className="text-[11px] text-gray-400 mt-1 font-medium">
-                          {new Date(activity.createdAt).toLocaleString(undefined, {
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                          })}
-                        </p>
+                  {recentActivities.map((activity: any, idx: number) => {
+                    const content = (
+                      <div className="p-4 hover:bg-gray-50/50 transition-colors flex items-start gap-3">
+                        <Avatar className="w-8 h-8 border border-gray-100 shadow-sm flex-shrink-0">
+                          <AvatarImage src={activity.user?.image || ""} />
+                          <AvatarFallback className="bg-[var(--color-brand-50)] text-[var(--color-brand-600)] text-xs font-semibold">
+                            {activity.user?.name?.[0] || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800 line-clamp-2">
+                            <span className="font-semibold text-gray-900 hover:text-[var(--color-brand-600)] transition-colors">{activity.user?.name || "Someone"}</span> {activity.details}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-1 font-medium">
+                            {new Date(activity.createdAt).toLocaleString(undefined, {
+                              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+
+                    return activity.href ? (
+                      <Link key={activity.id || idx} href={activity.href} className="block group">
+                        {content}
+                      </Link>
+                    ) : (
+                      <div key={activity.id || idx}>{content}</div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="p-8 text-center text-gray-500 text-sm">

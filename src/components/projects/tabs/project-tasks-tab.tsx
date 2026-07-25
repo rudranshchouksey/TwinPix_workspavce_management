@@ -3,6 +3,7 @@ import { PremiumCard } from "@/components/ui/premium-card";
 import { CheckSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
+import Link from "next/link";
 
 export function ProjectTasksTab({ project }: { project: any }) {
   const tasks = project.tasks || [];
@@ -25,12 +26,19 @@ export function ProjectTasksTab({ project }: { project: any }) {
         <PremiumCard key={task.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 task.priority === 'URGENT' ? 'bg-red-500' :
                 task.priority === 'HIGH' ? 'bg-amber-500' :
                 task.priority === 'MEDIUM' ? 'bg-blue-500' : 'bg-gray-400'
               }`} />
-              <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">{task.title}</h4>
+              <Link href={`/tasks/${task.id}`} className="hover:underline">
+                <h4 className="text-sm font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-brand-600)] transition-colors">{task.title}</h4>
+              </Link>
+              {task.campaign && (
+                <Link href={`/campaigns/${task.campaign.id}`} className="ml-2 px-1.5 py-0.5 border bg-[rgba(0,0,0,0.02)] rounded text-[10px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-brand-500)] hover:border-[var(--color-brand-200)] transition-colors">
+                  {task.campaign.name}
+                </Link>
+              )}
             </div>
             {task.description && (
               <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1 ml-4">{task.description}</p>
