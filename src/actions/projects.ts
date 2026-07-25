@@ -88,3 +88,57 @@ export async function deleteProjectAction(id: string) {
     return { success: false, error: error.message || "Failed to delete project" };
   }
 }
+
+export async function getProjectByIdAction(id: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const project = await db.project.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        campaigns: {
+          include: {
+            influencers: {
+              include: {
+                influencer: true
+              }
+            },
+            teamMembers: {
+              include: {
+                user: true
+              }
+            },
+            activities: true,
+            files: true,
+            events: true,
+            tasks: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        tasks: {
+          include: {
+            assignee: true,
+            author: true,
+            reporter: true,
+            comments: {
+              include: {
+                user: true
+              },
+              orderBy: { createdAt: 'asc' }
+            },
+            files: true,
+            activities: true
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+      },
+    });
+
+    return project;
+  } catch (error) {
+    console.error("Failed to fetch project details", error);
+    return null;
+  }
+}

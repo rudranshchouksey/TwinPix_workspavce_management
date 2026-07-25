@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface ProjectsViewProps {
   initialProjects: any[];
@@ -138,12 +139,13 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {projects.map((project) => (
-            <PremiumCard key={project.id} hoverEffect="lift" className="p-5 group relative flex flex-col h-full border-[rgba(0,0,0,0.08)]">
+            <Link href={`/projects/${project.id}`} key={project.id} className="block group">
+            <PremiumCard hoverEffect="lift" className="p-5 relative flex flex-col h-full border-[rgba(0,0,0,0.08)]">
               
               <div className="absolute top-4 right-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger render={
-                    <button className="p-1.5 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100" />
+                    <button onClick={(e) => e.preventDefault()} className="p-1.5 rounded-md hover:bg-[rgba(0,0,0,0.05)] text-[var(--color-text-muted)] transition-colors opacity-0 group-hover:opacity-100" />
                   }>
                     <MoreVertical className="w-4 h-4" />
                   </DropdownMenuTrigger>
@@ -185,6 +187,7 @@ export function ProjectsView({ initialProjects, clients }: ProjectsViewProps) {
                 </span>
               </div>
             </PremiumCard>
+            </Link>
           ))}
         </div>
       )}
