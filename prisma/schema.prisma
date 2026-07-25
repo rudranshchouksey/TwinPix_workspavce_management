@@ -99,6 +99,8 @@ model User {
   sentMessages     Message[]            @relation("SentMessages")
   receivedMessages Message[]            @relation("ReceivedMessages")
   feedback         Feedback[]           @relation("UserFeedback")
+  fileComments     FileComment[]
+  fileActivities   FileActivity[]
 
   watchedTasks     Task[]               @relation("TaskWatchers")
   followedTasks    Task[]               @relation("TaskFollowers")
@@ -668,6 +670,10 @@ model File {
   mimeType     String
   size         Int
   url          String
+  folder       String?  @default("Content") // Contracts, Brand Assets, Invoices, Content, Photos, Videos, Design Files, Documents
+  tags         String[] @default([])
+  version      Int      @default(1)
+  isArchived   Boolean  @default(false)
   uploadedById String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -686,12 +692,49 @@ model File {
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  comments   FileComment[]
+  activities FileActivity[]
+
   @@index([uploadedById])
   @@index([campaignId])
   @@index([influencerId])
   @@index([taskId])
   @@index([projectId])
+  @@index([folder])
   @@map("files")
+}
+
+model FileComment {
+  id        String   @id @default(cuid())
+  content   String
+  fileId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@index([userId])
+  @@map("file_comments")
+}
+
+model FileActivity {
+  id        String   @id @default(cuid())
+  fileId    String
+  userId    String?
+  type      String   // UPLOADED, NEW_VERSION, COMMENTED, ARCHIVED
+  details   String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  file File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([fileId])
+  @@index([userId])
+  @@map("file_activities")
 }
 
 // ─────────────────────────────────────────────
