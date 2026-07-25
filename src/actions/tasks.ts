@@ -100,8 +100,25 @@ export async function getTasksAction(params: {
     take: limit + 1, // Take one extra to check if there is a next page
     ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
     include: {
-      assignee: { select: { id: true, name: true, image: true } },
-      campaign: { select: { id: true, name: true } },
+      assignee: { select: { id: true, name: true, image: true, role: true, jobTitle: true, status: true } },
+      reporter: { select: { id: true, name: true, image: true, role: true, jobTitle: true, status: true } },
+      campaign: { 
+        select: { 
+          id: true, 
+          name: true,
+          status: true,
+          client: { select: { id: true, companyName: true, brandName: true, status: true } },
+          teamMembers: { include: { user: { select: { id: true, name: true, image: true, role: true, jobTitle: true, status: true } } } }
+        } 
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          client: { select: { id: true, companyName: true, brandName: true, status: true } }
+        }
+      },
       comments: { select: { id: true } }, // just for count
     },
     orderBy,
@@ -134,17 +151,26 @@ export async function getTaskByIdAction(id: string) {
   const task = await db.task.findUnique({
     where: { id },
     include: {
-      assignee: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
-      author: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
-      reporter: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
+      assignee: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true, status: true } },
+      author: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true, status: true } },
+      reporter: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true, status: true } },
       campaign: { 
         select: { 
           id: true, 
           name: true,
-          client: { select: { id: true, companyName: true, brandName: true } }
+          status: true,
+          client: { select: { id: true, companyName: true, brandName: true, status: true } },
+          teamMembers: { include: { user: { select: { id: true, name: true, image: true, role: true, jobTitle: true, status: true } } } }
         } 
       },
-      project: { select: { id: true, name: true } },
+      project: { 
+        select: { 
+          id: true, 
+          name: true,
+          status: true,
+          client: { select: { id: true, companyName: true, brandName: true, status: true } }
+        } 
+      },
       watchers: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
       followers: { select: { id: true, name: true, image: true, email: true, jobTitle: true, role: true } },
       comments: {

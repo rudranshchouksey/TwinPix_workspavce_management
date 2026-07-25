@@ -7,6 +7,9 @@ import { Loader2, Check, X, FileText, Activity, LayoutDashboard, Target, Briefca
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 
 import { taskSchema, TaskInput } from "@/lib/validations/task";
 import { createTaskAction, updateTaskAction, getTaskByIdAction } from "@/actions/tasks";
@@ -53,6 +56,144 @@ const getStatusColor = (s: string) => {
     default: return "";
   }
 };
+
+function SearchableSelect({ value, onSelect, placeholder, items, renderItem, getDisplayValue }: any) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <div 
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex w-full items-center justify-between bg-white border border-[rgba(0,0,0,0.08)] rounded-xl px-3 py-2 cursor-pointer shadow-sm min-h-[48px] hover:border-[rgba(0,0,0,0.2)] transition-colors",
+          open && "ring-1 ring-[var(--color-brand-500)] border-[var(--color-brand-500)]"
+        )}
+      >
+        <div className="flex-1 overflow-hidden truncate">
+          {value ? getDisplayValue(value) : <span className="text-sm text-[var(--color-text-muted)]">{placeholder}</span>}
+        </div>
+        <ChevronDown className={cn("w-4 h-4 text-[var(--color-text-muted)] shrink-0 transition-transform", open && "rotate-180")} />
+      </div>
+      
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-[rgba(0,0,0,0.08)] rounded-xl shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95">
+           <Command className="max-h-[300px]">
+             <CommandInput placeholder={`Search...`} className="h-10 text-sm border-none ring-0 focus-visible:ring-0 shadow-none" />
+             <CommandList>
+               <CommandEmpty>No results found.</CommandEmpty>
+               <CommandGroup className="p-1">
+                 <CommandItem 
+                    value="unassigned" 
+                    onSelect={() => { onSelect(""); setOpen(false); }}
+                    className="cursor-pointer rounded-lg text-sm mb-1"
+                 >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center"><User className="w-4 h-4 text-[var(--color-text-muted)]" /></div>
+                      <span className="font-medium text-[var(--color-text-secondary)]">None / Unassigned</span>
+                    </div>
+                    {value === "" && <Check className="ml-auto w-4 h-4 text-[var(--color-brand-500)]" />}
+                 </CommandItem>
+                 
+                 {items.map((item: any) => (
+                   <CommandItem
+                     key={item.id}
+                     value={item.searchValue || item.name || item.email || ""}
+                     onSelect={() => { onSelect(item.id); setOpen(false); }}
+                     className="cursor-pointer rounded-lg text-sm mb-1 data-[selected=true]:bg-[rgba(0,0,0,0.03)]"
+                   >
+                     {renderItem(item)}
+                     {value === item.id && <Check className="ml-auto w-4 h-4 text-[var(--color-brand-500)]" />}
+                   </CommandItem>
+                 ))}
+               </CommandGroup>
+             </CommandList>
+           </Command>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const renderUser = (u: any) => (
+  <div className="flex items-center gap-2 w-full">
+    <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center overflow-hidden shrink-0">
+      {u.image ? <img src={u.image} alt="" className="w-full h-full object-cover"/> : <span className="text-xs font-bold text-indigo-500">{u.name?.charAt(0) || "U"}</span>}
+    </div>
+    <div className="flex flex-col text-left flex-1 min-w-0">
+      <span className="font-medium leading-none truncate text-[var(--color-text-primary)]">{u.name || u.email}</span>
+      {(u.jobTitle || u.role) && <span className="text-[10px] text-[var(--color-text-muted)] mt-1.5 truncate leading-none">{u.jobTitle || u.role}</span>}
+    </div>
+    {u.status && (
+      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full border shrink-0 uppercase tracking-wider font-semibold", 
+        u.status === 'ACTIVE' ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-gray-50 text-gray-500 border-gray-200"
+      )}>
+        {u.status}
+      </span>
+    )}
+  </div>
+);
+
+const renderCampaign = (c: any) => (
+  <div className="flex flex-col text-left w-full py-0.5 gap-1">
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 rounded-md bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+        <LayoutDashboard className="w-3 h-3 text-purple-500" />
+      </div>
+      <span className="font-medium truncate text-[var(--color-text-primary)] leading-none">{c.name}</span>
+      {c.status && (
+        <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full border shrink-0 ml-auto uppercase font-semibold", 
+          c.status === 'ACTIVE' ? "bg-indigo-50 text-indigo-600 border-indigo-200" : "bg-gray-50 text-gray-500 border-gray-200"
+        )}>
+          {c.status}
+        </span>
+      )}
+    </div>
+    {c.client && (
+      <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1.5 ml-8 mt-0.5">
+        <Building2 className="w-3 h-3"/> {c.client.companyName}
+      </span>
+    )}
+    {c.teamMembers?.length > 0 && (
+      <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1.5 ml-8">
+        <Users className="w-3 h-3"/> {c.teamMembers.length} Team Members
+      </span>
+    )}
+  </div>
+);
+
+const renderProject = (p: any) => (
+  <div className="flex flex-col text-left w-full py-0.5 gap-1">
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+        <Briefcase className="w-3 h-3 text-blue-500" />
+      </div>
+      <span className="font-medium truncate text-[var(--color-text-primary)] leading-none">{p.name}</span>
+      {p.status && (
+        <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full border shrink-0 ml-auto uppercase font-semibold", 
+          p.status === 'ACTIVE' ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-gray-50 text-gray-500 border-gray-200"
+        )}>
+          {p.status}
+        </span>
+      )}
+    </div>
+    {p.client && (
+      <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1.5 ml-8 mt-0.5">
+        <Building2 className="w-3 h-3"/> {p.client.companyName}
+      </span>
+    )}
+  </div>
+);
 
 export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], campaigns = [], projects = [], defaultStatus = "TODO" }: TaskDialogProps) {
   const isEditMode = !!initialTask;
@@ -451,34 +592,18 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Assignee</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className="h-12 bg-white border-[rgba(0,0,0,0.08)] rounded-xl shadow-sm">
-                                    <SelectValue placeholder="Unassigned" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="unassigned" onClick={() => field.onChange("")} className="py-2 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center"><User className="w-3 h-3 text-gray-400" /></div>
-                                      <span className="font-medium text-gray-500">Unassigned</span>
-                                    </div>
-                                  </SelectItem>
-                                  {users.map(u => (
-                                    <SelectItem key={u.id} value={u.id} className="py-2 cursor-pointer">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center overflow-hidden shrink-0">
-                                          {u.image ? <img src={u.image} alt="" className="w-full h-full object-cover"/> : <span className="text-[10px] font-bold text-indigo-500">{u.name?.charAt(0) || "U"}</span>}
-                                        </div>
-                                        <div className="flex flex-col text-left">
-                                          <span className="font-medium leading-none">{u.name || u.email}</span>
-                                          {u.jobTitle && <span className="text-[10px] text-gray-500 mt-1">{u.jobTitle}</span>}
-                                        </div>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <SearchableSelect 
+                                value={field.value || ""}
+                                onSelect={field.onChange}
+                                placeholder="Select Assignee"
+                                items={users.map(u => ({ ...u, searchValue: `${u.name || ''} ${u.email || ''} ${u.jobTitle || ''} ${u.role || ''}` }))}
+                                renderItem={renderUser}
+                                getDisplayValue={(val: string) => {
+                                  const u = users.find((u:any) => u.id === val) || (activeTask?.assignee?.id === val ? activeTask.assignee : null);
+                                  if (u) return renderUser(u);
+                                  return <span className="text-gray-500 font-medium">{val}</span>;
+                                }}
+                              />
                             </FormItem>
                           )}
                         />
@@ -489,28 +614,18 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider">Reporter</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className="h-12 bg-white border-[rgba(0,0,0,0.08)] rounded-xl shadow-sm">
-                                    <SelectValue placeholder="Select Reporter" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  {users.map(u => (
-                                    <SelectItem key={u.id} value={u.id} className="py-2 cursor-pointer">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center overflow-hidden shrink-0">
-                                          {u.image ? <img src={u.image} alt="" className="w-full h-full object-cover"/> : <span className="text-[10px] font-bold text-indigo-500">{u.name?.charAt(0) || "U"}</span>}
-                                        </div>
-                                        <div className="flex flex-col text-left">
-                                          <span className="font-medium leading-none">{u.name || u.email}</span>
-                                          {u.jobTitle && <span className="text-[10px] text-gray-500 mt-1">{u.jobTitle}</span>}
-                                        </div>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <SearchableSelect 
+                                value={field.value || ""}
+                                onSelect={field.onChange}
+                                placeholder="Select Reporter"
+                                items={users.map(u => ({ ...u, searchValue: `${u.name || ''} ${u.email || ''} ${u.jobTitle || ''} ${u.role || ''}` }))}
+                                renderItem={renderUser}
+                                getDisplayValue={(val: string) => {
+                                  const u = users.find((u:any) => u.id === val) || (activeTask?.reporter?.id === val ? activeTask.reporter : null);
+                                  if (u) return renderUser(u);
+                                  return <span className="text-gray-500 font-medium">{val}</span>;
+                                }}
+                              />
                             </FormItem>
                           )}
                         />
@@ -524,24 +639,18 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider flex items-center gap-1.5"><LayoutDashboard className="w-3.5 h-3.5"/> Campaign</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className="h-10 bg-white border-[rgba(0,0,0,0.08)] rounded-xl font-medium shadow-sm">
-                                    <SelectValue placeholder="No Campaign" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="none" onClick={() => field.onChange("")} className="font-medium text-gray-500 cursor-pointer">No Campaign</SelectItem>
-                                  {campaigns.map(c => (
-                                    <SelectItem key={c.id} value={c.id} className="font-medium cursor-pointer py-2">
-                                      <div className="flex flex-col text-left">
-                                        <span>{c.name}</span>
-                                        {c.client && <span className="text-[10px] text-gray-500">{c.client.companyName}</span>}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <SearchableSelect 
+                                value={field.value || ""}
+                                onSelect={field.onChange}
+                                placeholder="Select Campaign"
+                                items={campaigns.map(c => ({ ...c, searchValue: `${c.name || ''} ${c.client?.companyName || ''}` }))}
+                                renderItem={renderCampaign}
+                                getDisplayValue={(val: string) => {
+                                  const c = campaigns.find((c:any) => c.id === val) || (activeTask?.campaign?.id === val ? activeTask.campaign : null);
+                                  if (c) return renderCampaign(c);
+                                  return <span className="text-gray-500 font-medium">{val}</span>;
+                                }}
+                              />
                             </FormItem>
                           )}
                         />
@@ -552,21 +661,18 @@ export function TaskDialog({ open, onOpenChange, task: initialTask, users = [], 
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs text-[var(--color-text-muted)] uppercase font-semibold tracking-wider flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5"/> Project</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className="h-10 bg-white border-[rgba(0,0,0,0.08)] rounded-xl font-medium shadow-sm">
-                                    <SelectValue placeholder="No Project" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="none" onClick={() => field.onChange("")} className="font-medium text-gray-500 cursor-pointer">No Project</SelectItem>
-                                  {projects?.map(p => (
-                                    <SelectItem key={p.id} value={p.id} className="font-medium cursor-pointer">
-                                      {p.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <SearchableSelect 
+                                value={field.value || ""}
+                                onSelect={field.onChange}
+                                placeholder="Select Project"
+                                items={projects?.map(p => ({ ...p, searchValue: `${p.name || ''} ${p.client?.companyName || ''}` })) || []}
+                                renderItem={renderProject}
+                                getDisplayValue={(val: string) => {
+                                  const p = projects?.find((p:any) => p.id === val) || (activeTask?.project?.id === val ? activeTask.project : null);
+                                  if (p) return renderProject(p);
+                                  return <span className="text-gray-500 font-medium">{val}</span>;
+                                }}
+                              />
                             </FormItem>
                           )}
                         />
