@@ -1,102 +1,51 @@
 # Contributing to TwinPix Workspace
 
-First off, thank you for considering contributing to TwinPix Workspace! It's people like you that make open-source a great community to learn, inspire, and create.
+We welcome contributions! Please follow these guidelines to ensure a smooth and consistent development process.
 
-This document outlines the process for contributing to the repository.
+## Coding Standards
 
----
+- **TypeScript**: Strict mode is enabled. Do not use `any` unless absolutely necessary. Define clear interfaces in `src/types`.
+- **Styling**: Use Tailwind CSS for all styling. Avoid custom CSS unless utilizing global variables in `globals.css`.
+- **Components**: Use `shadcn/ui` components located in `src/components/ui` as the foundation. Build complex features in `src/components/features`.
+- **Data Fetching**: Prefer Next.js Server Actions over API Routes for internal mutations to optimize performance and typing.
 
-## 🚀 Getting Started
+## Folder Structure
 
-1. **Fork the repository** on GitHub.
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/your-username/twinpix-workspace.git
-   ```
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-4. **Set up your environment**:
-   Follow the setup instructions in the [README.md](./README.md) to configure your database and API keys.
+Ensure your code is placed in the correct directory:
+- `src/actions/`: Server Actions.
+- `src/app/(dashboard)/`: Authenticated views.
+- `src/components/ui/`: Generic, reusable UI atoms.
+- `src/lib/`: Stateless utility functions.
 
----
+## Branch Naming
 
-## 🌱 Branch Naming Conventions
+Follow this convention for branch names:
+- Feature: `feat/short-description`
+- Bugfix: `fix/issue-description`
+- Refactor: `refactor/what-was-changed`
+- Documentation: `docs/what-was-updated`
 
-We follow a strict branching model to keep our repository organized. Please name your branches using the following formats:
+## Commit Convention
 
-- **Features**: `feat/short-description` (e.g., `feat/add-ai-scoring`)
-- **Bug Fixes**: `fix/short-description` (e.g., `fix/campaign-card-overflow`)
-- **Documentation**: `docs/short-description` (e.g., `docs/update-api-reference`)
-- **Refactors**: `refactor/short-description` (e.g., `refactor/extract-table-component`)
-- **Chores**: `chore/short-description` (e.g., `chore/update-dependencies`)
-
----
-
-## 📝 Commit Conventions
-
-We strictly adhere to [Conventional Commits](https://www.conventionalcommits.org/). This helps us automatically generate changelogs and version releases.
-
-**Format:**
-```text
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
+We use Conventional Commits.
+Example:
+```
+feat(campaigns): add budget tracking fields
+fix(auth): resolve session timeout issue
+docs(readme): update deployment instructions
 ```
 
-**Types:**
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation only changes
-- `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-- `refactor`: A code change that neither fixes a bug nor adds a feature
-- `perf`: A code change that improves performance
-- `test`: Adding missing tests or correcting existing tests
-- `chore`: Changes to the build process or auxiliary tools and libraries
+## PR Guidelines
 
-**Examples:**
-- `feat(influencer): add instagram engagement sync via apify`
-- `fix(ui): resolve overflow issue on campaign board`
-- `docs: update deployment troubleshooting guide`
+1. Ensure your branch is up to date with `main`.
+2. Run `npm run lint` and resolve any errors before pushing.
+3. Your PR title must follow the Commit Convention.
+4. Provide a clear description of the problem solved and the approach taken.
+5. Include screenshots if the PR involves UI changes.
 
----
+## Testing
 
-## 🔁 Pull Request Guidelines
-
-1. **Create a branch** from `main`.
-2. Ensure your code strictly follows our **Code Style Rules**.
-3. **Commit** your changes using Conventional Commits.
-4. **Push** your branch to your fork.
-5. Open a **Pull Request (PR)** against the `main` branch of the upstream repository.
-6. **Description**: Clearly describe the problem you are solving and the approach you took. Reference any related issues (e.g., `Fixes #123`).
-7. **Review**: Wait for a core maintainer to review your code. Be prepared to make requested changes.
-
----
-
-## 💅 Code Style Rules
-
-To ensure a consistent and readable codebase, we enforce the following rules:
-
-- **TypeScript Strict Mode**: All code must be strongly typed. Avoid using `any` wherever possible.
-- **Component Structure**: Follow the established pattern in `src/components`. Use Server Components by default, and `use client` only when necessary (e.g., for interactivity or hooks).
-- **Styling**: We use **Tailwind CSS**. Avoid writing custom CSS unless absolutely necessary. Rely on utility classes and our global CSS variables for colors (e.g., `var(--color-brand-500)`).
-- **Linting**: Ensure your code passes all linting checks. Run `npm run lint` before committing.
-- **Server Actions**: All database mutations must go through Server Actions located in `src/actions`, rather than direct API routes, ensuring type safety from client to database.
-
-*(For detailed architectural guidelines, see [CODE_STYLE.md](./CODE_STYLE.md))*
-
----
-
-## 🧪 Testing Requirements
-
-*(Note: Test suite implementation is currently in progress).*
-
-As we introduce testing frameworks (Jest/Playwright), all new features must include:
-1. **Unit Tests**: For utility functions and complex React hooks.
-2. **Integration Tests**: For crucial Server Actions ensuring database integrity.
-3. If your PR introduces a bug fix, include a test that would have failed without your fix.
-
-Thank you for contributing to TwinPix Workspace!
+While full test coverage is a work in progress, ensure that:
+1. Critical database mutations (Server Actions) handle errors gracefully.
+2. UI components do not break the responsive layout.
+3. Future automated tests will be placed in `__tests__` directories adjacent to the files they test.

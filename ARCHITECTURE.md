@@ -1,129 +1,111 @@
-# Architecture Documentation
+# System Architecture
 
-TwinPix Workspace is built using a modern, server-first architecture powered by the Next.js App Router. This document provides a high-level overview of the system, data flows, and external integrations.
+TwinPix Workspace utilizes a modern, serverless-first architecture built on Next.js, optimizing for both developer experience and performance.
 
----
-
-## High-Level Architecture Diagram
+## High-Level Architecture
 
 ```mermaid
 graph TD
-    Client[Web Browser / Client]
+    Client[Client Browser] --> NextJS[Next.js Application]
+    NextJS --> Auth[NextAuth.js]
+    NextJS --> ServerActions[Server Actions]
+    NextJS --> APIRoutes[API Routes]
     
-    subgraph Vercel[Next.js Application on Vercel]
-        UI[React Server & Client Components]
-        SA[Server Actions]
-        Auth[Auth.js / NextAuth]
+    ServerActions --> Prisma[Prisma ORM]
+    APIRoutes --> Prisma
+    
+    Prisma --> Postgres[(PostgreSQL)]
+    
+    ServerActions --> External[External Services]
+    APIRoutes --> External
+    
+    subgraph External Services
+        OpenAI[OpenAI / ChatGPT]
+        Resend[Resend / Email]
+        WhatsApp[WhatsApp API]
+        Cloudinary[Cloudinary]
+        Instagram[Instagram / Apify]
     end
-    
-    subgraph Infrastructure
-        DB[(Neon PostgreSQL Database)]
-        Prisma[Prisma ORM]
-    end
-    
-    subgraph ExternalServices[External Services]
-        Apify[Apify Instagram Scraper]
-        Cloudinary[Cloudinary CDN]
-        OpenAI[OpenAI Copilot]
-    end
-    
-    Client <-->|HTTP / React Server payload| UI
-    UI -->|Invoke| SA
-    SA -->|Query / Mutate| Prisma
-    Prisma <-->|TCP/IP| DB
-    UI <-->|Session check| Auth
-    Auth <-->|Verify| DB
-    
-    SA -->|Fetch data| Apify
-    SA -->|Upload assets| Cloudinary
-    SA -->|Generate insights| OpenAI
 ```
 
----
+## Folder Architecture
 
-## Core Technologies Explained
+The codebase follows a modular structure organized by technical concern and domain logic:
 
-### Next.js App Router
-We utilize the Next.js App Router (`/src/app`) to heavily leverage React Server Components (RSC). By default, components render on the server, resulting in smaller client bundles and faster Initial Page Loads. Client Components (`"use client"`) are used strictly at the leaves of the component tree for interactivity, state management (Zustand), and animations (Framer Motion).
+- **`src/app`**: Contains the routing layer. Divided into Route Groups `(auth)` for unauthenticated pages and `(dashboard)` for the main application.
+- **`src/actions`**: Server Actions. This is the primary mutation layer. React components call these actions directly without hitting traditional API routes.
+- **`src/app/api`**: Reserved for webhooks, cron jobs, and external integrations that cannot use Server Actions (e.g., OAuth callbacks, Apify webhooks).
+- **`src/components`**: Highly modular UI components. Split between basic UI elements (`shadcn/ui`) and complex feature-specific components.
+- **`src/lib`**: Core utilities, including the initialized Prisma client (`lib/prisma.ts`) and AI utility functions.
 
-### Server Actions
-Instead of traditional REST APIs (`/api/route`), all data mutations (Creates, Updates, Deletes) are handled via **Server Actions** located in `/src/actions`. These provide end-to-end type safety and direct integration with React's `useTransition` and `<form action={...}>`.
-
-### Prisma & PostgreSQL
-Our database is hosted on **Neon**, providing serverless PostgreSQL. **Prisma** acts as our Type-Safe ORM. The schema (`prisma/schema.prisma`) acts as the single source of truth for our data models, generating precise TypeScript definitions used throughout the application.
-
-### Authentication Flow (Auth.js)
-We use `NextAuth.js` (Auth.js) with the Prisma Adapter. Authentication is currently handled via credentials (bcrypt hashed passwords). Sessions are managed securely via encrypted JWTs stored in HTTP-only cookies.
-
----
-
-## Sequence Diagrams
-
-### 1. User Login Flow
+## Module Relationships
 
 ```mermaid
-sequenceDiagram
-    actor User
-    participant Client
-    participant NextAuth
-    participant DB
-    
-    User->>Client: Enters Credentials
-    Client->>NextAuth: POST /api/auth/callback/credentials
-    NextAuth->>DB: Query User by Email
-    DB-->>NextAuth: Return User Record (Hashed Password)
-    NextAuth->>NextAuth: Compare bcrypt hashes
-    alt Success
-        NextAuth-->>Client: Set HttpOnly Session Cookie & Redirect
-        Client-->>User: Show Dashboard
-    else Failure
-        NextAuth-->>Client: Return Error
-        Client-->>User: Show "Invalid Credentials"
-    end
+graph LR
+    Auth(Authentication) --> Users
+    Users --> Workspace
+    Workspace --> Clients
+    Workspace --> Influencers
+    Clients --> Projects
+    Projects --> Campaigns
+    Campaigns --> Tasks
+    Campaigns --> Files
+    Influencers --> Analytics
+    Tasks --> Notifications
 ```
 
-### 2. Influencer Sync Flow (Apify Integration)
+## Database Relationships
+
+The database is heavily normalized. Key relationships include:
+- A **User** can have multiple roles and manage multiple **Influencers** and **Tasks**.
+- A **Client** has multiple **Projects** and **Campaigns**.
+- A **Campaign** involves multiple **Influencers** (via a join table) and **Team Members**.
+- A **Task** is assigned to a **User**, authored by a **User**, and belongs to a **Campaign** or **Project**.
+
+## Authentication Flow
+
+1. User attempts to access a protected route in `(dashboard)`.
+2. Next.js Middleware intercepts the request.
+3. If unauthenticated, the user is redirected to `/login`.
+4. Authentication is handled via NextAuth.js using Credentials (bcrypt hashed) or OAuth.
+5. The session is stored securely, and role-based access control (RBAC) determines what UI elements are rendered.
+
+## Notification Flow
 
 ```mermaid
-sequenceDiagram
-    actor Admin
-    participant UI as Influencer Profile UI
-    participant SA as Sync Server Action
-    participant Apify
-    participant DB as Prisma / Neon
-    
-    Admin->>UI: Clicks "Sync Instagram Data"
-    UI->>SA: invoke syncInfluencer(influencerId)
-    SA->>DB: Fetch Influencer (Handle)
-    SA->>Apify: POST Run Actor (Instagram Scraper) with Handle
-    Apify-->>SA: Return JSON (Followers, Posts, Reels)
-    SA->>DB: Update Influencer Record
-    SA->>DB: Create InfluencerMetricSnapshot
-    SA->>DB: Upsert InfluencerPost & InfluencerReel records
-    DB-->>SA: Success
-    SA-->>UI: revalidatePath() & Return Success
-    UI-->>Admin: Show updated metrics
+graph TD
+    Trigger[Action Triggered e.g. Task Assigned] --> Action[Server Action]
+    Action --> DBInsert[Insert into Notification Table]
+    DBInsert --> PrefCheck{Check User Preferences}
+    PrefCheck -->|In-App| UI[Update UI State]
+    PrefCheck -->|Email| Resend[Trigger Resend Email]
+    PrefCheck -->|WhatsApp| WA[Trigger WhatsApp API]
 ```
 
-### 3. Campaign Creation Flow
+## AI Flow
+
+TwinPix deeply integrates OpenAI for creator intelligence.
+1. System pulls influencer data (from DB or Instagram).
+2. Data is formatted into a prompt within `src/lib/ai` or `src/app/api/copilot`.
+3. OpenAI returns structured JSON.
+4. Insights (Strengths, Brand Safety, Match Score) are stored in `CreatorAIInsights` and `BrandMatchAnalysis` tables.
+
+## Instagram Sync Flow
+
+1. Cron job triggers `src/app/api/instagram/sync`.
+2. System queries the Apify API to scrape latest Instagram data for active influencers.
+3. Apify webhook posts data back to our API.
+4. Data is parsed and upserted into `InfluencerPost`, `InfluencerReel`, and `InfluencerMetricSnapshot` tables.
+
+## Project Hierarchy
 
 ```mermaid
-sequenceDiagram
-    actor Manager
-    participant UI as Campaign Form
-    participant SA as createCampaign Action
-    participant DB
-    
-    Manager->>UI: Submits new campaign details
-    UI->>SA: invoke createCampaign(data)
-    SA->>DB: Prisma.campaign.create()
-    SA->>DB: Log Activity (Campaign Created)
-    DB-->>SA: Return Campaign Record
-    SA-->>UI: revalidatePath('/campaigns')
-    UI-->>Manager: Redirect to Campaign Dashboard
+graph TD
+    A[Workspace] --> B[Client]
+    B --> C[Project]
+    C --> D[Campaign]
+    D --> E[Influencer]
+    D --> F[Task]
+    D --> G[Calendar Event]
+    D --> H[Files]
 ```
-
----
-
-## Caching Strategy
-Next.js aggressively caches fetch requests and pages. We invalidate caches on mutation by calling `revalidatePath('/path')` within our Server Actions. This ensures the user immediately sees updated data (e.g., after updating task status) without requiring a full page refresh.

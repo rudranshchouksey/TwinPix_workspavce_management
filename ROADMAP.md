@@ -1,34 +1,33 @@
-# TwinPix Workspace Roadmap
+# Roadmap
 
-This document outlines the strategic vision and upcoming feature phases for TwinPix Workspace.
+TwinPix Workspace is continuously evolving to support the needs of enterprise influencer agencies. Below is our current roadmap.
 
----
+## Completed
 
-## Current Features (v1.0.0)
-- **Influencer CRM**: Contact tracking, status pipelines, rate tracking.
-- **Campaign Management**: Budgets, timelines, assigned influencers.
-- **Workspace Tooling**: Kanban tasks, File management, Internal messaging.
-- **Basic AI Integrations**: AI Copilot for basic insights and SWOT analysis.
-- **Instagram Sync**: Integration with Apify to pull creator stats.
+- **Initial CRM Module**: Basic influencer and client tracking.
+- **Premium Light UI**: Implementation of shadcn/ui and Tailwind CSS for a modern aesthetic.
+- **Project Workspace**: Hierarchical organization of clients, projects, campaigns, and tasks.
+- **AI Assistant Integration**: Basic ChatGPT integration for workflow assistance.
+- **Notification Engine**: In-app, Email (Resend), and WhatsApp integration.
+- **Enterprise Agency Platform**: Stabilization of core features for v1.0 release.
 
----
+## In Progress
 
-## 🚀 Upcoming Phases
+- **Auto Instagram Sync**: Reliable chron-based syncing via Apify.
+- **Activity Timeline Refinement**: Granular tracking of all entity changes.
+- **Project Health Score**: Automated calculation of project status based on task completion and deadlines.
 
-### Phase 1: Enhanced Automation & Creator Intelligence
-**Target**: Q3 2026
-- **AI Creator Scoring**: Implement a proprietary AI model that evaluates creator engagement authenticity and assigns a "Quality Score" (0-100).
-- **AI Outreach Generation**: Generative AI templates that automatically draft hyper-personalized outreach emails to creators based on their recent posts and campaign requirements.
-- **Automated Reporting**: One-click generation of PDF campaign wrap-up reports for clients.
+## Planned
 
-### Phase 2: Predictive Analytics & Audience Fraud
-**Target**: Q4 2026
-- **Audience Fraud Detection**: Advanced analysis of follower growth velocity and comment sentiment to flag potentially purchased followers or bot rings.
-- **Predictive Analytics**: Using historical campaign data to predict the ROI, Cost-Per-Click (CPC), and Cost-Per-Acquisition (CPA) for hiring specific creators.
-- **Smart Recommendations**: An algorithmic recommendation engine (`/influencers/recommend`) that suggests the top 5 creators for a new campaign based on past success and client industry.
+- **Client Portal**: Dedicated view-only access for agency clients to track campaign progress and approve deliverables without seeing internal discussions.
+- **Influencer Portal**: A secure dashboard for influencers to sign contracts, upload deliverables, and track their payments.
+- **Advanced Analytics**: Deeper integration with Recharts for custom reporting dashboards.
 
-### Phase 3: Client Portal & Financial Suite
-**Target**: Q1 2027
-- **White-Label Client Portals**: Secure, dedicated login areas where Clients can view active campaign statuses, approve creators, and leave feedback without seeing internal team tasks.
-- **Invoicing & Payments**: Stripe integration to handle influencer payouts and client invoicing directly through the platform.
-- **Advanced Permissions**: Granular, field-level access control.
+## Future Enterprise Features
+
+- **Automation Engine**: Trigger-based workflows (e.g., "When Task is marked Done, email Client").
+- **Workflow Automation**: Visual builder for agency-specific standard operating procedures (SOPs).
+- **Finance Module**: Comprehensive financial tracking.
+- **Invoice Management**: Generate, send, and track invoice statuses directly linked to campaigns.
+- **Contracts**: Digital signature integration and template management.
+- **AI Project Manager**: Autonomous agent capable of predicting bottlenecks and suggesting task reassignments.
