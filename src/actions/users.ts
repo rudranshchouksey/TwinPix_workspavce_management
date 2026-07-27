@@ -25,6 +25,7 @@ export async function getUsersAction() {
         jobTitle: true,
         department: true,
         createdAt: true,
+        image: true,
       },
     });
 
